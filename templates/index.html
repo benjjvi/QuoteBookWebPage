@@ -125,12 +125,21 @@
             box-shadow: none;
         }
 
+        .subtitle {
+        color: #999;
+        margin-bottom: 32px;
+        }
+
+
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Quote Book</h1>
-        <p>Questionable wisdom, perfectly preserved.</p>
+        <h1>Quote Book
+
+        </h1><p class="subtitle">
+        A living record of terrible, brilliant things people have said
+        </p>
 
         <table>
             <thead>
@@ -149,6 +158,11 @@
             </tbody>
         </table>
 
+        <div class="stats">
+            <strong>{{ total_quotes }}</strong> quotes ·
+            <strong>{{ speaker_counts[0][0] }}</strong> quoted the most
+        </div><br><br>
+
         <div class="button-grid">
             <a href="{{ url_for('random_quote') }}">
                 <button class="enter-btn"><img src="{{ url_for('static', filename='assets/img/dice.svg') }}"></button>
@@ -164,10 +178,6 @@
 
             <a href="{{ url_for('search') }}">
                 <button class="enter-btn secondary"><img src="{{ url_for('static', filename='assets/img/search.svg') }}"> </button>
-            </a>
-
-            <a href="{{ url_for('admin_login') }}">
-                <button class="enter-btn"><img src="{{ url_for('static', filename='assets/img/admin.svg') }}"></button>
             </a>
         </div>
 

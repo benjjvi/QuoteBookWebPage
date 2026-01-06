@@ -31,12 +31,6 @@ load_dotenv()
 # Define the character set: uppercase, lowercase, digits
 chars = string.ascii_letters + string.digits
 
-ADMIN_PASSWORD = (
-    os.getenv("ADMIN_PASSWORD")
-    if os.getenv("ADMIN_PASSWORD")
-    else "".join(secrets.choice(chars) for _ in range(12))
-)  # generates a random, secure password if there is none supplied.
-
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 
 app.config.update(
@@ -63,46 +57,6 @@ def robots_txt():
     """.strip()
     return Response(content, mimetype="text/plain")
 
-@app.route("/admin_login", methods=["GET", "POST"])
-def admin_login():
-    error = None
-    if request.method == "POST":
-        if request.form.get("password") == ADMIN_PASSWORD:
-            session["admin"] = True
-            return redirect(url_for("admin_queue"))
-        else:
-            error = "Incorrect password."
-    return render_template("admin_login.html", error=error)
-
-
-@app.route("/admin_logout")
-def admin_logout():
-    session.pop("admin", None)
-    return redirect(url_for("admin_login"))
-
-
-@app.route("/admin_queue", methods=["GET", "POST"])
-def admin_queue():
-    # Require login
-    if not session.get("admin"):
-        return redirect(url_for("admin_login"))
-
-    # Load current queue
-    qb.load_queue()
-
-    if request.method == "POST":
-        index = int(request.form.get("index"))
-        action = request.form.get("action")
-
-        if action == "approve":
-            qb.approve_quote(index)
-        elif action == "reject":
-            qb.reject_quote(index)
-
-        return redirect(url_for("admin_queue"))
-
-    # Pass queue to template
-    return render_template("admin_queue.html", queue=qb.queue)
 
 
 @app.route("/")
@@ -141,7 +95,7 @@ def add_quote():
             extras = f"{author_raw}, {timestamp}"
 
         if quote_text:
-            qb.add_quote_to_queue(quote_text, extras)
+            qb.add_quote(quote_text, extras)
             # Reload quotes
             status = qb.reload()
             if status != 200 and status != 304:
@@ -207,11 +161,6 @@ def search():
 @app.route("/credits")
 def credits():
     return render_template("credits.html")
-
-
-@app.route("/admin")
-def admin():
-    return render_template("admin.html")
 
 
 @app.route("/health")

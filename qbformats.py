@@ -89,31 +89,6 @@ class QuoteBook:
         with open("qb.qbf", "a", encoding="utf-8") as f:
             f.write(f"\n\n{quote} — {author}")
 
-    def add_quote_to_queue(self, quote_text, author_info="Unknown"):
-        """Add quote to a temporary queue file for later processing."""
-        if not quote_text:
-            raise ValueError("Quote text cannot be empty")
-
-        # --- sanitise quote text for storage ---
-        quote = quote_text.strip()
-
-        # Normalise newlines (no multi-paragraph quotes)
-        quote = " ".join(quote.splitlines())
-
-        # Escape double quotes inside the quote
-        quote = quote.replace('"', '\\"')
-
-        # Wrap in speech marks
-        quote = f'"{quote}"'
-
-        # --- sanitise author ---
-        author = author_info.strip() or "Unknown"
-        author = author.replace("\n", " ").replace("—", "—")
-
-        # --- write in canonical format to queue file ---
-        with open("qb_queue.qbf", "a", encoding="utf-8") as f:
-            f.write(f"\n\n{quote} — {author}")
-
     def search_quotes(self, query):
         """Search quotes for a given query string (case-insensitive)."""
         query_lower = query.lower()
@@ -145,66 +120,6 @@ class QuoteBook:
         self.__init__()  # Re-initialize to reload quotes
 
         return 200
-
-    # -----------------------------
-    # Admin queue management
-    # -----------------------------
-    def load_queue(self):
-        """Load the queue from qb_queue.qbf (text format, two newlines per quote)"""
-        self.queue = []
-        try:
-            with open("qb_queue.qbf", "r", encoding="utf-8") as f:
-                raw = f.read().strip()
-                if raw:
-                    # Split quotes by two newlines
-                    entries = raw.split("\n\n")
-                    for entry in entries:
-                        # Split quote and info by " — " delimiter
-                        if " — " in entry:
-                            quote, info = entry.split(" — ", 1)
-                            self.queue.append([quote.strip(), info.strip()])
-        except FileNotFoundError:
-            self.queue = []
-
-    def save_queue(self):
-        """Save the current queue back to qb_queue.qbf"""
-        with open("qb_queue.qbf", "w", encoding="utf-8") as f:
-            # Join each quote with " — " and separate by two newlines
-            lines = [f"{quote} — {info}" for quote, info in self.queue]
-            f.write("\n\n".join(lines))
-
-    def approve_quote(self, index):
-        """
-        Move a quote from the queue into the main quotes list.
-        Automatically saves both queue and main quotes.
-        Strips any wrapping speech marks from the queued quote.
-        """
-        if 0 <= index < len(self.queue):
-            quote, author_info = self.queue.pop(index)
-
-            # Strip wrapping quotes if present
-            quote = quote.strip()
-            if (quote.startswith('"') and quote.endswith('"')) or (
-                quote.startswith("“") and quote.endswith("”")
-            ):
-                quote = quote[1:-1].strip()
-
-            # Add to main quotes (add_quote will wrap in quotes)
-            self.add_quote(quote, author_info)
-
-            # Save updated queue
-            self.save_queue()
-            return True
-
-        return False
-
-    def reject_quote(self, index):
-        """Remove a quote from the queue without adding it."""
-        if 0 <= index < len(self.queue):
-            self.queue.pop(index)
-            self.save_queue()
-            return True
-        return False
 
 
 if __name__ == "__main__":
