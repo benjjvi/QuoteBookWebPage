@@ -30,7 +30,11 @@ load_dotenv()
 # Define the character set: uppercase, lowercase, digits
 chars = string.ascii_letters + string.digits
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") if os.getenv("ADMIN_PASSWORD") else ''.join(secrets.choice(chars) for _ in range(12)) # generates a random, secure password if there is none supplied.
+ADMIN_PASSWORD = (
+    os.getenv("ADMIN_PASSWORD")
+    if os.getenv("ADMIN_PASSWORD")
+    else "".join(secrets.choice(chars) for _ in range(12))
+)  # generates a random, secure password if there is none supplied.
 print(f"YOUR ADMIN PASSWORD IS {ADMIN_PASSWORD}")
 
 
