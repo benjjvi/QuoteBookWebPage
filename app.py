@@ -37,6 +37,8 @@ ADMIN_PASSWORD = (
     else "".join(secrets.choice(chars) for _ in range(12))
 )  # generates a random, secure password if there is none supplied.
 
+IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
+
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,  # prevents JS from reading cookie
     SESSION_COOKIE_SECURE=True,    # only send cookie over HTTPS
@@ -235,4 +237,4 @@ def handle_all_errors(e):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True if not IS_PROD else False)
