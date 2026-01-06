@@ -1,0 +1,133 @@
+/* ---------- Reset / Base ---------- */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
+    color: #f5f5f5;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+
+/* ---------- Typography ---------- */
+h1 {
+    font-size: 2.4rem;
+    margin-bottom: 0.5rem;
+}
+
+h2 {
+    font-size: 1.1rem;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+p {
+    opacity: 0.75;
+    line-height: 1.5;
+}
+
+/* ---------- Layout ---------- */
+.container {
+    width: 100%;
+    padding: 2.5rem;
+}
+
+.centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.button-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+    padding: 0.6rem 1.6rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: #2a2a2a;
+    color: #f5f5f5;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-primary {
+    background: #f5f5f5;
+    color: #111;
+}
+
+.btn-secondary {
+    background: #2a2a2a;
+    color: #f5f5f5;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* Remove underline from button-style links */
+a.btn,
+a.enter-btn {
+    text-decoration: none;
+    color: inherit;
+}
+
+
+/* ---------- Forms ---------- */
+input[type="text"],
+textarea {
+    width: 100%;
+    background: #0f0f0f;
+    color: #f5f5f5;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 0.6rem;
+    font-family: inherit;
+}
+
+/* ---------- Tables ---------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+th, td {
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+}
+
+th {
+    opacity: 0.7;
+    font-weight: 500;
+    border-bottom: 1px solid #333;
+|

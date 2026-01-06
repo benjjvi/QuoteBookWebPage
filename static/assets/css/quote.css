@@ -1,0 +1,33 @@
+/* quote.css */
+
+.quote-box {
+    max-width: 700px;
+    padding: 2rem;
+    background: #1c1c1c;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    text-align: center;
+}
+
+.quote {
+    font-size: 1.6rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    white-space: pre-line;
+}
+
+.author {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.button-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.button-row form {
+    margin: 0;
+}

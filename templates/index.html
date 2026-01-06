@@ -1,190 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Quote Book</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}">
+{% extends "base.html" %}
 
-    <style>
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
-            color: #f5f5f5;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-        }
+{% block title %}Quote Book{% endblock %}
 
-        .container {
-            text-align: center;
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 420px;
-        }
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/index.css') }}">
+{% endblock %}
 
-        h1 {
-            font-size: 2.4rem;
-            margin-bottom: 0.5rem;
-        }
+{% block content %}
+<div class="container">
+    <h1>Quote Book</h1>
+    <p class="subtitle">A living record of terrible, brilliant things people have said</p>
 
-        p {
-            opacity: 0.75;
-            margin-bottom: 1.5rem;
-        }
+    <table>
+        <thead>
+            <tr><th>Top quoters</th><th>Quotes</th></tr>
+        </thead>
+        <tbody>
+            {% for name, count in speaker_counts[:5] %}
+                <tr><td>{{ name }}</td><td>{{ count }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 2rem;
-            font-size: 0.95rem;
-        }
-
-        th, td {
-            padding: 0.4rem 0.6rem;
-            text-align: left;
-        }
-
-        th {
-            opacity: 0.7;
-            font-weight: 500;
-            border-bottom: 1px solid #333;
-        }
-
-        td:last-child {
-            text-align: right;
-            opacity: 0.85;
-        }
-
-        .enter-btn {
-            padding: 0.8rem 2.2rem;
-            font-size: 1rem;
-            border-radius: 999px;
-            border: none;
-            background: #f5f5f5;
-            color: #111;
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .enter-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-        }
-
-        .enter-btn:active {
-            transform: translateY(0);
-            box-shadow: none;
-        }
-
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-            gap: 16px;
-
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-
-        .enter-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-
-            aspect-ratio: 1 / 1;
-            width: 100%;
-
-            padding: 12px;
-            border-radius: 12px;
-
-            text-decoration: none;
-            border: 1px solid #ccc;
-        }
-
-        .enter-btn img {
-            width: 95%;
-            height: 95%;
-            object-fit: contain;
-        }
-
-        .enter-btn.secondary {
-            background: #e6e6e6;
-        }
-
-        .enter-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-        }
-
-        .enter-btn:active {
-            transform: translateY(0);
-            box-shadow: none;
-        }
-
-        .subtitle {
-        color: #999;
-        margin-bottom: 32px;
-        }
-
-
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Quote Book
-
-        </h1><p class="subtitle">
-        A living record of terrible, brilliant things people have said
-        </p>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Top quoters</th>
-                    <th>Quotes</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for name, count in speaker_counts[:5] %}
-                <tr>
-                    <td>{{ name }}</td>
-                    <td>{{ count }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div class="stats">
-            <strong>{{ total_quotes }}</strong> quotes ·
-            <strong>{{ speaker_counts[0][0] }}</strong> quoted the most
-        </div><br><br>
-
-        <div class="button-grid">
-            <a href="{{ url_for('random_quote') }}">
-                <button class="enter-btn"><img src="{{ url_for('static', filename='assets/img/dice.svg') }}"></button>
-            </a>
-
-            <a href="{{ url_for('add_quote') }}">
-                <button class="enter-btn secondary"><img src="{{ url_for('static', filename='assets/img/add.svg') }}"></button>
-            </a>
-
-            <a href="{{ url_for('all_quotes') }}">
-                <button class="enter-btn secondary"><img src="{{ url_for('static', filename='assets/img/book.svg') }}"></button>
-            </a>
-
-            <a href="{{ url_for('search') }}">
-                <button class="enter-btn secondary"><img src="{{ url_for('static', filename='assets/img/search.svg') }}"> </button>
-            </a>
-        </div>
-
-        <div class="button-grid">
-        </div>
-
-        {% include "footer.html" %}
+    <div class="stats">
+        <strong>{{ total_quotes }}</strong> quotes ·
+        <strong>{{ speaker_counts[0][0] }}</strong> quoted the most
     </div>
-</body>
-</html>
+
+    <div class="button-grid">
+        <a href="{{ url_for('random_quote') }}" class="enter-btn">
+            <img src="{{ url_for('static', filename='assets/img/dice.svg') }}">
+        </a>
+        <a href="{{ url_for('add_quote') }}" class="enter-btn secondary">
+            <img src="{{ url_for('static', filename='assets/img/add.svg') }}">
+        </a>
+        <a href="{{ url_for('all_quotes') }}" class="enter-btn secondary">
+            <img src="{{ url_for('static', filename='assets/img/book.svg') }}">
+        </a>
+        <a href="{{ url_for('search') }}" class="enter-btn secondary">
+            <img src="{{ url_for('static', filename='assets/img/search.svg') }}">
+        </a>
+    </div>
+</div>
+{% endblock %}

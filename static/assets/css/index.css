@@ -1,0 +1,52 @@
+/* index.css */
+
+.container {
+    max-width: 420px;
+    text-align: center;
+}
+
+.subtitle {
+    color: #999;
+    margin-bottom: 32px;
+}
+
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+
+.enter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    background: #f5f5f5;
+}
+
+.enter-btn.secondary {
+    background: #e6e6e6;
+}
+
+.enter-btn img {
+    width: 95%;
+    height: 95%;
+    object-fit: contain;
+}
+
+.stats {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}

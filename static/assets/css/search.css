@@ -1,0 +1,35 @@
+/* search.css */
+
+.container {
+    max-width: 420px;
+    text-align: center;
+}
+
+form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.quote {
+    background: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.quote-text {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.quote-meta {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.no-results {
+    color: #666;
+    font-style: italic;
+}
