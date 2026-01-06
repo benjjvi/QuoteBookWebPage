@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Error {{ code }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}">
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
+            color: #f5f5f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .container {
+            max-width: 480px;
+            padding: 2.5rem;
+            background: #151515;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 3rem;
+            letter-spacing: 0.06em;
+        }
+
+        h2 {
+            margin: 0.5rem 0 1.5rem;
+            font-size: 1.1rem;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        p {
+            opacity: 0.75;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.7rem 1.8rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .btn-primary {
+            background: #f5f5f5;
+            color: #111;
+        }
+
+        .btn-secondary {
+            background: #2a2a2a;
+            color: #f5f5f5;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ code }}</h1>
+        <h2>{{ name }}</h2>
+
+        <p>
+            {{ description }}
+        </p>
+
+        <div class="button-row">
+            <a href="{{ url_for('index') }}">
+                <button class="btn btn-primary">Back home</button>
+            </a>
+
+            <a href="{{ request.referrer or url_for('index') }}">
+                <button class="btn btn-secondary">Go back</button>
+            </a>
+        </div>
+        {% include "footer.html" %}
+    </div>
+</body>
+</html>

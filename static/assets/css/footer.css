@@ -1,0 +1,29 @@
+/* Use flexbox on body to push footer to the bottom */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* full viewport height */
+}
+
+/* Main content grows to fill available space */
+main {
+    flex: 1; /* takes up remaining space */
+}
+
+/* Footer styling */
+footer {
+    background-color: rgba(0, 0, 0, 0, 1); /* light grey background */
+    text-align: center;
+    padding: 15px 0;
+    width: 100%;
+}
+
+.plainlink {
+    color: #00FFFF; /* cyan link */
+    text-decoration: none;
+}
+
+.plainlink:hover {
+    color: #66FFFF; /* lighter cyan on hover */
+    text-decoration: underline;
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Quotes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}">
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0d0d0d;
+            color: #f5f5f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            font-size: 2.4rem;
+        }
+
+        .quote-card {
+            background: #151515;
+            border-radius: 14px;
+            padding: 1.6rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .quote-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            white-space: pre-line;
+            margin-bottom: 1rem;
+        }
+
+        .quote-author {
+            text-align: right;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.6rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            background: #2a2a2a;
+            color: #f5f5f5;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <h1>All Quotes</h1>
+
+            <a href="{{ url_for('index') }}">
+                <button class="btn">Back home</button>
+            </a>
+        </div>
+
+
+            <!-- Speaker filter dropdown -->
+            <form method="get" action="{{ url_for('all_quotes') }}">
+                <label for="speaker">Filter by speaker:</label>
+                <select name="speaker" id="speaker" onchange="this.form.submit()">
+                    <option value="">All Speakers</option>
+                    {% for speaker, count in speakers %}
+                        <option value="{{ speaker }}"
+                            {% if speaker == speaker_filter %}selected{% endif %}>
+                            {{ speaker }} ({{ count }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <noscript>
+                    <button type="submit">Filter</button>
+                </noscript>
+            </form>
+
+            <!-- Quotes display -->
+            {% for quote, info in quotes %}
+                <div class="quote-card">
+                    <div class="quote-text">
+                        {{ quote | e }}
+                    </div>
+                    <div class="quote-author">
+                        — {{ info.split(',')[0] | e }}  <!-- Only show the speaker -->
+                    </div>
+                </div>
+            {% else %}
+                <p>No quotes found.</p>
+            {% endfor %}
+
+        {% include "footer.html" %}
+
+    </div>
+</body>
+</html>

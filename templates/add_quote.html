@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Quote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}">
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
+            color: #f5f5f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            padding: 2.5rem;
+            background: #151515;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.4rem;
+            opacity: 0.85;
+        }
+
+        textarea,
+        input[type="text"] {
+            width: 100%;
+            background: #0f0f0f;
+            color: #f5f5f5;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 0.6rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 140px;
+            resize: vertical;
+            margin-bottom: 1.2rem;
+            white-space: pre-wrap;
+        }
+
+        input[type="text"] {
+            margin-bottom: 1.8rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.7rem 1.8rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .btn-primary {
+            background: #f5f5f5;
+            color: #111;
+        }
+
+        .btn-secondary {
+            background: #2a2a2a;
+            color: #f5f5f5;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add a Quote</h1>
+
+        <form method="post" action="{{ url_for('add_quote') }}">
+            <label for="quote_text">Quote</label>
+            <textarea
+                id="quote_text"
+                name="quote_text"
+                placeholder="Write the quote exactly as it was said…"
+                required
+            ></textarea>
+
+            <label for="author_info">Author</label>
+            <input
+                type="text"
+                id="author_info"
+                name="author_info"
+                placeholder="Speaker Name (e.g., Albert Einstein)"
+            >
+            
+            <label for="context">Date and Time</label>
+            <input
+                type="text"
+                id="time"
+                name="time"
+                placeholder="[If left blank will auto fill] Time (e.g., 12th March, 14:30)"
+            >
+
+            <label for="context">Context</label>
+            <input
+                type="text"
+                id="context"
+                name="context"
+                placeholder="Context (e.g., place, funny info)"
+            >
+
+            <div class="button-row">
+                <button type="submit" class="btn btn-primary">Add Quote</button>
+                <a href="{{ url_for('index') }}">
+                    <button type="button" class="btn btn-secondary">Cancel</button>
+                </a>
+            </div>
+        </form>
+        {% include "footer.html" %}
+    </div>
+</body>
+</html>

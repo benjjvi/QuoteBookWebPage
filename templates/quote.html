@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Random Quote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #111;
+            color: #f5f5f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .quote-box {
+            max-width: 700px;
+            padding: 2rem;
+            background: #1c1c1c;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            text-align: center;
+        }
+
+        .quote {
+            font-size: 1.6rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+            white-space: pre-line;
+        }
+
+        .author {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .reroll-btn {
+            margin-top: 1.5rem;
+            padding: 0.6rem 1.4rem;
+            background: #2a2a2a;
+            color: #f5f5f5;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .reroll-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .reroll-btn:active {
+            transform: scale(0.96);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .button-row form {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="quote-box">
+        <div class="quote">
+            {{ quote | e }}
+        </div>
+
+        <div class="author">
+            — {{ author | e }}
+        </div>
+
+        <div class="button-row">
+            <form method="get" action="{{ url_for('random_quote') }}">
+                <button type="submit" class="reroll-btn">Re-roll</button>
+            </form>
+
+            <form method="get" action="{{ url_for('index') }}">
+                <button type="submit" class="reroll-btn">Back Home</button>
+            </form>
+        </div>
+        {% include "footer.html" %}
+    </div>
+</body>
+</html>

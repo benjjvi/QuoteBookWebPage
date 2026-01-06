@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Quotes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}">
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
+            color: #f5f5f5;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            opacity: 0.75;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+        }
+
+        th {
+            opacity: 0.7;
+            font-weight: 500;
+            border-bottom: 1px solid #333;
+        }
+
+        td:last-child {
+            text-align: right;
+            opacity: 0.85;
+        }
+
+        form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px 12px;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 10px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .quote {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .quote-text {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .quote-meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .no-results {
+            color: #666;
+            font-style: italic;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.6rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            background: #2a2a2a;
+            color: #f5f5f5;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+
+
+<body>
+    <div class="container">
+        <div class="top-bar"> 
+            <h1>Search Quotes</h1>
+
+            <a href="{{ url_for('index') }}">
+                <button class="btn">Back home</button>
+            </a>
+        </div>
+
+        <form method="post">
+            <input
+                type="text"
+                name="query"
+                placeholder="Search quotes..."
+                value="{{ query }}"
+                autofocus
+            >
+            <button type="submit">Search</button>
+        </form>
+
+        {% if query %}
+            <h2>{{ len_results }} results for “{{ query }}”</h2>
+        {% endif %}
+
+        {% if results %}
+            {% for quote in results %}
+                <div class="quote">
+                    {% if quote is iterable and quote|length > 1 %}
+                        <div class="quote-text">{{ quote[0] }}</div>
+                        <div class="quote-meta">— {{ quote[1] }}</div>
+                    {% else %}
+                        <div class="quote-text">{{ quote }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% elif query %}
+            <p class="no-results">No quotes found.</p>
+        {% endif %}
+    </div>
+    {% include "footer.html" %}
+</body>
+</html>
