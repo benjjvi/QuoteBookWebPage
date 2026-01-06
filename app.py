@@ -15,13 +15,14 @@ from flask import (
     request,
     session,
     url_for,
+    Response
 )
 from werkzeug.exceptions import HTTPException
 
 import qbformats as quote_book
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = f"{secrets.token_hex(32)}"
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", secrets.token_hex(32))
 qb = quote_book.QuoteBook()
 
 # Load the .env file
@@ -35,18 +36,30 @@ ADMIN_PASSWORD = (
     if os.getenv("ADMIN_PASSWORD")
     else "".join(secrets.choice(chars) for _ in range(12))
 )  # generates a random, secure password if there is none supplied.
-print(f"YOUR ADMIN PASSWORD IS {ADMIN_PASSWORD}")
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,  # prevents JS from reading cookie
+    SESSION_COOKIE_SECURE=True,    # only send cookie over HTTPS
+    SESSION_COOKIE_SAMESITE="Lax"  # protects against CSRF
+)
+
 
 
 @app.before_request
 def refresh_qb():
     status = qb.reload()
-    print(status)
     if status != 200 and status != 304:
         # give nicely formatted error page. follow template ERRXXX.html
         if status < 400 or status > 600:
             abort(500)
 
+@app.route("/robots.txt")
+def robots_txt():
+    content = """
+    User-agent: *
+    Disallow: /
+    """.strip()
+    return Response(content, mimetype="text/plain")
 
 @app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
@@ -97,7 +110,6 @@ def index():
             "index.html", total_quotes=qb.total_quotes, speaker_counts=qb.speaker_counts
         )
     except Exception as e:
-        print(e)
         abort(500)
 
 
@@ -185,7 +197,6 @@ def search():
         if query:
             results = qb.search_quotes(query)
 
-    print(results)
     return render_template(
         "search.html", results=results, len_results=len(results), query=query
     )
