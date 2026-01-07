@@ -207,4 +207,4 @@ def handle_all_errors(e):
 
 
 if __name__ == "__main__":
-    app.run(debug=True if not IS_PROD else False)
+    app.run()
