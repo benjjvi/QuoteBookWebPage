@@ -219,3 +219,4 @@ qb.qbf
 qb_queue.qbf
 NOTES
 unusedHelpers/
+*.DS_Store
