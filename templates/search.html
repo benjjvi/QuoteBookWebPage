@@ -23,15 +23,17 @@
     {% endif %}
 
     {% for q in results %}
-        <div class="quote">
-            <div class="quote-text">
-                {{ q.quote }}
-            </div>
+        <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="quote-box-link">
+            <div class="quote">
+                <div class="quote-text">
+                    {{ q.quote }}
+                </div>
 
-            <div class="quote-meta">
-                — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(', ') }}
+                <div class="quote-meta">
+                    — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(', ') }}
+                </div>
             </div>
-        </div>
+        </a>
 
         {% if not results %}
             <p class="no-results">No quotes found.</p>

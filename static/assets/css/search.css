@@ -12,10 +12,12 @@ form {
 }
 
 .quote {
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
     background: white;
-    padding: 16px 20px;
     border-radius: 8px;
-    margin-bottom: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
 }
 
 .quote-text {
@@ -32,4 +34,23 @@ form {
 .no-results {
     color: #666;
     font-style: italic;
+}
+
+/* Anchor wrapping the quote box */
+.quote-box-link {
+    display: block;               /* full width clickable */
+    text-decoration: none;        /* remove underline */
+    color: inherit;               /* keep text color */
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+/* Hover pop effect */
+.quote-box-link:hover .quote {
+    transform: translateY(-3px) scale(1.02);  /* small “pop” */
+    box-shadow: 0 12px 25px rgba(0,0,0,0.5); /* subtle shadow */
+}
+
+/* Optional: smooth text color transition */
+.quote-text, .quote-meta {
+    transition: color 0.2s ease;
 }

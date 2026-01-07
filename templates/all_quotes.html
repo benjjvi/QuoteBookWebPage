@@ -33,6 +33,10 @@
         <div class="quote-author">
             — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(', ') }}
         </div>
+        <br>
+        <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn-quote"> View
+        </a>
+
     </div>
     {% else %}
         <p>No quotes found.</p>

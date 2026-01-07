@@ -126,6 +126,26 @@ def random_quote():
         date=q.date,
         time=q.time,
         context=q.context,
+        reroll_button=True,
+        quote_id=q.id,
+    )
+
+
+@app.route("/quote/<int:quote_id>")
+def quote_by_id(quote_id):
+    q = qb.get_quote_by_id(quote_id)
+    if not q:
+        abort(404)
+
+    return render_template(
+        "quote.html",
+        quote=q.quote,
+        author=", ".join(q.authors),
+        date=q.date,
+        time=q.time,
+        context=q.context,
+        reroll_button=False,
+        quote_id=quote_id,
     )
 
 

@@ -11,12 +11,22 @@
     <div class="quote">{{ quote | e }}</div>
 
     <div class="author">
-    — {{ [author, date, time, context]|select|join(', ') }}
+    — {{ [author, date, time, context]|select|join(', ') | e }}
     </div>
 
     <div class="button-row">
+        {% if reroll_button is sameas true %}
         <a href="{{ url_for('random_quote') }}" class="btn btn-secondary">Re-roll</a>
+        {% endif %}
+        
         <a href="{{ url_for('index') }}" class="btn btn-secondary">Back Home</a>
+        <a href="{{ url_for('quote_by_id', quote_id=quote_id) }}" class="btn btn-quote" id="permalinkBtn">
+            Permalink
+        </a>
+
+
+        <script src="{{ url_for('static', filename='assets/js/clipboard.js') }}"></script>
+
     </div>
 </div>
 {% endblock %}

@@ -31,3 +31,31 @@ h1 {
     font-size: 0.9rem;
     opacity: 0.7;
 }
+
+/* ---------- Quote Link Button ---------- */
+.btn-quote {
+    background: #444;          /* slightly lighter than secondary */
+    color: #f5f5f5;
+    border: 1px solid #666;    /* subtle border to indicate clickable */
+    padding: 0.7rem 1.8rem;    /* slightly larger for emphasis */
+    font-weight: 500;
+    text-align: right;
+    transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-quote:hover {
+    background: #555;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+}
+
+.btn-quote:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* For anchor links */
+a.btn-quote {
+    text-decoration: none;
+    display: inline-block;
+}
