@@ -22,13 +22,18 @@
         <h2>{{ results|length }} results for “{{ query }}”</h2>
     {% endif %}
 
-    {% for quote in results %}
+    {% for q in results %}
         <div class="quote">
-            <div class="quote-text">{{ quote[0] }}</div>
-            <div class="quote-meta">— {{ quote[1] }}</div>
+            <div class="quote-text">
+                {{ q.quote }}
+            </div>
+
+            <div class="quote-meta">
+                — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(', ') }}
+            </div>
         </div>
-    {% else %}
-        {% if query %}
+
+        {% if not results %}
             <p class="no-results">No quotes found.</p>
         {% endif %}
     {% endfor %}

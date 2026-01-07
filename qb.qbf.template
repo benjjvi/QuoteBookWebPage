@@ -1,5 +1,26 @@
-"Quote" — Speaker, Date Time, Optional Context
-
-"Quote 2" — Speaker 2, Date Time, Optional Context 2
-
-"Quote 3" — Speaker, Date Time
+[
+    {
+        "id": 1,
+        "quote": "“You might be able to see my vagina but I don’t care.”",
+        "authors": ["Jess"],
+        "date": "24th August",
+        "time": "00:38",
+        "context": "",
+    },
+    {
+        "id": 2,
+        "quote": "“Oh no! My wine!”",
+        "authors": ["Alex"],
+        "date": "24th August",
+        "time": "",
+        "context": "Alex spilt her wine.",
+    },
+    {
+        "id": 3,
+        "quote": "“No black! A Latino boy!!”",
+        "authors": ["Ionut"],
+        "date": "28th August",
+        "time": "",
+        "context": "",
+    }
+]

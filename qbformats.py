@@ -1,110 +1,141 @@
+import json
 import os
+import random
 from collections import defaultdict
+from dataclasses import dataclass
+from typing import List
+
+
+@dataclass
+class Quote:
+    id: int
+    quote: str
+    authors: List[str]
+    date: str
+    time: str
+    context: str
 
 
 class QuoteBook:
-    def __init__(self):
-        self.filepath = "qb.qbf"
-        with open(self.filepath, "r", encoding="utf-8") as f:
-            raw = f.read()
+    def __init__(self, filepath: str = "qb.qbf"):
+        self.filepath = filepath
+        self.last_mtime = 0
+        self.quotes: List[Quote] = []
 
-        # Split quotes by blank lines (2+ newlines)
-        blocks = [b.strip() for b in raw.split("\n\n") if b.strip()]
+        self._load()
 
-        self.quotes = []
-        if not hasattr(self, "last_mtime"):
-            self.last_mtime = 0
-
-        for block in blocks:
-            if "—" in block:
-                quote_text, meta = block.rsplit("—", 1)
-                self.quotes.append([quote_text.strip(), meta.strip()])
-            else:
-                # Fallback if metadata missing
-                self.quotes.append([block.strip(), "Unknown"])
-
-        # Get stats
+        # Stats
         self.total_quotes = len(self.quotes)
         self.speaker_counts = self.get_sorted_quote_counts()
 
         print(
-            f"Loaded {self.total_quotes} quotes from qb.qbf"
-            f" with {len(self.speaker_counts)} unique speakers."
+            f"Loaded {self.total_quotes} quotes "
+            f"with {len(self.speaker_counts)} unique speakers."
         )
 
-    def get_random_quote(self, randomlib):
-        return randomlib.choice(self.quotes)
+    # ------------------------
+    # Internal loading logic
+    # ------------------------
+
+    def _load(self):
+        if not os.path.exists(self.filepath):
+            raise FileNotFoundError(f"{self.filepath} does not exist")
+
+        with open(self.filepath, "r", encoding="utf-8") as f:
+            raw_quotes = json.load(f)
+
+        self.quotes = [
+            Quote(
+                id=q["id"],
+                quote=q["quote"],
+                authors=q.get("authors", []),
+                date=q.get("date", ""),
+                time=q.get("time", ""),
+                context=q.get("context", ""),
+            )
+            for q in raw_quotes
+        ]
+
+        self.last_mtime = os.path.getmtime(self.filepath)
+
+    # ------------------------
+    # Quote access
+    # ------------------------
+
+    def get_random_quote(self) -> Quote:
+        return random.choice(self.quotes)
+
+    def get_quote_by_id(self, quote_id: int) -> Quote | None:
+        return next((q for q in self.quotes if q.id == quote_id), None)
+
+    # ------------------------
+    # Searching
+    # ------------------------
+
+    def search_quotes(self, query: str):
+        query_lower = query.lower()
+        results = []
+
+        for q in self.quotes:
+            if (
+                query_lower in q.quote.lower()
+                or any(query_lower in author.lower() for author in q.authors)
+                or (q.context and query_lower in q.context.lower())
+            ):
+                results.append(q)
+
+        return results
+
+    # ------------------------
+    # Stats
+    # ------------------------
 
     def get_quote_counts(self):
-        """
-        Returns a list of (name, count) tuples
-        """
         counts = defaultdict(int)
 
-        for quote in self.quotes:
-            if len(quote) < 2:
-                continue
-
-            meta = quote[1].strip()
-
-            # Name(s) appear before first comma
-            name_part = meta.split(",", 1)[0].strip()
-
-            # Support multiple speakers: "Ben and James"
-            speakers = [n.strip() for n in name_part.split(" and ")]
-
-            for speaker in speakers:
-                if speaker:
-                    counts[speaker] += 1
+        for q in self.quotes:
+            for author in q.authors:
+                counts[author] += 1
 
         return list(counts.items())
 
     def get_sorted_quote_counts(self):
-        """
-        Returns counts sorted highest → lowest
-        """
-        return sorted(self.get_quote_counts(), key=lambda x: x[1], reverse=True)
+        return sorted(
+            self.get_quote_counts(),
+            key=lambda x: x[1],
+            reverse=True,
+        )
 
-    def add_quote(self, quote_text, author_info="Unknown"):
-        if not quote_text:
-            raise ValueError("Quote text cannot be empty")
+    # ------------------------
+    # Mutations
+    # ------------------------
 
-        # --- sanitise quote text for storage ---
-        quote = quote_text.strip()
+    def add_quote(self, quote: Quote):
+        self.quotes.append(quote)
+        self._save()
+        self.reload(force=True)
 
-        # Normalise newlines (no multi-paragraph quotes)
-        quote = " ".join(quote.splitlines())
+    def next_id(self) -> int:
+        if not self.quotes:
+            return 1
+        return max(q.id for q in self.quotes) + 1
 
-        # Escape double quotes inside the quote
-        quote = quote.replace('"', '\\"')
+    def _save(self):
+        with open(self.filepath, "w", encoding="utf-8") as f:
+            json.dump(
+                [q.__dict__ for q in self.quotes],
+                f,
+                ensure_ascii=False,
+                indent=4,
+            )
 
-        # Wrap in speech marks
-        quote = f'"{quote}"'
+        self.last_mtime = os.path.getmtime(self.filepath)
 
-        # --- sanitise author ---
-        author = author_info.strip() or "Unknown"
-        author = author.replace("\n", " ").replace("—", "—")
+    # ------------------------
+    # Reloading
+    # ------------------------
 
-        # --- write in canonical format ---
-        with open("qb.qbf", "a", encoding="utf-8") as f:
-            f.write(f"\n\n{quote} — {author}")
-
-    def search_quotes(self, query):
-        """Search quotes for a given query string (case-insensitive)."""
-        query_lower = query.lower()
-        results = []
-
-        for quote in self.quotes:
-            quote_text = quote[0].lower()
-            author_info = quote[1].lower() if len(quote) > 1 else ""
-
-            if query_lower in quote_text or query_lower in author_info:
-                results.append(quote)
-
-        return results
-
-    def reload(self, force=False):
-        """Reload quotes from disk."""
+    def reload(self, force: bool = False) -> int:
         try:
             mtime = os.path.getmtime(self.filepath)
         except FileNotFoundError:
@@ -113,12 +144,7 @@ class QuoteBook:
         if not force and mtime == self.last_mtime:
             return 304  # Not Modified
 
-        with open(self.filepath, "r", encoding="utf-8") as f:
-            raw = f.read().strip()
-
-        self.last_mtime = mtime
-        self.__init__()  # Re-initialize to reload quotes
-
+        self._load()
         return 200
 
 

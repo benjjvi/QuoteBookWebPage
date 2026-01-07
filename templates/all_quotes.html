@@ -27,13 +27,16 @@
         <noscript><button type="submit">Filter</button></noscript>
     </form>
 
-    {% for quote, info in quotes %}
-        <div class="quote-card">
-            <div class="quote-text">{{ quote | e }}</div>
-            <div class="quote-author">— {{ info | e }}</div>
+    {% for q in quotes %}
+    <div class="quote-card">
+        <div class="quote-text">{{ q.quote }}</div>
+        <div class="quote-author">
+            — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(', ') }}
         </div>
+    </div>
     {% else %}
         <p>No quotes found.</p>
     {% endfor %}
+
 </div>
 {% endblock %}

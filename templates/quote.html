@@ -9,7 +9,10 @@
 {% block content %}
 <div class="quote-box">
     <div class="quote">{{ quote | e }}</div>
-    <div class="author">— {{ author | e }}</div>
+
+    <div class="author">
+    — {{ [author, date, time, context]|select|join(', ') }}
+    </div>
 
     <div class="button-row">
         <a href="{{ url_for('random_quote') }}" class="btn btn-secondary">Re-roll</a>

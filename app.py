@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo  # Python 3.9+
 from dotenv import load_dotenv
 from flask import (
     Flask,
+    Response,
     abort,
     jsonify,
     redirect,
@@ -15,15 +16,14 @@ from flask import (
     request,
     session,
     url_for,
-    Response
 )
 from werkzeug.exceptions import HTTPException
 
-import qbformats as quote_book
+import qbformats
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", secrets.token_hex(32))
-qb = quote_book.QuoteBook()
+qb = qbformats.QuoteBook()
 
 # Load the .env file
 load_dotenv()
@@ -35,19 +35,18 @@ IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,  # prevents JS from reading cookie
-    SESSION_COOKIE_SECURE=True,    # only send cookie over HTTPS
-    SESSION_COOKIE_SAMESITE="Lax"  # protects against CSRF
+    SESSION_COOKIE_SECURE=True,  # only send cookie over HTTPS
+    SESSION_COOKIE_SAMESITE="Lax",  # protects against CSRF
 )
-
 
 
 @app.before_request
 def refresh_qb():
     status = qb.reload()
     if status != 200 and status != 304:
-        # give nicely formatted error page. follow template ERRXXX.html
         if status < 400 or status > 600:
             abort(500)
+
 
 @app.route("/robots.txt")
 def robots_txt():
@@ -56,7 +55,6 @@ def robots_txt():
     Disallow: /
     """.strip()
     return Response(content, mimetype="text/plain")
-
 
 
 @app.route("/")
@@ -89,13 +87,20 @@ def add_quote():
             )
             timestamp = now.strftime(f"{day}{suffix} %B, %H:%M")
 
-        if context:
-            extras = f"{author_raw}, {timestamp}, {context}"
-        else:
-            extras = f"{author_raw}, {timestamp}"
-
         if quote_text:
-            qb.add_quote(quote_text, extras)
+            authors = [a.strip() for a in author_raw.split(" and ") if a.strip()]
+
+            new_quote = qbformats.Quote(
+                id=qb.next_id(),
+                quote=quote_text,
+                authors=authors,
+                date=timestamp.split(",")[0],
+                time=timestamp.split(",")[1].strip() if "," in timestamp else "",
+                context=context,
+            )
+
+            qb.add_quote(new_quote)
+
             # Reload quotes
             status = qb.reload()
             if status != 200 and status != 304:
@@ -112,10 +117,16 @@ def add_quote():
 
 @app.route("/random_quote")
 def random_quote():
-    random_quote = qb.get_random_quote(random)
-    quote_text = random_quote[0].strip()
-    author_info = random_quote[1].strip() if len(random_quote) > 1 else "Unknown"
-    return render_template("quote.html", quote=quote_text, author=author_info)
+    q = qb.get_random_quote()
+
+    return render_template(
+        "quote.html",
+        quote=q.quote,
+        author=", ".join(q.authors),
+        date=q.date,
+        time=q.time,
+        context=q.context,
+    )
 
 
 @app.route("/all_quotes")
@@ -125,10 +136,12 @@ def all_quotes():
 
     # Filter quotes if a speaker is selected
     if speaker_filter:
+        speaker_lower = speaker_filter.lower()
+
         filtered_quotes = [
             q
             for q in qb.quotes
-            if q[1].split(",")[0].strip().lower() == speaker_filter.lower()
+            if any(speaker_lower == author.lower() for author in q.authors)
         ]
     else:
         filtered_quotes = qb.quotes
@@ -146,16 +159,24 @@ def all_quotes():
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
-    results = []
-    query = ""
-    if request.method == "POST":
-        query = request.form.get("query", "").strip()
-        if query:
-            results = qb.search_quotes(query)
+    try:
+        results = []
+        query = ""
 
-    return render_template(
-        "search.html", results=results, len_results=len(results), query=query
-    )
+        if request.method == "POST":
+            query = request.form.get("query", "").strip()
+            if query:
+                results = qb.search_quotes(query)
+
+        return render_template(
+            "search.html",
+            results=results,  # List[Quote]
+            len_results=len(results),
+            query=query,
+        )
+    except Exception as e:
+        print(e)
+        abort(500)
 
 
 @app.route("/credits")
