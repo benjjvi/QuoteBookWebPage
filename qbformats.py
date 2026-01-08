@@ -144,7 +144,7 @@ class QuoteBook:
         if not force and mtime == self.last_mtime:
             return 304  # Not Modified
 
-        self._load()
+        self.__init__()
         return 200
 
 
