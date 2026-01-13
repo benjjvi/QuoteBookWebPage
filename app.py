@@ -3,6 +3,7 @@ import secrets
 import string
 from datetime import datetime
 from zoneinfo import ZoneInfo  # Python 3.9+
+import re
 
 from dotenv import load_dotenv
 from flask import (
@@ -38,6 +39,25 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",  # protects against CSRF
 )
 
+def parse_authors(raw):
+    """
+    Accepts:
+      - "Ben"
+      - "Ben and James"
+      - "Ben, James"
+      - "Ben, James, and Kim"
+      - "test1, test2, test3, and test4"
+    Returns:
+      ["Ben", "James", "Kim"]
+    """
+
+    # Normalise " and " / ", and " into commas
+    cleaned = re.sub(r'\s*,?\s+and\s+', ',', raw, flags=re.IGNORECASE)
+
+    # Split on commas
+    authors = [a.strip() for a in cleaned.split(',') if a.strip()]
+
+    return authors
 
 @app.before_request
 def refresh_qb():
@@ -87,7 +107,7 @@ def add_quote():
             timestamp = now.strftime(f"{day}{suffix} %B, %H:%M")
 
         if quote_text:
-            authors = [a.strip() for a in author_raw.split(" and ") if a.strip()]
+            authors = parse_authors(author_raw)
 
             new_quote = qbformats.Quote(
                 id=qb.next_id(),
