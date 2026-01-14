@@ -1,9 +1,11 @@
 import os
+import re
 import secrets
 import string
+import json
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo  # Python 3.9+
-import re
 
 from dotenv import load_dotenv
 from flask import (
@@ -20,16 +22,21 @@ from flask import (
 from werkzeug.exceptions import HTTPException
 
 import qbformats
-
-app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", secrets.token_hex(32))
-qb = qbformats.QuoteBook()
+import ai_helpers
 
 # Load the .env file
 load_dotenv()
 
+app = Flask(__name__)
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", secrets.token_hex(32))
+qb = qbformats.QuoteBook()
+ai_worker = ai_helpers.AI()
+
+
 # Define the character set: uppercase, lowercase, digits
 chars = string.ascii_letters + string.digits
+
+CACHE_DIR = "cache"
 
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 
@@ -38,6 +45,7 @@ app.config.update(
     SESSION_COOKIE_SECURE=True,  # only send cookie over HTTPS
     SESSION_COOKIE_SAMESITE="Lax",  # protects against CSRF
 )
+
 
 def parse_authors(raw):
     """
@@ -52,12 +60,13 @@ def parse_authors(raw):
     """
 
     # Normalise " and " / ", and " into commas
-    cleaned = re.sub(r'\s*,?\s+and\s+', ',', raw, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*,?\s+and\s+", ",", raw, flags=re.IGNORECASE)
 
     # Split on commas
-    authors = [a.strip() for a in cleaned.split(',') if a.strip()]
+    authors = [a.strip() for a in cleaned.split(",") if a.strip()]
 
     return authors
+
 
 @app.before_request
 def refresh_qb():
@@ -132,6 +141,37 @@ def add_quote():
                 return redirect(url_for("index"))
 
     return render_template("add_quote.html")
+
+
+@app.route("/ai")
+def ai():
+    return render_template("ai.html")
+
+@app.route("/ai_screenplay")
+def ai_screenplay():
+    try:
+        scored_quotes = [
+            (q, ai_worker.classify_funny_score(q.quote, q.authors)) for q in qb.quotes
+        ]
+        top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
+        resp = ai_worker.get_ai(top_20)
+
+        return jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
+    except Exception as e:
+        print(e)
+        abort(500)
+
+
+
+@app.route("/ai_screenplay_render", methods=["POST"])
+def ai_screenplay_render():
+    data = json.loads(request.form["data"])
+    return render_template(
+        "ai_screenplay.html",
+        title="AI Screenplay",
+        screenplay=data.get("screenplay", "")
+    )
+
 
 
 @app.route("/random_quote")
