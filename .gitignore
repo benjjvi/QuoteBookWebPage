@@ -220,3 +220,4 @@ qb_queue.qbf
 NOTES
 unusedHelpers/
 *.DS_Store
+cache/*.json
