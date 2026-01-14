@@ -1,11 +1,11 @@
-import json
-import re
-import requests
-import os
-import time
 import hashlib
-from dotenv import load_dotenv
+import json
+import os
+import re
+import time
 
+import requests
+from dotenv import load_dotenv
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 import qbformats
@@ -15,8 +15,7 @@ load_dotenv()
 
 CACHE_DIR = "cache"
 CACHE_FILE = os.path.join(CACHE_DIR, "top_20_cache.json")
-CACHE_TTL_SECONDS = 60 * 60 * 3 # 3 hours
-
+CACHE_TTL_SECONDS = 60 * 60 * 3  # 3 hours
 
 
 class AI:
@@ -34,10 +33,8 @@ class AI:
         top20_list = quotes["data"]["top_20"]
 
         joined_quotes = "\n".join(
-            f"- \"{q['quote']}\" — {', '.join(q['authors'])}"
-            for q in top20_list
+            f"- \"{q['quote']}\" — {', '.join(q['authors'])}" for q in top20_list
         )
-
 
         return f"""
     You are writing a short comedy screenplay set in the UK.
@@ -63,7 +60,6 @@ class AI:
     Write a screenplay-style script with character names and dialogue.
     """
 
-
     def get_ai(self, top_20):
         os.makedirs(CACHE_DIR, exist_ok=True)
         cache_file = os.path.join(CACHE_DIR, "ai_response_cache.json")
@@ -76,12 +72,14 @@ class AI:
                 "id": q["id"],
                 "quote": q["quote"],
                 "authors": q["authors"],
-                "score": q["score"]
+                "score": q["score"],
             }
             for q in top_20["data"]["top_20"]
         ]
 
-        top_20_hash = hashlib.sha256(json.dumps(hash_input, sort_keys=True).encode("utf-8")).hexdigest()
+        top_20_hash = hashlib.sha256(
+            json.dumps(hash_input, sort_keys=True).encode("utf-8")
+        ).hexdigest()
 
         # --- Step 2: check existing AI cache ---
         if os.path.exists(cache_file):
@@ -89,7 +87,10 @@ class AI:
                 with open(cache_file, "r") as f:
                     cache = json.load(f)
 
-                if cache.get("expires_at", 0) > now and cache.get("hash") == top_20_hash:
+                if (
+                    cache.get("expires_at", 0) > now
+                    and cache.get("hash") == top_20_hash
+                ):
                     print("Using cached AI screenplay...")
                     return json.dumps(cache["data"])
 
@@ -112,7 +113,9 @@ class AI:
                         return json.dumps(cache["data"])
 
                 except (json.JSONDecodeError, KeyError):
-                    raise FileNotFoundError("Can not lock cache file, and cannot generate new AI response.")  # corrupted cache → cannot use
+                    raise FileNotFoundError(
+                        "Can not lock cache file, and cannot generate new AI response."
+                    )  # corrupted cache → cannot use
 
         # --- Step 4: save ---
         cache_payload = {
@@ -125,7 +128,6 @@ class AI:
 
         return ai_response
 
-        
     def generate_screenplay(self, quotes):
         prompt = self.build_screenplay_prompt(quotes)
 
@@ -137,13 +139,16 @@ class AI:
         }
 
         payload = {
-            "model": "mistralai/mistral-7b-instruct", # excellent for scripts
+            "model": "mistralai/mistral-7b-instruct",  # excellent for scripts
             # alternatives:
             # "openai/gpt-4o"
             # "google/gemini-pro-1.5"
             "messages": [
-                {"role": "system", "content": "You are a professional comedy screenwriter."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are a professional comedy screenwriter.",
+                },
+                {"role": "user", "content": prompt},
             ],
             "temperature": 0.9,
             "max_tokens": 1200,
@@ -174,7 +179,6 @@ class AI:
             text = re.sub(r"```$", "", text.strip())
 
         return json.loads(text)
-
 
     def normalise(self, raw):
         return max(1.0, min(10.0, raw + 5))
@@ -315,9 +319,7 @@ if __name__ == "__main__":
     ai = AI()
     qb = qbformats.QuoteBook("qb.qbf")
     quotes = qb.quotes
-    scored_quotes = [
-        (q, ai.classify_funny_score(q.quote, q.authors)) for q in quotes
-    ]
+    scored_quotes = [(q, ai.classify_funny_score(q.quote, q.authors)) for q in quotes]
     top_20 = AI.get_top_20_with_cache(scored_quotes)
 
     sc = ai.get_ai(top_20)

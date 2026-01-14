@@ -1,8 +1,8 @@
+import json
 import os
 import re
 import secrets
 import string
-import json
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo  # Python 3.9+
@@ -21,8 +21,8 @@ from flask import (
 )
 from werkzeug.exceptions import HTTPException
 
-import qbformats
 import ai_helpers
+import qbformats
 
 # Load the .env file
 load_dotenv()
@@ -147,6 +147,7 @@ def add_quote():
 def ai():
     return render_template("ai.html")
 
+
 @app.route("/ai_screenplay")
 def ai_screenplay():
     try:
@@ -162,16 +163,14 @@ def ai_screenplay():
         abort(500)
 
 
-
 @app.route("/ai_screenplay_render", methods=["POST"])
 def ai_screenplay_render():
     data = json.loads(request.form["data"])
     return render_template(
         "ai_screenplay.html",
         title="AI Screenplay",
-        screenplay=data.get("screenplay", "")
+        screenplay=data.get("screenplay", ""),
     )
-
 
 
 @app.route("/random_quote")
