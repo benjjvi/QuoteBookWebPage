@@ -157,7 +157,9 @@ def ai_screenplay():
         top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
         resp = ai_worker.get_ai(top_20)
 
-        return jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
+        resp = jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
+        print(resp)
+        return resp
     except Exception as e:
         print(e)
         abort(500)
