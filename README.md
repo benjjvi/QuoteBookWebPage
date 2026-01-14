@@ -68,19 +68,9 @@ QuoteBookWebPage/
 
 ## 🎨 Screenshots
 
-> 🖼️ If you want screenshots in this README, here’s what would be ideal:
+### 📸 Screenshot – Homepage
 
-1. Homepage screenshot – put this right after the Features section.
-2. Quote detail view (if exists) – add this under “Usage”.
-3. Mobile / responsive view – demonstrates design on phones.
-
-You can insert images like this:
-
-## 📸 Screenshot – Homepage
-
-![Homepage view](./path/to/screenshot-home.png)
-
-Replace path/to/screenshot-home.png with the actual path where you upload screenshots in the repo.
+![Homepage view](./docs/1.png)
 
 ---
 
@@ -102,6 +92,7 @@ You can deploy this app easily:
 - Heroku – standard Python deploy
 - Render – deploy from GitHub with auto‑deploy
 - GitHub Pages – if you export as static HTML (using a build step)
+- PythonAnywhere - drag and drop install.
 
 > ⚡ GitHub Pages only serves static content — if you choose this path, you’ll need to generate static HTML first.
 
@@ -117,13 +108,8 @@ You can deploy this app easily:
 
 ---
 
-## 📜 License
-
-This project is open source and free to use. (Add a LICENSE file if you want a formal license!)
-
----
-
 ## 🙌 Thanks
 
-Made with ☕ and quotes.  
+Made with ☕ and quotes.
+This project uses icons from [Lucide](https://lucide.dev). Profanities were gathered from [this repo](https://github.com/dsojevic/profanity-list) by [dsojevic](https://github.com/dsojevic).
 Happy quoting! ✨
