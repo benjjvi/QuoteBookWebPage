@@ -1,46 +1,53 @@
-{% extends "base.html" %}
-
-{% block title %}All Quotes{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/all_quotes.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}All Quotes{% endblock %} {% block
+extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/all_quotes.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container">
-    <div class="top-bar">
-        <h1>All Quotes</h1>
-        <a href="{{ url_for('index') }}" class="btn">Back home</a>
+  <div class="top-bar">
+    <h1>All Quotes</h1>
+    <a href="{{ url_for('index') }}" class="btn">Back home</a>
+  </div>
+
+  <form method="get">
+    <label for="speaker">Filter by speaker:</label>
+    <select name="speaker" id="speaker" onchange="this.form.submit()">
+      <option value="">All Speakers</option>
+      {% for speaker, count in speakers %}
+      <option
+        value="{{ speaker }}"
+        {%
+        if
+        speaker=""
+        ="speaker_filter"
+        %}selected{%
+        endif
+        %}
+      >
+        {{ speaker }} ({{ count }})
+      </option>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit">Filter</button></noscript>
+  </form>
+
+  {% for q in quotes %}
+  <div class="quote-card">
+    <div class="quote-text">{{ q.quote }}</div>
+    <div class="quote-author">
+      — {% set dt = q.timestamp | to_uk_datetime %} {% set parts = [q.authors |
+      join(", "), dt.date, dt.time, q.context] %} {{ parts | select | join(', ')
+      }}
     </div>
-
-    <form method="get">
-        <label for="speaker">Filter by speaker:</label>
-        <select name="speaker" id="speaker" onchange="this.form.submit()">
-            <option value="">All Speakers</option>
-            {% for speaker, count in speakers %}
-                <option value="{{ speaker }}"
-                    {% if speaker == speaker_filter %}selected{% endif %}>
-                    {{ speaker }} ({{ count }})
-                </option>
-            {% endfor %}
-        </select>
-        <noscript><button type="submit">Filter</button></noscript>
-    </form>
-
-    {% for q in quotes %}
-    <div class="quote-card">
-        <div class="quote-text">{{ q.quote }}</div>
-        <div class="quote-author">
-            — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(', ') }}
-        </div>
-        <br>
-        <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn-quote"> View
-        </a>
-
-    </div>
-    {% else %}
-        <p>No quotes found.</p>
-    {% endfor %}
-
+    <br />
+    <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn-quote"
+      >View</a
+    >
+  </div>
+  {% else %}
+  <p>No quotes found.</p>
+  {% endfor %}
 </div>
 {% endblock %}

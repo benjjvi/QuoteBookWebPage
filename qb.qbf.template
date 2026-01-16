@@ -3,24 +3,21 @@
         "id": 1,
         "quote": "“You might be able to see my vagina but I don’t care.”",
         "authors": ["Jess"],
-        "date": "24th August",
-        "time": "00:38",
+        "timestamp": 1,
         "context": "",
     },
     {
         "id": 2,
         "quote": "“Oh no! My wine!”",
         "authors": ["Alex"],
-        "date": "24th August",
-        "time": "",
+        "timestamp": 2,
         "context": "Alex spilt her wine.",
     },
     {
         "id": 3,
         "quote": "“No black! A Latino boy!!”",
         "authors": ["Ionut"],
-        "date": "28th August",
-        "time": "",
+        "timestamp": 1758156000,
         "context": "",
     }
 ]

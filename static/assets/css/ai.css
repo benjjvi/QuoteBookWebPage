@@ -1,28 +1,32 @@
 .loading-image {
-    width: 120px;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-    color: white;
+  width: 120px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  color: white;
 }
 
 .block-center {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 80vh; /* Adjust height as needed */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 80vh; /* Adjust height as needed */
 }
 
 .text-center {
-    text-align: center;
-    font-size: 1.5em;
-    color: white;
+  text-align: center;
+  font-size: 1.5em;
+  color: white;
 }
 
 .screenplayText {
-    white-space: pre-wrap;    /* preserves newlines and spaces but allows wrapping */
-    word-wrap: break-word;    /* breaks long words if needed */
-    overflow-wrap: break-word;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  white-space: pre-wrap; /* preserves newlines and spaces but allows wrapping */
+  word-wrap: break-word; /* breaks long words if needed */
+  overflow-wrap: break-word;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }

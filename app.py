@@ -3,7 +3,6 @@ import os
 import re
 import secrets
 import string
-import time
 from datetime import datetime
 from zoneinfo import ZoneInfo  # Python 3.9+
 
@@ -16,20 +15,20 @@ from flask import (
     redirect,
     render_template,
     request,
-    session,
     url_for,
 )
 from werkzeug.exceptions import HTTPException
 
 import ai_helpers
-import qbformats
+import datetime_handler
+import qb_formats
 
 # Load the .env file
 load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", secrets.token_hex(32))
-qb = qbformats.QuoteBook()
+qb = qb_formats.QuoteBook()
 ai_worker = ai_helpers.AI()
 
 
@@ -70,6 +69,19 @@ def parse_authors(raw):
     return authors
 
 
+def to_uk_datetime(ts):
+    uk_tz = ZoneInfo("Europe/London")
+    dt = datetime.fromtimestamp(ts, tz=uk_tz)
+    day = dt.day
+    suffix = (
+        "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+    )
+    return {"date": f"{day}{suffix} {dt.strftime('%B')}", "time": dt.strftime("%H:%M")}
+
+
+app.jinja_env.filters["to_uk_datetime"] = to_uk_datetime
+
+
 @app.before_request
 def refresh_qb():
     status = qb.reload()
@@ -89,52 +101,42 @@ def robots_txt():
 
 @app.route("/")
 def index():
-    try:
-        return render_template(
-            "index.html", total_quotes=qb.total_quotes, speaker_counts=qb.speaker_counts
-        )
-    except Exception as e:
-        abort(500)
+    return render_template(
+        "index.html", total_quotes=qb.total_quotes, speaker_counts=qb.speaker_counts
+    )
 
 
 @app.route("/add_quote", methods=["GET", "POST"])
 def add_quote():
     if request.method == "POST":
+        # Get form inputs
         quote_text = request.form.get("quote_text", "").strip()
         context = request.form.get("context", "").strip()
         author_raw = request.form.get("author_info", "Unknown").strip()
-        time = request.form.get("time", "").strip()
-        if time != "":
-            timestamp = time
-        else:
-            now = datetime.now(ZoneInfo("Europe/London"))
 
-            day = now.day
-            suffix = (
-                "th"
-                if 11 <= day <= 13
-                else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
-            )
-            timestamp = now.strftime(f"{day}{suffix} %B, %H:%M")
-
+        # Only proceed if there is quote text
         if quote_text:
+            # Parse authors
             authors = parse_authors(author_raw)
 
-            new_quote = qbformats.Quote(
+            # Get current UK timestamp in UTC
+            timestamp = datetime_handler.get_current_uk_timestamp()
+
+            # Build new quote object
+            new_quote = qb_formats.Quote(
                 id=qb.next_id(),
                 quote=quote_text,
                 authors=authors,
-                date=timestamp.split(",")[0],
-                time=timestamp.split(",")[1].strip() if "," in timestamp else "",
+                timestamp=timestamp,  # UTC timestamp
                 context=context,
             )
 
+            # Add quote to quote book
             qb.add_quote(new_quote)
 
             # Reload quotes
             status = qb.reload()
-            if status != 200 and status != 304:
-                # give nicely formatted error page. follow template ERRXXX.html
+            if status not in (200, 304):
                 if status < 400 or status > 600:
                     abort(500)
                 else:
@@ -142,6 +144,7 @@ def add_quote():
             else:
                 return redirect(url_for("index"))
 
+    # GET request or empty quote_text
     return render_template("add_quote.html")
 
 
@@ -152,19 +155,15 @@ def ai():
 
 @app.route("/ai_screenplay")
 def ai_screenplay():
-    try:
-        scored_quotes = [
-            (q, ai_worker.classify_funny_score(q.quote, q.authors)) for q in qb.quotes
-        ]
-        top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
-        resp = ai_worker.get_ai(top_20)
+    scored_quotes = [
+        (q, ai_worker.classify_funny_score(q.quote, q.authors)) for q in qb.quotes
+    ]
+    top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
+    resp = ai_worker.get_ai(top_20)
 
-        resp = jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
-        print(resp)
-        return resp
-    except Exception as e:
-        print(e)
-        abort(500)
+    resp = jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
+    print(resp)
+    return resp
 
 
 @app.route("/ai_screenplay_render", methods=["POST"])
@@ -181,12 +180,16 @@ def ai_screenplay_render():
 def random_quote():
     q = qb.get_random_quote()
 
+    # Decode UTC timestamp into UK local date and time
+    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
+
     return render_template(
         "quote.html",
         quote=q.quote,
         author=", ".join(q.authors),
-        date=q.date,
-        time=q.time,
+        date=date_str,
+        time=time_str,
+        id=str(q.id),
         context=q.context,
         reroll_button=True,
         quote_id=q.id,
@@ -199,12 +202,16 @@ def quote_by_id(quote_id):
     if not q:
         abort(404)
 
+    # Decode UTC timestamp into UK local date and time
+    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
+
     return render_template(
         "quote.html",
         quote=q.quote,
         author=", ".join(q.authors),
-        date=q.date,
-        time=q.time,
+        id=str(q.id),
+        date=date_str,
+        time=time_str,
         context=q.context,
         reroll_button=False,
         quote_id=quote_id,
@@ -241,24 +248,25 @@ def all_quotes():
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
-    try:
-        results = []
-        query = ""
+    results = []
+    query = ""
 
-        if request.method == "POST":
-            query = request.form.get("query", "").strip()
-            if query:
-                results = qb.search_quotes(query)
+    if request.method == "POST":
+        query = request.form.get("query", "").strip()
+        if query:
+            results = qb.search_quotes(query)
 
-        return render_template(
-            "search.html",
-            results=results,  # List[Quote]
-            len_results=len(results),
-            query=query,
-        )
-    except Exception as e:
-        print(e)
-        abort(500)
+    return render_template(
+        "search.html",
+        results=results,  # List[Quote]
+        len_results=len(results),
+        query=query,
+    )
+
+
+@app.route("/timeline")
+def timeline():
+    return "<h1> coming soon </h1>"
 
 
 @app.route("/credits")

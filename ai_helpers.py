@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-import qbformats
+import qb_formats
 from PATTERNS import TABOO_GROUPS, UK_INSULT_PATTERNS
 
 load_dotenv()
@@ -63,7 +63,6 @@ class AI:
     def get_ai(self, top_20):
         os.makedirs(CACHE_DIR, exist_ok=True)
         cache_file = os.path.join(CACHE_DIR, "ai_response_cache.json")
-        top_20_cache_file = os.path.join(CACHE_DIR, "top_20_cache.json")
         now = int(time.time())
 
         # --- Step 1: compute top_20 hash ---
@@ -319,7 +318,7 @@ class AI:
 
 if __name__ == "__main__":
     ai = AI()
-    qb = qbformats.QuoteBook("qb.qbf")
+    qb = qb_formats.QuoteBook("qb.qbf")
     quotes = qb.quotes
     scored_quotes = [(q, ai.classify_funny_score(q.quote, q.authors)) for q in quotes]
     top_20 = AI.get_top_20_with_cache(scored_quotes)

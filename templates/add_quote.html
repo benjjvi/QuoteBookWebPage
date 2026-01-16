@@ -1,52 +1,42 @@
-{% extends "base.html" %}
-
-{% block title %}Add Quote{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/add_quote.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Add Quote{% endblock %} {% block
+extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/add_quote.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container">
-    <h1>Add a Quote</h1>
+  <h1>Add a Quote</h1>
 
-    <form method="post" action="{{ url_for('add_quote') }}">
-        <label for="quote_text">Quote</label>
-        <textarea
-            id="quote_text"
-            name="quote_text"
-            placeholder="Write the quote exactly as it was said…"
-            required
-        ></textarea>
+  <form method="post" action="{{ url_for('add_quote') }}">
+    <label for="quote_text">Quote</label>
+    <textarea
+      id="quote_text"
+      name="quote_text"
+      placeholder="Write the quote exactly as it was said…"
+      required
+    ></textarea>
 
-        <label for="author_info">Author</label>
-        <input
-            type="text"
-            id="author_info"
-            name="author_info"
-            placeholder="Speaker Name (e.g., Albert Einstein)"
-        >
+    <label for="author_info">Author</label>
+    <input
+      type="text"
+      id="author_info"
+      name="author_info"
+      placeholder="Speaker Name (e.g., Albert Einstein)"
+    />
 
-        <label for="time">Date and Time</label>
-        <input
-            type="text"
-            id="time"
-            name="time"
-            placeholder="[If left blank will auto fill] Time (e.g., 12th March, 14:30)"
-        >
+    <label for="context">Context</label>
+    <input
+      type="text"
+      id="context"
+      name="context"
+      placeholder="Context (e.g., place, funny info)"
+    />
 
-        <label for="context">Context</label>
-        <input
-            type="text"
-            id="context"
-            name="context"
-            placeholder="Context (e.g., place, funny info)"
-        >
-
-        <div class="button-row">
-            <button type="submit" class="btn btn-primary">Add Quote</button>
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
+    <div class="button-row">
+      <button type="submit" class="btn btn-primary">Add Quote</button>
+      <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
 </div>
 {% endblock %}

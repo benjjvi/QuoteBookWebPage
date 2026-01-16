@@ -1,25 +1,28 @@
-{% extends "base.html" %}
-
-{% block title %}Credits{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Credits{% endblock %} {% block
+content %}
 <div class="container">
-    <h1>Credits & License</h1>
+  <h1>Credits & License</h1>
 
-    <h2>Website Design</h2>
-    <p>
-        Designed by Ben Voisey
-        <a class="plainlink" href="https://github.com/benjjvi">@benjjvi</a>.
-    </p>
+  <h2>Website Design</h2>
+  <p>
+    Designed by Ben Voisey
+    <a class="plainlink" href="https://github.com/benjjvi">@benjjvi</a>.
+  </p>
 
-    <h2>Icon Attribution</h2>
-    <p>
-        Icons from <a class="plainlink" href="https://lucide.dev" target="_blank">Lucide</a>  <a class="plainlink" href="https://lucide.dev/license" target="_blank">(ISC License).</a>
-    </p>
+  <h2>Icon Attribution</h2>
+  <p>
+    Icons from
+    <a class="plainlink" href="https://lucide.dev" target="_blank">Lucide</a>
+    <a class="plainlink" href="https://lucide.dev/license" target="_blank"
+      >(ISC License).</a
+    >
+  </p>
 
-    <div class="button-row">
-        <a href="{{ url_for('index') }}" class="btn btn-primary">Go Home</a>
-        <button class="btn btn-secondary" onclick="window.history.back()">Go Back</button>
-    </div>
+  <div class="button-row">
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Go Home</a>
+    <button class="btn btn-secondary" onclick="window.history.back()">
+      Go Back
+    </button>
+  </div>
 </div>
 {% endblock %}

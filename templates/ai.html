@@ -1,24 +1,25 @@
-{% extends "base.html" %}
-
-{% block title %}Loading AI...{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/ai.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Loading AI...{% endblock %} {% block
+extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/ai.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container block-center text-center">
-    <img src="{{ url_for('static', filename='assets/img/loading.svg') }}" class="loading-image">
-    <p class="text" id="loadingText">Loading AI screenplay...</p>
+  <img
+    src="{{ url_for('static', filename='assets/img/loading.svg') }}"
+    class="loading-image"
+  />
+  <p class="text" id="loadingText">Loading AI screenplay...</p>
 </div>
 
 <script>
-fetch("/ai_screenplay")
-  .then(res => {
+  fetch("/ai_screenplay")
+    .then((res) => {
       if (!res.ok) throw new Error("Network response was not OK");
       return res.json(); // <- read the body as text
-  })
-  .then(data => {
+    })
+    .then((data) => {
       // Replace page content with AI screenplay
       document.body.innerHTML = `
         <div class="container">
@@ -28,11 +29,12 @@ fetch("/ai_screenplay")
           <a href="{{ url_for('index') }}" class="btn btn-secondary">Back Home</a>
         </div>
       `;
-  })
-  .catch(err => {
+    })
+    .catch((err) => {
       console.error(err);
-      document.getElementById("loadingText").innerText = "Error loading AI screenplay";
-  });
+      document.getElementById("loadingText").innerText =
+        "Error loading AI screenplay";
+    });
 </script>
 
 {% endblock %}

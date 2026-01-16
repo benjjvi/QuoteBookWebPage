@@ -1,43 +1,43 @@
-{% extends "base.html" %}
-
-{% block title %}Search Quotes{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/search.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Search Quotes{% endblock %} {% block
+extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/search.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container">
-    <div class="top-bar">
-        <h1>Search Quotes</h1>
-        <a href="{{ url_for('index') }}" class="btn">Back home</a>
+  <div class="top-bar">
+    <h1>Search Quotes</h1>
+    <a href="{{ url_for('index') }}" class="btn">Back home</a>
+  </div>
+
+  <form method="post">
+    <input
+      type="text"
+      name="query"
+      placeholder="Search quotes..."
+      value="{{ query }}"
+      autofocus
+    />
+    <button type="submit" class="btn">Search</button>
+  </form>
+
+  {% if query %}
+  <h2>{{ results|length }} results for “{{ query }}”</h2>
+  {% endif %} {% for q in results %}
+  <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="quote-box-link">
+    <div class="quote">
+      <div class="quote-text">{{ q.quote }}</div>
+
+      <div class="quote-meta">
+        — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(',
+        ') }}
+      </div>
     </div>
+  </a>
 
-    <form method="post">
-        <input type="text" name="query" placeholder="Search quotes..." value="{{ query }}" autofocus>
-        <button type="submit" class="btn">Search</button>
-    </form>
-
-    {% if query %}
-        <h2>{{ results|length }} results for “{{ query }}”</h2>
-    {% endif %}
-
-    {% for q in results %}
-        <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="quote-box-link">
-            <div class="quote">
-                <div class="quote-text">
-                    {{ q.quote }}
-                </div>
-
-                <div class="quote-meta">
-                    — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(', ') }}
-                </div>
-            </div>
-        </a>
-
-        {% if not results %}
-            <p class="no-results">No quotes found.</p>
-        {% endif %}
-    {% endfor %}
+  {% if not results %}
+  <p class="no-results">No quotes found.</p>
+  {% endif %} {% endfor %}
 </div>
 {% endblock %}

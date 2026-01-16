@@ -1,48 +1,76 @@
-{% extends "base.html" %}
-
-{% block title %}Quote Book{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/index.css') }}">
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Quote Book{% endblock %} {% block
+extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/index.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="container">
+  <!-- Header -->
+  <header class="home-header">
     <h1>Quote Book</h1>
-    <p class="subtitle">A living record of terrible, brilliant things people have said</p>
+    <p class="subtitle">
+      A living record of terrible, brilliant things people have said
+    </p>
+  </header>
 
-    <table>
-        <thead>
-            <tr><th>Top quoters</th><th>Quotes</th></tr>
-        </thead>
-        <tbody>
+  <!-- Stats / Top Quoters -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <!-- Top Quoters Table -->
+      <div class="top-quoters-table">
+        <h2>Top Quoters</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Speaker</th>
+              <th>Quotes</th>
+            </tr>
+          </thead>
+          <tbody>
             {% for name, count in speaker_counts[:5] %}
-                <tr><td>{{ name }}</td><td>{{ count }}</td></tr>
+            <tr>
+              <td>{{ name }}</td>
+              <td>{{ count }}</td>
+            </tr>
             {% endfor %}
-        </tbody>
-    </table>
+          </tbody>
+        </table>
+      </div>
 
-    <div class="stats">
-        <strong>{{ total_quotes }}</strong> quotes ·
-        <strong>{{ speaker_counts[0][0] }}</strong> quoted the most
+      <!-- Quick Stats -->
+      <div class="quick-stats">
+        <h2>Stats</h2>
+        <p><strong>{{ total_quotes }}</strong> quotes</p>
+        <p><strong>{{ speaker_counts[0][0] }}</strong> quoted the most</p>
+      </div>
     </div>
+  </section>
 
+  <!-- Buttons / Navigation -->
+  <section class="buttons-section">
     <div class="button-grid">
-        <a href="{{ url_for('random_quote') }}" class="enter-btn">
-            <img src="{{ url_for('static', filename='assets/img/dice.svg') }}">
-        </a>
-        <a href="{{ url_for('add_quote') }}" class="enter-btn secondary">
-            <img src="{{ url_for('static', filename='assets/img/add.svg') }}">
-        </a>
-        <a href="{{ url_for('all_quotes') }}" class="enter-btn secondary">
-            <img src="{{ url_for('static', filename='assets/img/book.svg') }}">
-        </a>
-        <a href="{{ url_for('search') }}" class="enter-btn secondary">
-            <img src="{{ url_for('static', filename='assets/img/search.svg') }}">
-        </a>
-        <a href="{{ url_for('ai')}}" class="enter-btn secondary">
-            <img src="{{ url_for('static', filename='assets/img/robot.svg') }}">
-        </a>
+      <a href="{{ url_for('random_quote') }}" class="enter-btn">
+        <img src="{{ url_for('static', filename='assets/img/dice.svg') }}" />
+      </a>
+      <a href="{{ url_for('add_quote') }}" class="enter-btn secondary">
+        <img src="{{ url_for('static', filename='assets/img/add.svg') }}" />
+      </a>
+      <a href="{{ url_for('all_quotes') }}" class="enter-btn secondary">
+        <img src="{{ url_for('static', filename='assets/img/book.svg') }}" />
+      </a>
+      <a href="{{ url_for('search') }}" class="enter-btn secondary">
+        <img src="{{ url_for('static', filename='assets/img/search.svg') }}" />
+      </a>
+      <a href="{{ url_for('ai') }}" class="enter-btn secondary">
+        <img src="{{ url_for('static', filename='assets/img/robot.svg') }}" />
+      </a>
+      <a href="{{ url_for('timeline') }}" class="enter-btn secondary">
+        <img
+          src="{{ url_for('static', filename='assets/img/calendar.svg') }}"
+        />
+      </a>
     </div>
+  </section>
 </div>
 {% endblock %}

@@ -218,6 +218,10 @@ __marimo__/
 qb.qbf
 qb_queue.qbf
 NOTES
-unusedHelpers/
+unusedHelpers/test.py
+unusedHelpers
 *.DS_Store
 cache/*.json
+cleanup.sh
+node_modules
+package*.json

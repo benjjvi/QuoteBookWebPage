@@ -11,8 +11,7 @@ class Quote:
     id: int
     quote: str
     authors: List[str]
-    date: str
-    time: str
+    timestamp: int
     context: str
 
 
@@ -49,8 +48,7 @@ class QuoteBook:
                 id=q["id"],
                 quote=q["quote"],
                 authors=q.get("authors", []),
-                date=q.get("date", ""),
-                time=q.get("time", ""),
+                timestamp=q.get("timestamp", 0),
                 context=q.get("context", ""),
             )
             for q in raw_quotes
