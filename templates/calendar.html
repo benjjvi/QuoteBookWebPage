@@ -1,0 +1,67 @@
+{% extends "base.html" %} {% block title %} Calendar {{ year }}-{{
+"%02d"|format(month) }} {% endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/calendar.css') }}"
+/>
+{% endblock %} {% block content %}
+
+<form
+  class="timeline-controls"
+  onsubmit="
+    event.preventDefault();
+    window.location.href = `/timeline/${this.year.value}/${this.month.value}`;
+  "
+>
+  <select name="year">
+    {% for y in years %}
+    <option value="{{ y }}" {% if y="" ="year" %}selected{% endif %}>
+      {{ y }}
+    </option>
+    {% endfor %}
+  </select>
+
+  <select name="month">
+    {% for m in months %}
+    <option value="{{ m }}" {% if m="" ="month" %}selected{% endif %}>
+      {{ m | month_name }}
+    </option>
+    {% endfor %}
+  </select>
+
+  <button type="submit" class="enter-btn secondary">Go</button>
+</form>
+
+<div class="calendar">
+  {% for week in calendar_days %} {% for day in week %} {% if day.in_month and
+  day.count > 0 %}
+  <a
+    class="day clickable"
+    href="{{ url_for('quotes_by_day', timestamp=day.timestamp) }}"
+  >
+    <div class="circle-wrapper">
+      <div
+        class="circle"
+        style="
+                                width: {{ 20 + (day.count * 4) }}px;
+                                height: {{ 20 + (day.count * 4) }}px;
+                                background-color: #4a90e2; /* Accent blue for heatmap */
+                            "
+      >
+        <span class="circle-day">{{ day.date.day }}</span>
+      </div>
+    </div>
+
+    {% if day.count > 0 %}
+    <div class="count">{{ day.count }}</div>
+    {% endif %}
+  </a>
+
+  {% else %}
+  <div class="day disabled">
+    <div class="day-number">{{ day.date.day }}</div>
+  </div>
+  {% endif %} {% endfor %} {% endfor %}
+</div>
+
+{% endblock %}

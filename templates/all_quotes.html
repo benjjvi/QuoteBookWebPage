@@ -15,18 +15,18 @@ extra_css %}
     <label for="speaker">Filter by speaker:</label>
     <select name="speaker" id="speaker" onchange="this.form.submit()">
       <option value="">All Speakers</option>
-      {% for speaker, count in speakers %}
+      {% for spk, count in speakers %}
       <option
-        value="{{ speaker }}"
+        value="{{ spk }}"
         {%
         if
-        speaker=""
-        ="speaker_filter"
+        spk=""
+        ="selected_speaker"
         %}selected{%
         endif
         %}
       >
-        {{ speaker }} ({{ count }})
+        {{ spk }} ({{ count }})
       </option>
       {% endfor %}
     </select>

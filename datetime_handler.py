@@ -1,6 +1,75 @@
 import re
-from datetime import datetime
+from calendar import monthrange
+from collections import defaultdict
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
+
+
+def build_calendar_data(quotes, year: int, month: int):
+    """
+    Build calendar heatmap data for a given month/year.
+
+    Returns a list of dicts:
+    [
+        {
+            "date": date(2025, 6, 15),
+            "timestamp": 1755564000,
+            "count": 3,
+            "radius": 12,
+            "clickable": True
+        },
+        ...
+    ]
+    """
+
+    uk_tz = ZoneInfo("Europe/London")
+
+    # Group quotes by UK-local date
+    quotes_by_day = defaultdict(list)
+
+    for q in quotes:
+        dt = datetime.fromtimestamp(q.timestamp, tz=uk_tz)
+        quotes_by_day[dt.date()].append(q)
+
+    days_in_month = monthrange(year, month)[1]
+    calendar_data = []
+
+    max_count = max((len(v) for v in quotes_by_day.values()), default=1)
+
+    for day in range(1, days_in_month + 1):
+        d = date(year, month, day)
+        day_quotes = quotes_by_day.get(d, [])
+        count = len(day_quotes)
+
+        if count == 0:
+            calendar_data.append(
+                {
+                    "date": d,
+                    "timestamp": None,
+                    "count": 0,
+                    "radius": 0,
+                    "clickable": False,
+                }
+            )
+            continue
+
+        # Pick midday for stable positioning
+        midday = datetime(year, month, day, 12, 0, tzinfo=uk_tz)
+
+        # Scale circle radius (tweak numbers freely)
+        radius = int(6 + (count / max_count) * 14)
+
+        calendar_data.append(
+            {
+                "date": d,
+                "timestamp": int(midday.timestamp()),
+                "count": count,
+                "radius": radius,
+                "clickable": True,
+            }
+        )
+
+    return calendar_data
 
 
 def get_current_uk_timestamp():

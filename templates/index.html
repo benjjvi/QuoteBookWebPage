@@ -65,7 +65,12 @@ extra_css %}
       <a href="{{ url_for('ai') }}" class="enter-btn secondary">
         <img src="{{ url_for('static', filename='assets/img/robot.svg') }}" />
       </a>
-      <a href="{{ url_for('timeline') }}" class="enter-btn secondary">
+      <a
+        href="{{ url_for('timeline',
+                          year=now.year,
+                          month=now.month) }}"
+        class="enter-btn secondary"
+      >
         <img
           src="{{ url_for('static', filename='assets/img/calendar.svg') }}"
         />

@@ -84,6 +84,9 @@ class QuoteBook:
 
         return results
 
+    def get_quotes_between(self, start_ts, end_ts):
+        return [q for q in self.quotes if start_ts <= q.timestamp <= end_ts]
+
     # ------------------------
     # Stats
     # ------------------------

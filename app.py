@@ -1,9 +1,10 @@
+import calendar as pycalendar
 import json
 import os
 import re
 import secrets
 import string
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo  # Python 3.9+
 
 from dotenv import load_dotenv
@@ -79,6 +80,14 @@ def to_uk_datetime(ts):
     return {"date": f"{day}{suffix} {dt.strftime('%B')}", "time": dt.strftime("%H:%M")}
 
 
+def month_name(month: int) -> str:
+    try:
+        return datetime(2000, int(month), 1).strftime("%B")
+    except Exception:
+        return ""
+
+
+app.jinja_env.filters["month_name"] = month_name
 app.jinja_env.filters["to_uk_datetime"] = to_uk_datetime
 
 
@@ -101,9 +110,16 @@ def robots_txt():
 
 @app.route("/")
 def index():
-    return render_template(
-        "index.html", total_quotes=qb.total_quotes, speaker_counts=qb.speaker_counts
-    )
+    try:
+        return render_template(
+            "index.html",
+            total_quotes=qb.total_quotes,
+            speaker_counts=qb.speaker_counts,
+            now=datetime.now(ZoneInfo("Europe/London")),
+        )
+    except Exception as e:
+        print(e)
+        abort(501)
 
 
 @app.route("/add_quote", methods=["GET", "POST"])
@@ -220,30 +236,36 @@ def quote_by_id(quote_id):
 
 @app.route("/all_quotes")
 def all_quotes():
-    # Get the speaker from query parameter
-    speaker_filter = request.args.get("speaker", None)
+    try:
+        # Get the speaker from query parameter
+        speaker_filter = request.args.get("speaker", None)
 
-    # Filter quotes if a speaker is selected
-    if speaker_filter:
-        speaker_lower = speaker_filter.lower()
+        # Filter quotes if a speaker is selected
+        if speaker_filter:
+            speaker_lower = speaker_filter.lower()
 
-        filtered_quotes = [
-            q
-            for q in qb.quotes
-            if any(speaker_lower == author.lower() for author in q.authors)
-        ]
-    else:
-        filtered_quotes = qb.quotes
+            filtered_quotes = [
+                q
+                for q in qb.quotes
+                if any(speaker_lower == author.lower() for author in q.authors)
+            ]
+        else:
+            filtered_quotes = qb.quotes
 
-    # Sort speakers by count (most common first)
-    sorted_speakers = sorted(qb.speaker_counts, key=lambda x: x[1], reverse=True)
+        # Sort speakers by count (most common first)
+        sorted_speakers = sorted(qb.speaker_counts, key=lambda x: x[1], reverse=True)
 
-    return render_template(
-        "all_quotes.html",
-        quotes=filtered_quotes,
-        speaker=speaker_filter,
-        speakers=sorted_speakers,
-    )
+        print(sorted_speakers)
+
+        return render_template(
+            "all_quotes.html",
+            quotes=filtered_quotes,
+            selected_speaker=speaker_filter,
+            speakers=sorted_speakers,
+        )
+    except Exception as e:
+        print(e)
+        abort(500)
 
 
 @app.route("/search", methods=["GET", "POST"])
@@ -264,9 +286,86 @@ def search():
     )
 
 
-@app.route("/timeline")
-def timeline():
-    return "<h1> coming soon </h1>"
+@app.route("/timeline/<int:year>/<int:month>")
+def timeline(year, month):
+    try:
+        uk_tz = ZoneInfo("Europe/London")
+
+        cal = pycalendar.Calendar(firstweekday=0)  # Monday
+        month_days = cal.monthdatescalendar(year, month)
+
+        calendar_days = []
+
+        for week in month_days:
+            week_days = []
+            for day in week:
+                day_start = datetime(day.year, day.month, day.day, tzinfo=uk_tz)
+                day_end = day_start + timedelta(days=1) - timedelta(seconds=1)
+
+                start_ts = int(day_start.timestamp())
+                end_ts = int(day_end.timestamp())
+
+                quotes = qb.get_quotes_between(start_ts, end_ts)
+                count = len(quotes)
+
+                week_days.append(
+                    {
+                        "date": day,
+                        "in_month": day.month == month,
+                        "count": count,
+                        "timestamp": start_ts if count > 0 else None,
+                    }
+                )
+
+            calendar_days.append(week_days)
+
+        years = sorted(
+            {datetime.fromtimestamp(q.timestamp, uk_tz).year for q in qb.quotes}
+        )
+
+        months = list(range(1, 13))
+
+        return render_template(
+            "calendar.html",
+            year=year,
+            month=month,
+            years=years,
+            months=months,
+            calendar_days=calendar_days,
+        )
+    except Exception as e:
+        print(e)
+        abort(500)
+
+
+@app.route("/timeline/day/<int:timestamp>")
+def quotes_by_day(timestamp):
+    uk_tz = ZoneInfo("Europe/London")
+
+    day_dt = datetime.fromtimestamp(timestamp, tz=uk_tz)
+
+    start_of_day = datetime.combine(
+        day_dt.date(),
+        time.min,
+        tzinfo=uk_tz,
+    )
+
+    end_of_day = datetime.combine(
+        day_dt.date(),
+        time.max,
+        tzinfo=uk_tz,
+    )
+
+    start_ts = int(start_of_day.timestamp())
+    end_ts = int(end_of_day.timestamp())
+
+    quotes = qb.get_quotes_between(start_ts, end_ts)
+
+    return render_template(
+        "quotes_by_day.html",
+        quotes=quotes,
+        day=day_dt.strftime("%d %B %Y"),
+    )
 
 
 @app.route("/credits")
