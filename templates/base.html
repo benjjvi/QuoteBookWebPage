@@ -31,12 +31,14 @@
     <meta name="twitter:description" content="A living record of terrible, brilliant things people have said.">
     <meta name="twitter:image" content="{{ url_for('static', filename='favicon.png') }}">
 
-    <!-- Optional: Canonical URL to avoid duplicate content -->
+    <!-- Canonical URL to avoid duplicate content -->
     <link rel="canonical" href="https://benjjvi.pythonanywhere.com/">
 
     <title>{% block title %}Quote Book{% endblock %}</title>
-</head>
 
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
