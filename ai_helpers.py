@@ -154,7 +154,9 @@ class AI:
             "max_tokens": 1200,
         }
 
-        response = requests.post(self.OPENROUTER_URL, headers=headers, json=payload, timeout=60)
+        response = requests.post(
+            self.OPENROUTER_URL, headers=headers, json=payload, timeout=60
+        )
         response.raise_for_status()
 
         answer = response.json()["choices"][0]["message"]["content"]

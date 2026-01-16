@@ -39,6 +39,8 @@ chars = string.ascii_letters + string.digits
 CACHE_DIR = "cache"
 
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = os.getenv("PORT", "443")
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,  # prevents JS from reading cookie
@@ -287,4 +289,4 @@ def handle_all_errors(e):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=False if IS_PROD else True, host=HOST, port=PORT)

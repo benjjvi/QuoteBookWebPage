@@ -40,13 +40,17 @@ Make sure you have the following installed:
    python -m pip install -r requirements.txt
    ```
 
-3. Run the app:
+3. Set up environment. There is an example version in example.env
+
+4. Set up your quote book. There is an example in qb.qbf.template.
+
+5. Run the app:
 
     ``` bash
    python app.py
    ```
 
-4. Open your browser and navigate to 127.0.0.1:5000
+6. Open your browser and navigate to 127.0.0.1:8040
 
 ---
 

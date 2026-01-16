@@ -12,13 +12,30 @@
 
 .button-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-
+    grid-template-columns: repeat(3, 1fr); /* 3 buttons per row */
+    gap: 16px;           /* spacing between buttons inside the grid */
     max-width: 520px;
-    margin: 0 auto;
+    margin: 0 auto 24px; /* bottom margin adds space between rows of grids */
 }
 
+
+
+/* each section is a row that wraps buttons */
+.button-section {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 buttons per row */
+    gap: 16px;                            /* spacing between buttons */
+}
+
+/* optional: style individual buttons */
+.button {
+    padding: 12px 16px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #f5f5f5;
+}
 
 .enter-btn {
     display: flex;
