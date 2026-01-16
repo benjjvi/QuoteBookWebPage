@@ -39,8 +39,8 @@ chars = string.ascii_letters + string.digits
 CACHE_DIR = "cache"
 
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = os.getenv("PORT", "443")
+HOST = os.getenv("HOST", "127.0.0.1")
+PORT = os.getenv("PORT", "8040")
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,  # prevents JS from reading cookie
