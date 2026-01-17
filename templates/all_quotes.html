@@ -16,38 +16,45 @@ extra_css %}
     <select name="speaker" id="speaker" onchange="this.form.submit()">
       <option value="">All Speakers</option>
       {% for spk, count in speakers %}
-      <option
-        value="{{ spk }}"
-        {%
-        if
-        spk=""
-        ="selected_speaker"
-        %}selected{%
-        endif
-        %}
-      >
-        {{ spk }} ({{ count }})
-      </option>
+        <option
+          value="{{ spk }}"
+          {% if spk == selected_speaker %}selected{% endif %}
+        >
+          {{ spk }} ({{ count }})
+        </option>
       {% endfor %}
+
     </select>
     <noscript><button type="submit">Filter</button></noscript>
   </form>
 
   {% for q in quotes %}
-  <div class="quote-card">
-    <div class="quote-text">{{ q.quote }}</div>
-    <div class="quote-author">
-      — {% set dt = q.timestamp | to_uk_datetime %} {% set parts = [q.authors |
-      join(", "), dt.date, dt.time, q.context] %} {{ parts | select | join(', ')
-      }}
+    <div class="quote-card">
+      <div class="quote-text">{{ q.quote }}</div>
+
+      <div class="quote-author">
+        —
+        {{
+          [
+            q.authors | join(", "),
+            q.timestamp | uk_date,
+            q.timestamp | uk_time,
+            q.context
+          ]
+          | select
+          | join(", ")
+        }}
+      </div>
+
+      <br />
+
+      <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn-quote">
+        View
+      </a>
     </div>
-    <br />
-    <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn-quote"
-      >View</a
-    >
-  </div>
   {% else %}
   <p>No quotes found.</p>
   {% endfor %}
+
 </div>
 {% endblock %}

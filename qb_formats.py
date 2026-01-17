@@ -24,7 +24,7 @@ class QuoteBook:
         self._load()
 
         # Stats
-        self.total_quotes = len(self.quotes)
+        self.total_quotes = len(self.quotes) + 1
         self.speaker_counts = self.get_sorted_quote_counts()
 
         print(

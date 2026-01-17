@@ -1,27 +1,43 @@
-{% extends "base.html" %} {% block title %} Quotes — {{ day }} {% endblock %} {%
-block content %}
-<section class="quotes-by-day">
+{% extends "base.html" %}
+
+{% block title %} Quotes — {{ day }} {% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/all_quotes.css') }}"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="quotes-by-day container">
   <h1 class="day-heading">{{ day }}</h1>
 
   {% if quotes %}
-  <div class="quotes-list">
-    {% for q in quotes %}
-    <div class="quote-card">
-      <div class="quote-text">{{ q.quote }}</div>
+    <div class="quotes-list">
+      {% for q in quotes %}
+        <div class="quote-card">
+          <div class="quote-text">{{ q.quote }}</div>
 
-      <div class="quote-author">
-        — {{ q.authors | join(", ") }} {% if q.time %} · {{ q.time }} {% endif
-        %} {% if q.context %} · {{ q.context }} {% endif %}
-      </div>
+          <div class="quote-author">
+            — {{ q.authors | join(", ") }}
+            {% set dt = q.timestamp | to_uk_datetime %}
+            {% if dt.time %} · {{ dt.time }}{% endif %}
 
-      <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn-quote">
-        View
-      </a>
+            {% if q.context %} · {{ q.context }}{% endif %}
+          </div>
+
+          <a
+            href="{{ url_for('quote_by_id', quote_id=q.id) }}"
+            class="btn-quote"
+          >
+            View
+          </a>
+        </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
   {% else %}
-  <p class="no-quotes">No quotes recorded for this day.</p>
+    <p class="no-quotes">No quotes recorded for this day.</p>
   {% endif %}
 </section>
 {% endblock %}

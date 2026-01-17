@@ -79,6 +79,18 @@ def to_uk_datetime(ts):
     )
     return {"date": f"{day}{suffix} {dt.strftime('%B')}", "time": dt.strftime("%H:%M")}
 
+def uk_date(epoch):
+    return datetime.fromtimestamp(
+        epoch,
+        ZoneInfo("Europe/London")
+    ).strftime("%d %B %Y")
+
+
+def uk_time(epoch):
+    return datetime.fromtimestamp(
+        epoch,
+        ZoneInfo("Europe/London")
+    ).strftime("%H:%M")
 
 def month_name(month: int) -> str:
     try:
@@ -89,6 +101,8 @@ def month_name(month: int) -> str:
 
 app.jinja_env.filters["month_name"] = month_name
 app.jinja_env.filters["to_uk_datetime"] = to_uk_datetime
+app.jinja_env.filters["uk_time"] = uk_time
+app.jinja_env.filters["uk_date"] = uk_date
 
 
 @app.before_request
