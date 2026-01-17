@@ -79,18 +79,14 @@ def to_uk_datetime(ts):
     )
     return {"date": f"{day}{suffix} {dt.strftime('%B')}", "time": dt.strftime("%H:%M")}
 
+
 def uk_date(epoch):
-    return datetime.fromtimestamp(
-        epoch,
-        ZoneInfo("Europe/London")
-    ).strftime("%d %B %Y")
+    return datetime.fromtimestamp(epoch, ZoneInfo("Europe/London")).strftime("%d %B %Y")
 
 
 def uk_time(epoch):
-    return datetime.fromtimestamp(
-        epoch,
-        ZoneInfo("Europe/London")
-    ).strftime("%H:%M")
+    return datetime.fromtimestamp(epoch, ZoneInfo("Europe/London")).strftime("%H:%M")
+
 
 def month_name(month: int) -> str:
     try:
