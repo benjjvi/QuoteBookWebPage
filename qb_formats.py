@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import List
@@ -120,6 +121,26 @@ class QuoteBook:
         if not self.quotes:
             return 1
         return max(q.id for q in self.quotes) + 1
+
+    def parse_authors(self, raw):
+        """
+        Accepts:
+        - "Ben"
+        - "Ben and James"
+        - "Ben, James"
+        - "Ben, James, and Kim"
+        - "test1, test2, test3, and test4"
+        Returns:
+        ["Ben", "James", "Kim"]
+        """
+
+        # Normalise " and " / ", and " into commas
+        cleaned = re.sub(r"\s*,?\s+and\s+", ",", raw, flags=re.IGNORECASE)
+
+        # Split on commas
+        authors = [a.strip() for a in cleaned.split(",") if a.strip()]
+
+        return authors
 
     def _save(self):
         with open(self.filepath, "w", encoding="utf-8") as f:

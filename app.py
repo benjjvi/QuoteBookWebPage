@@ -1,7 +1,7 @@
 import calendar as pycalendar
 import json
+import math
 import os
-import re
 import secrets
 import string
 from datetime import datetime, time, timedelta
@@ -41,33 +41,14 @@ CACHE_DIR = "cache"
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = os.getenv("PORT", "8040")
+PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 10
+
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,  # prevents JS from reading cookie
     SESSION_COOKIE_SECURE=True,  # only send cookie over HTTPS
     SESSION_COOKIE_SAMESITE="Lax",  # protects against CSRF
 )
-
-
-def parse_authors(raw):
-    """
-    Accepts:
-      - "Ben"
-      - "Ben and James"
-      - "Ben, James"
-      - "Ben, James, and Kim"
-      - "test1, test2, test3, and test4"
-    Returns:
-      ["Ben", "James", "Kim"]
-    """
-
-    # Normalise " and " / ", and " into commas
-    cleaned = re.sub(r"\s*,?\s+and\s+", ",", raw, flags=re.IGNORECASE)
-
-    # Split on commas
-    authors = [a.strip() for a in cleaned.split(",") if a.strip()]
-
-    return authors
 
 
 def to_uk_datetime(ts):
@@ -111,11 +92,14 @@ def refresh_qb():
 
 @app.route("/robots.txt")
 def robots_txt():
-    content = """
-    User-agent: *
-    Disallow: /
-    """.strip()
-    return Response(content, mimetype="text/plain")
+    try:
+        content = """
+        User-agent: *
+        Disallow: /
+        """.strip()
+        return Response(content, mimetype="text/plain")
+    except Exception:
+        abort(500)
 
 
 @app.route("/")
@@ -134,126 +118,147 @@ def index():
 
 @app.route("/add_quote", methods=["GET", "POST"])
 def add_quote():
-    if request.method == "POST":
-        # Get form inputs
-        quote_text = request.form.get("quote_text", "").strip()
-        context = request.form.get("context", "").strip()
-        author_raw = request.form.get("author_info", "Unknown").strip()
+    try:
+        if request.method == "POST":
+            # Get form inputs
+            quote_text = request.form.get("quote_text", "").strip()
+            context = request.form.get("context", "").strip()
+            author_raw = request.form.get("author_info", "Unknown").strip()
 
-        # Only proceed if there is quote text
-        if quote_text:
-            # Parse authors
-            authors = parse_authors(author_raw)
+            # Only proceed if there is quote text
+            if quote_text:
+                # Parse authors
+                authors = qb.parse_authors(author_raw)
 
-            # Get current UK timestamp in UTC
-            timestamp = datetime_handler.get_current_uk_timestamp()
+                # Get current UK timestamp in UTC
+                timestamp = datetime_handler.get_current_uk_timestamp()
 
-            # Build new quote object
-            new_quote = qb_formats.Quote(
-                id=qb.next_id(),
-                quote=quote_text,
-                authors=authors,
-                timestamp=timestamp,  # UTC timestamp
-                context=context,
-            )
+                # Build new quote object
+                new_quote = qb_formats.Quote(
+                    id=qb.next_id(),
+                    quote=quote_text,
+                    authors=authors,
+                    timestamp=timestamp,  # UTC timestamp
+                    context=context,
+                )
 
-            # Add quote to quote book
-            qb.add_quote(new_quote)
+                # Add quote to quote book
+                qb.add_quote(new_quote)
 
-            # Reload quotes
-            status = qb.reload()
-            if status not in (200, 304):
-                if status < 400 or status > 600:
-                    abort(500)
+                # Reload quotes
+                status = qb.reload()
+                if status not in (200, 304):
+                    if status < 400 or status > 600:
+                        abort(500)
+                    else:
+                        abort(status)
                 else:
-                    abort(status)
-            else:
-                return redirect(url_for("index"))
+                    return redirect(url_for("index"))
 
-    # GET request or empty quote_text
-    return render_template("add_quote.html")
+        # GET request or empty quote_text
+        return render_template("add_quote.html")
+    except Exception:
+        abort(500)
 
 
 @app.route("/ai")
 def ai():
-    return render_template("ai.html")
+    try:
+        return render_template("ai.html")
+    except Exception:
+        abort(500)
 
 
 @app.route("/ai_screenplay")
 def ai_screenplay():
-    scored_quotes = [
-        (q, ai_worker.classify_funny_score(q.quote, q.authors)) for q in qb.quotes
-    ]
-    top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
-    resp = ai_worker.get_ai(top_20)
+    try:
+        scored_quotes = [
+            (q, ai_worker.classify_funny_score(q.quote, q.authors)) for q in qb.quotes
+        ]
+        top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
+        resp = ai_worker.get_ai(top_20)
 
-    resp = jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
-    print(resp)
-    return resp
+        resp = jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
+        print(resp)
+        return resp
+    except Exception:
+        abort(500)
 
 
 @app.route("/ai_screenplay_render", methods=["POST"])
 def ai_screenplay_render():
-    data = json.loads(request.form["data"])
-    return render_template(
-        "ai_screenplay.html",
-        title="AI Screenplay",
-        screenplay=data.get("screenplay", ""),
-    )
+    try:
+        data = json.loads(request.form["data"])
+        return render_template(
+            "ai_screenplay.html",
+            title="AI Screenplay",
+            screenplay=data.get("screenplay", ""),
+        )
+    except Exception:
+        abort(500)
 
 
 @app.route("/random_quote")
 def random_quote():
-    q = qb.get_random_quote()
+    try:
+        q = qb.get_random_quote()
 
-    # Decode UTC timestamp into UK local date and time
-    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
+        # Decode UTC timestamp into UK local date and time
+        date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
+            q.timestamp
+        )
 
-    return render_template(
-        "quote.html",
-        quote=q.quote,
-        author=", ".join(q.authors),
-        date=date_str,
-        time=time_str,
-        id=str(q.id),
-        context=q.context,
-        reroll_button=True,
-        quote_id=q.id,
-    )
+        return render_template(
+            "quote.html",
+            quote=q.quote,
+            author=", ".join(q.authors),
+            date=date_str,
+            time=time_str,
+            id=str(q.id),
+            context=q.context,
+            reroll_button=True,
+            quote_id=q.id,
+        )
+    except Exception:
+        abort(500)
 
 
 @app.route("/quote/<int:quote_id>")
 def quote_by_id(quote_id):
-    q = qb.get_quote_by_id(quote_id)
-    if not q:
-        abort(404)
+    try:
+        q = qb.get_quote_by_id(quote_id)
+        if not q:
+            abort(404)
 
-    # Decode UTC timestamp into UK local date and time
-    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
+        # Decode UTC timestamp into UK local date and time
+        date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
+            q.timestamp
+        )
 
-    return render_template(
-        "quote.html",
-        quote=q.quote,
-        author=", ".join(q.authors),
-        id=str(q.id),
-        date=date_str,
-        time=time_str,
-        context=q.context,
-        reroll_button=False,
-        quote_id=quote_id,
-    )
+        return render_template(
+            "quote.html",
+            quote=q.quote,
+            author=", ".join(q.authors),
+            id=str(q.id),
+            date=date_str,
+            time=time_str,
+            context=q.context,
+            reroll_button=False,
+            quote_id=quote_id,
+        )
+    except Exception:
+        abort(500)
 
 
 @app.route("/all_quotes")
 def all_quotes():
     try:
-        # Get the speaker from query parameter
         speaker_filter = request.args.get("speaker", None)
+        page = request.args.get("page", 1, type=int)
 
         # Filter quotes if a speaker is selected
         if speaker_filter:
             speaker_lower = speaker_filter.lower()
-
             filtered_quotes = [
                 q
                 for q in qb.quotes
@@ -262,38 +267,53 @@ def all_quotes():
         else:
             filtered_quotes = qb.quotes
 
+        # Pagination maths
+        total_quotes = len(filtered_quotes)
+        total_pages = max(
+            1, math.ceil(total_quotes / PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE)
+        )
+
+        page = max(1, min(page, total_pages))  # clamp page safely
+        start = (page - 1) * PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE
+        end = start + PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE
+
+        paginated_quotes = filtered_quotes[start:end]
+
         # Sort speakers by count (most common first)
         sorted_speakers = sorted(qb.speaker_counts, key=lambda x: x[1], reverse=True)
 
-        print(sorted_speakers)
-
         return render_template(
             "all_quotes.html",
-            quotes=filtered_quotes,
+            quotes=paginated_quotes,
             selected_speaker=speaker_filter,
             speakers=sorted_speakers,
+            page=page,
+            total_pages=total_pages,
         )
-    except Exception as e:
-        print(e)
+
+    except Exception:
         abort(500)
 
 
 @app.route("/search", methods=["GET", "POST"])
 def search():
-    results = []
-    query = ""
+    try:
+        results = []
+        query = ""
 
-    if request.method == "POST":
-        query = request.form.get("query", "").strip()
-        if query:
-            results = qb.search_quotes(query)
+        if request.method == "POST":
+            query = request.form.get("query", "").strip()
+            if query:
+                results = qb.search_quotes(query)
 
-    return render_template(
-        "search.html",
-        results=results,  # List[Quote]
-        len_results=len(results),
-        query=query,
-    )
+        return render_template(
+            "search.html",
+            results=results,  # List[Quote]
+            len_results=len(results),
+            query=query,
+        )
+    except Exception:
+        abort(500)
 
 
 @app.route("/timeline/<int:year>/<int:month>")
@@ -343,49 +363,62 @@ def timeline(year, month):
             months=months,
             calendar_days=calendar_days,
         )
-    except Exception as e:
-        print(e)
+    except Exception:
         abort(500)
 
 
 @app.route("/timeline/day/<int:timestamp>")
 def quotes_by_day(timestamp):
-    uk_tz = ZoneInfo("Europe/London")
+    try:
+        uk_tz = ZoneInfo("Europe/London")
 
-    day_dt = datetime.fromtimestamp(timestamp, tz=uk_tz)
+        day_dt = datetime.fromtimestamp(timestamp, tz=uk_tz)
 
-    start_of_day = datetime.combine(
-        day_dt.date(),
-        time.min,
-        tzinfo=uk_tz,
-    )
+        start_of_day = datetime.combine(
+            day_dt.date(),
+            time.min,
+            tzinfo=uk_tz,
+        )
 
-    end_of_day = datetime.combine(
-        day_dt.date(),
-        time.max,
-        tzinfo=uk_tz,
-    )
+        end_of_day = datetime.combine(
+            day_dt.date(),
+            time.max,
+            tzinfo=uk_tz,
+        )
 
-    start_ts = int(start_of_day.timestamp())
-    end_ts = int(end_of_day.timestamp())
+        start_ts = int(start_of_day.timestamp())
+        end_ts = int(end_of_day.timestamp())
 
-    quotes = qb.get_quotes_between(start_ts, end_ts)
+        quotes = qb.get_quotes_between(start_ts, end_ts)
 
-    return render_template(
-        "quotes_by_day.html",
-        quotes=quotes,
-        day=day_dt.strftime("%d %B %Y"),
-    )
+        return render_template(
+            "quotes_by_day.html",
+            quotes=quotes,
+            day=day_dt.strftime("%d %B %Y"),
+        )
+    except Exception:
+        abort(500)
 
 
 @app.route("/credits")
 def credits():
-    return render_template("credits.html")
+    try:
+        return render_template("credits.html")
+    except Exception:
+        abort(500)
 
 
 @app.route("/health")
 def health():
-    return jsonify(status="ok")
+    try:
+        return jsonify(status="ok")
+    except Exception:
+        abort(500)
+
+
+@app.route("/cuppa")
+def cuppa():
+    abort(418)
 
 
 @app.errorhandler(Exception)

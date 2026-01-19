@@ -62,3 +62,88 @@ a.btn-quote {
   text-decoration: none;
   display: inline-block;
 }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 32px 0;
+}
+
+.page-indicator {
+  opacity: 0.7;
+}
+
+.page-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-input {
+  width: 4ch;
+  text-align: center;
+}
+
+.page-input {
+  width: 4ch;
+  max-width: 4ch;
+  padding: 4px 6px;
+
+  font: inherit;
+  text-align: center;
+
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+
+  outline: none;
+
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.page-input:focus {
+  border-color: #888;
+}
+
+.page-input:hover {
+  border-color: #aaa;
+}
+
+.speaker-select {
+  font: inherit;
+  color: inherit;
+
+  padding: 6px 36px 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: transparent;
+
+  cursor: pointer;
+
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.speaker-select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.speaker-select-wrapper::after {
+  content: "▾";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.speaker-select:focus {
+  border-color: #888;
+  outline: none;
+}

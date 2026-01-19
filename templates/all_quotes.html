@@ -12,19 +12,29 @@ extra_css %}
   </div>
 
   <form method="get">
-    <label for="speaker">Filter by speaker:</label>
-    <select name="speaker" id="speaker" onchange="this.form.submit()">
-      <option value="">All Speakers</option>
-      {% for spk, count in speakers %}
-        <option
-          value="{{ spk }}"
-          {% if spk == selected_speaker %}selected{% endif %}
-        >
-          {{ spk }} ({{ count }})
-        </option>
-      {% endfor %}
+    <input type="hidden" name="page" value="1">
 
-    </select>
+    <label for="speaker">Filter by speaker:</label>
+    <div class="speaker-select-wrapper">
+      <select
+        name="speaker"
+        id="speaker"
+        class="speaker-select"
+        onchange="this.form.submit()"
+      >
+
+        <option value="">All Speakers</option>
+        {% for spk, count in speakers %}
+          <option
+            value="{{ spk }}"
+            {% if spk == selected_speaker %}selected{% endif %}
+          >
+            {{ spk }} ({{ count }})
+          </option>
+        {% endfor %}
+
+      </select>
+    </div>
     <noscript><button type="submit">Filter</button></noscript>
   </form>
 
@@ -56,5 +66,59 @@ extra_css %}
   <p>No quotes found.</p>
   {% endfor %}
 
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    {% if page > 1 %}
+      <a
+        href="{{ url_for('all_quotes', speaker=selected_speaker, page=page-1) }}"
+        class="btn"
+      >
+        ← Prev
+      </a>
+    {% endif %}
+
+    <span class="page-indicator">
+      <form method="get" class="page-jump">
+        {% if selected_speaker %}
+          <input type="hidden" name="speaker" value="{{ selected_speaker }}">
+        {% endif %}
+
+        <label>
+          Page
+          <input
+            type="text"
+            name="page"
+            value="{{ page }}"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            class="page-input"
+          />
+          of {{ total_pages }}
+        </label>
+      </form>
+
+    </span>
+
+    {% if page < total_pages %}
+      <a
+        href="{{ url_for('all_quotes', speaker=selected_speaker, page=page+1) }}"
+        class="btn"
+      >
+        Next →
+      </a>
+    {% endif %}
+  </div>
+{% endif %}
+
+
 </div>
+
+<script>
+  document.addEventListener("focusin", (e) => {
+    if (e.target.classList.contains("page-input")) {
+      e.target.select();
+    }
+  });
+</script>
+
 {% endblock %}
