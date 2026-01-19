@@ -400,6 +400,28 @@ def quotes_by_day(timestamp):
         abort(500)
 
 
+@app.route("/api/latest")
+def api_latest_quote():
+    try:
+        # Get the newest quote by ID
+        if not qb.quotes:
+            return jsonify({"error": "No quotes found"}), 404
+
+        newest_quote = max(qb.quotes, key=lambda q: q.id)
+
+        return jsonify(
+            {
+                "id": newest_quote.id,
+                "quote": newest_quote.quote,
+                "authors": newest_quote.authors,
+                "timestamp": newest_quote.timestamp,
+            }
+        )
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Internal server error"}), 500
+
+
 @app.route("/credits")
 def credits():
     try:

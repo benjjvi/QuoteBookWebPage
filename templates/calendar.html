@@ -13,25 +13,34 @@
     window.location.href = `/timeline/${this.year.value}/${this.month.value}`;
   "
 >
-<select name="month">
-  {% for m in months %}
-    <option value="{{ m }}" {% if m == month %}selected{% endif %}>
-      {{ m | month_name }}
-    </option>
-  {% endfor %}
-</select>
 
-  <select name="year">
-  {% for y in years %}
-    <option value="{{ y }}" {% if y == year %}selected{% endif %}>
-      {{ y }}
-    </option>
-  {% endfor %}
-</select>
+  <!-- Month selector -->
+  <div class="custom-select-wrapper">
+    <select name="month" class="custom-select">
+      {% for m in months %}
+        <option value="{{ m }}" {% if m == month %}selected{% endif %}>
+          {{ m | month_name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
 
+  <!-- Year selector -->
+  <div class="custom-select-wrapper">
+    <select name="year" class="custom-select">
+      {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>
+          {{ y }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
 
-  <button type="submit" class="enter-btn secondary">Go</button>
+  <button type="submit" class="btn">Go</button>
 </form>
+
+
+<br>
 
 <div class="calendar">
   {% for week in calendar_days %} {% for day in week %} {% if day.in_month and
@@ -44,10 +53,10 @@
       <div
         class="circle"
         style="
-                                width: {{ 20 + (day.count * 4) }}px;
-                                height: {{ 20 + (day.count * 4) }}px;
-                                background-color: #4a90e2; /* Accent blue for heatmap */
-                            "
+            width: {{ 20 + (day.count * 4) }}px;
+            height: {{ 20 + (day.count * 4) }}px;
+            background-color: #4a90e2; /* Accent blue for heatmap */
+        "
       >
         <span class="circle-day">{{ day.date.day }}</span>
       </div>
@@ -65,4 +74,9 @@
   {% endif %} {% endfor %} {% endfor %}
 </div>
 
+<br>
+
+<a href="{{ url_for('index') }}">
+    <button class="btn">Back Home</button>
+  </a>
 {% endblock %}
