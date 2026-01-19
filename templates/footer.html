@@ -4,4 +4,33 @@
     © 2026 benjjvi.
     <a class="plainlink" href="{{ url_for('credits') }}">Credits</a>
   </p>
+
+  <!-- Latest quote container -->
+  <p id="latest-quote" style="margin-top: 6px; font-style: italic; opacity: 0.8;">
+    Well this is awkward. We couldn't load the funnies.
+  </p>
+
+  <!-- JS to fetch latest quote -->
+  <script>
+    async function fetchLatestQuote() {
+      try {
+        const res = await fetch('/api/latest');
+        if (!res.ok) throw new Error('Network response was not ok');
+
+        const data = await res.json();
+        const quoteEl = document.getElementById('latest-quote');
+
+        if (data.quote && data.authors) {
+          quoteEl.textContent = `Most recent quote: "${data.quote}" — ${data.authors.join(', ')}`;
+        } else {
+          quoteEl.textContent = 'No latest quote available.';
+        }
+      } catch (err) {
+        console.error('Failed to fetch latest quote:', err);
+        document.getElementById('latest-quote').textContent = 'Failed to load latest quote.';
+      }
+    }
+
+    fetchLatestQuote();
+  </script>
 </footer>
