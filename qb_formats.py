@@ -135,7 +135,13 @@ class QuoteBook:
         """
 
         # Normalise " and " / ", and " into commas
-        cleaned = re.sub(r"\s*,?\s+and\s+", ",", raw, flags=re.IGNORECASE)
+        cleaned = re.sub(
+            r"(?:,\s*)?\band\b\s*",
+            ", ",
+            raw,
+            flags=re.IGNORECASE
+        )
+
 
         # Split on commas
         authors = [a.strip() for a in cleaned.split(",") if a.strip()]
