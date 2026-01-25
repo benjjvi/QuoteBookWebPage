@@ -125,6 +125,8 @@ class AI:
         with open(cache_file, "w") as f:
             json.dump(cache_payload, f, indent=2)
 
+        ai_response.replace("â", "'")
+
         return ai_response
 
     def generate_screenplay(self, quotes):
