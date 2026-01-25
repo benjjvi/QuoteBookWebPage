@@ -6,6 +6,8 @@ import secrets
 import string
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo  # Python 3.9+
+import logging
+import time
 
 from dotenv import load_dotenv
 from flask import (
@@ -17,12 +19,18 @@ from flask import (
     render_template,
     request,
     url_for,
+    g
 )
 from werkzeug.exceptions import HTTPException
 
 import ai_helpers
 import datetime_handler
 import qb_formats
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] %(levelname)s: %(message)s",
+)
 
 # Load the .env file
 load_dotenv()
@@ -80,6 +88,89 @@ app.jinja_env.filters["month_name"] = month_name
 app.jinja_env.filters["to_uk_datetime"] = to_uk_datetime
 app.jinja_env.filters["uk_time"] = uk_time
 app.jinja_env.filters["uk_date"] = uk_date
+
+# ─────────────────────────────────────────────
+# Hard-capped file handler (no deletion)
+# ─────────────────────────────────────────────
+
+class MaxSizeFileHandler(logging.FileHandler):
+    def __init__(self, filename, max_bytes, **kwargs):
+        self.max_bytes = max_bytes
+        super().__init__(filename, **kwargs)
+
+    def emit(self, record):
+        try:
+            if os.path.exists(self.baseFilename):
+                if os.path.getsize(self.baseFilename) >= self.max_bytes:
+                    return
+            super().emit(record)
+        except Exception:
+            self.handleError(record)
+
+# ─────────────────────────────────────────────
+# Logging configuration
+# ─────────────────────────────────────────────
+
+formatter = logging.Formatter(
+    "[%(asctime)s] %(levelname)s: %(message)s"
+)
+
+# Console logging
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+
+# File logging (hard cap 2MB)
+file_handler = MaxSizeFileHandler(
+    "app.log",
+    max_bytes=2 * 1024 * 1024,
+)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+# Reset Flask logger
+app.logger.handlers.clear()
+app.logger.setLevel(logging.INFO)
+app.logger.propagate = False
+
+app.logger.addHandler(console_handler)
+app.logger.addHandler(file_handler)
+
+# Silence Werkzeug access logs
+logging.getLogger("werkzeug").setLevel(logging.ERROR)
+
+# Optional sanity log
+app.logger.info("Logging initialised")
+
+
+@app.before_request
+def start_timer():
+    g.start_time = time.time()
+
+@app.after_request
+def log_request(response):
+    duration = round(time.time() - g.start_time, 3)
+
+    app.logger.info(
+        "%s %s (%s) -> %s [%ss]",
+        request.method,
+        request.path,
+        request.endpoint,
+        response.status_code,
+        duration,
+    )
+
+    return response
+
+@app.teardown_request
+def log_exception(exception):
+    if exception:
+        app.logger.exception(
+            "Unhandled exception on %s %s",
+            request.method,
+            request.path,
+        )
+
 
 
 @app.before_request
