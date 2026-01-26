@@ -512,7 +512,6 @@ def api_latest_quote():
             }
         )
     except Exception as e:
-        print(e)
         app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
