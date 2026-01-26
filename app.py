@@ -1,25 +1,26 @@
 import calendar as pycalendar
 import json
+import logging
 import math
 import os
 import secrets
 import string
+import time as timelib
 from datetime import datetime, time, timedelta
+import random
 from zoneinfo import ZoneInfo  # Python 3.9+
-import logging
-import time
 
 from dotenv import load_dotenv
 from flask import (
     Flask,
     Response,
     abort,
+    g,
     jsonify,
     redirect,
     render_template,
     request,
     url_for,
-    g
 )
 from werkzeug.exceptions import HTTPException
 
@@ -93,6 +94,7 @@ app.jinja_env.filters["uk_date"] = uk_date
 # Hard-capped file handler (no deletion)
 # ─────────────────────────────────────────────
 
+
 class MaxSizeFileHandler(logging.FileHandler):
     def __init__(self, filename, max_bytes, **kwargs):
         self.max_bytes = max_bytes
@@ -107,13 +109,12 @@ class MaxSizeFileHandler(logging.FileHandler):
         except Exception:
             self.handleError(record)
 
+
 # ─────────────────────────────────────────────
 # Logging configuration
 # ─────────────────────────────────────────────
 
-formatter = logging.Formatter(
-    "[%(asctime)s] %(levelname)s: %(message)s"
-)
+formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s")
 
 # Console logging
 console_handler = logging.StreamHandler()
@@ -145,11 +146,12 @@ app.logger.info("Logging initialised")
 
 @app.before_request
 def start_timer():
-    g.start_time = time.time()
+    g.start_time = timelib.time()
+
 
 @app.after_request
 def log_request(response):
-    duration = round(time.time() - g.start_time, 3)
+    duration = round(timelib.time() - g.start_time, 3)
 
     app.logger.info(
         "%s %s (%s) -> %s [%ss]",
@@ -162,6 +164,7 @@ def log_request(response):
 
     return response
 
+
 @app.teardown_request
 def log_exception(exception):
     if exception:
@@ -170,7 +173,6 @@ def log_exception(exception):
             request.method,
             request.path,
         )
-
 
 
 @app.before_request
