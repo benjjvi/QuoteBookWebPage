@@ -205,7 +205,7 @@ def index():
             now=datetime.now(ZoneInfo("Europe/London")),
         )
     except Exception as e:
-        print(e)
+        app.logger.exception(e)
         abort(501)
 
 
@@ -272,7 +272,7 @@ def ai_screenplay():
         resp = ai_worker.get_ai(top_20)
 
         resp = jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
-        print(resp)
+        app.logger.info(resp)
         return resp
     except Exception:
         abort(500)
@@ -456,7 +456,8 @@ def timeline(year, month):
             months=months,
             calendar_days=calendar_days,
         )
-    except Exception:
+    except Exception as e:
+        app.logger.exception(e)
         abort(500)
 
 
@@ -512,6 +513,7 @@ def api_latest_quote():
         )
     except Exception as e:
         print(e)
+        app.logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
 
