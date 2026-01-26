@@ -3,8 +3,8 @@ import os
 import random
 import re
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Dict
 
 
 @dataclass
@@ -14,6 +14,12 @@ class Quote:
     authors: List[str]
     timestamp: int
     context: str
+    stats: Dict[str, int] = field(default_factory=lambda: {
+        "wins": 0,
+        "losses": 0,
+        "battles": 0,
+        "score": 0,
+    })
 
 
 class QuoteBook:
@@ -51,6 +57,10 @@ class QuoteBook:
                 authors=q.get("authors", []),
                 timestamp=q.get("timestamp", 0),
                 context=q.get("context", ""),
+                stats=q.get("stats", {"wins": 0,
+                    "losses": 0,
+                    "battles": 0,
+                    "score": 0})
             )
             for q in raw_quotes
         ]
