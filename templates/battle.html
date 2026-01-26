@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Quote Battle{% endblock %}
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/battle.css') }}"
+/>
+{% endblock %}
+
+{% block content %}
+
+    <div class="container centered">
+  <h1>Which quote is funnier?</h1>
+    <a href="{{ url_for('index') }}" class="btn">Back home</a></div>
+<section class="battle">
+  <div class="battle-grid">
+    <form method="post">
+      <input type="hidden" name="winner" value="{{ quote_a.id }}">
+      <input type="hidden" name="loser" value="{{ quote_b.id }}">
+
+      <button class="quote-card" type="submit">
+        <p class="quote-text">{{ quote_a.quote }}</p>
+        <p class="quote-meta">
+          — {{ quote_a.authors | join(", ") }}
+        </p>
+      </button>
+    </form>
+
+    <form method="post">
+      <input type="hidden" name="winner" value="{{ quote_b.id }}">
+      <input type="hidden" name="loser" value="{{ quote_a.id }}">
+
+      <button class="quote-card" type="submit">
+        <p class="quote-text">{{ quote_b.quote }}</p>
+        <p class="quote-meta">
+          — {{ quote_b.authors | join(", ") }}
+        </p>
+      </button>
+    </form>
+  </div>
+</section>
+{% endblock %}

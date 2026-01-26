@@ -10,8 +10,9 @@
 {% endblock %}
 
 {% block content %}
+
 <section class="quotes-by-day container">
-  <h1 class="day-heading">{{ day }}</h1>
+  <h1 class="day-heading">{{ day }}</h1><a href="{{ url_for('index') }}" class="btn centered">Back home</a>
 
   {% if quotes %}
     <div class="quotes-list">

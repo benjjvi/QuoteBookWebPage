@@ -291,6 +291,42 @@ def ai_screenplay_render():
         abort(500)
 
 
+@app.route("/battle", methods=["GET", "POST"])
+def battle():
+    try:
+        if request.method == "POST":
+            winner_id = int(request.form["winner"])
+            loser_id = int(request.form["loser"])
+
+            winner = next((q for q in qb.quotes if q.id == winner_id), None)
+            loser = next((q for q in qb.quotes if q.id == loser_id), None)
+
+            if winner and loser:
+                winner.stats["wins"] += 1
+                winner.stats["battles"] += 1
+                winner.stats["score"] += 1
+
+                loser.stats["losses"] += 1
+                loser.stats["battles"] += 1
+
+                qb._save()
+
+            return redirect(url_for("battle"))
+
+        if len(qb.quotes) < 2:
+            return "Not enough quotes for a battle", 400
+
+        quote_a, quote_b = random.sample(qb.quotes, 2)
+
+        return render_template(
+            "battle.html",
+            quote_a=quote_a,
+            quote_b=quote_b,
+        )
+    except Exception as e:
+        app.logger.exception(e)
+        abort(500)
+
 @app.route("/random_quote")
 def random_quote():
     try:
