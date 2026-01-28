@@ -168,7 +168,7 @@ def log_request(response):
 @app.teardown_request
 def log_exception(exception):
     if exception:
-        app.logger.exception(
+        app.logger.info(
             "Unhandled exception on %s %s",
             request.method,
             request.path,
