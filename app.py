@@ -266,12 +266,12 @@ def ai():
 def ai_screenplay():
     try:
         scored_quotes = [
-            (q, ai_worker.classify_funny_score(q.quote, q.authors)) for q in qb.quotes
+            (q, ai_worker.classify_funny_score(q.quote, q.authors, q.stats)) for q in qb.quotes
         ]
         top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
         resp = ai_worker.get_ai(top_20)
 
-        resp = jsonify(resp=f"{resp.encode("utf-8").decode("unicode-escape")}")
+        resp = jsonify(resp=f"{resp.encode('utf-8').decode('unicode-escape')}")
         app.logger.info(resp)
         return resp
     except Exception:

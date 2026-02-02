@@ -186,7 +186,7 @@ class AI:
     def normalise(self, raw):
         return max(1.0, min(10.0, raw + 5))
 
-    def classify_funny_score(self, quote, authors):
+    def classify_funny_score(self, quote, authors, stats):
         # Score quotes based on amount of profanities, general humor, and absurdity.
         score = -0.5
 
@@ -257,6 +257,23 @@ class AI:
         if re.search(r"\b(but|until|except|and then|so anyway)\b", quote.lower()):
             score += 0.4
 
+        # get battle results and add to funnyness. one score is worth +0.2 funny points
+        try:
+            battle_wins = stats.get("wins", 0)
+            battles_fought = stats.get("battles", 0)
+            if battles_fought > 0:
+                win_rate = battle_wins / battles_fought
+                print("Win rate:", win_rate)
+                score += min(win_rate * 5 * 0.2, 10.0)  # cap at +10.0
+
+            battles_lost = stats.get("losses", 0)
+            if battles_fought > 0:
+                loss_rate = battles_lost / battles_fought
+                print("Loss rate:", loss_rate)
+                score -= min(loss_rate * 5 * 0.2, 2.0)  # cap at -2.0
+        except Exception as e:
+            print("Error calculating battle stats:", e)
+
         return round(self.normalise(score), 2)
 
     def get_top_20_with_cache(self, scored_quotes):
@@ -322,8 +339,8 @@ if __name__ == "__main__":
     ai = AI()
     qb = qb_formats.QuoteBook("qb.qbf")
     quotes = qb.quotes
-    scored_quotes = [(q, ai.classify_funny_score(q.quote, q.authors)) for q in quotes]
-    top_20 = AI.get_top_20_with_cache(scored_quotes)
+    scored_quotes = [(q, ai.classify_funny_score(q.quote, q.authors, q.stats)) for q in quotes]
+    top_20 = ai.get_top_20_with_cache(scored_quotes)
 
     sc = ai.get_ai(top_20)
     print(sc)

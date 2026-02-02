@@ -215,6 +215,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# QuoteBookWP
 qb.qbf
 qb_queue.qbf
 NOTES
@@ -225,3 +226,4 @@ cache/*.json
 cleanup.sh
 node_modules
 package*.json
+app.log
