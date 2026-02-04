@@ -327,8 +327,8 @@ def battle():
         app.logger.exception(e)
         abort(500)
 
-@app.route("/random_quote")
-def random_quote():
+@app.route("/random")
+def random():
     try:
         q = qb.get_random_quote()
 
@@ -571,6 +571,10 @@ def health():
 @app.route("/cuppa")
 def cuppa():
     abort(418)
+
+@app.route("/err")
+def err():
+    abort(500)
 
 
 @app.errorhandler(Exception)

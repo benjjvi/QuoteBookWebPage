@@ -1,34 +1,85 @@
-{% extends "base.html" %} {% block title %}Quote {{ id }}{% endblock %} {% block
-extra_css %}
+{% extends "base.html" %}
+
+{% block title %}Quote #{{ id }}{% endblock %}
+
+{% block extra_css %}
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='assets/css/quote.css') }}"
 />
-{% endblock %} {% block content %}
-<div class="quote-box">
-  <div class="quote">{{ quote | e }}</div>
+{% endblock %}
 
-  <div class="author">
-    — {{ [author, date, time, context]|select|join(', ') | e }}
-  </div>
+{% block content %}
+<main class="quote-page">
+  <article class="quote-card">
 
-  <div class="button-row">
-    {% if reroll_button is sameas true %}
-    <a href="{{ url_for('random_quote') }}" class="btn btn-secondary"
-      >Re-roll</a
-    >
+    {% if not reroll_button %}
+      <header class="quote-header">
+        <span class="quote-id">Quote #{{ id }}</span>
+      </header>
     {% endif %}
 
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Back Home</a>
-    <a
-      href="{{ url_for('quote_by_id', quote_id=quote_id) }}"
-      class="btn btn-quote"
-      id="permalinkBtn"
-    >
-      Permalink
-    </a>
 
-    <script src="{{ url_for('static', filename='assets/js/clipboard.js') }}"></script>
-  </div>
-</div>
+    <blockquote class="quote-text">
+      “{{ quote }}”
+    </blockquote>
+
+    <div class="quote-author">
+      — {{ author }}
+    </div>
+
+    {% if context %}
+      <div class="quote-context">
+        <strong>Context:</strong> {{ context }}
+      </div>
+    {% endif %}
+
+    <div class="quote-meta">
+      <span>{{ date }}</span>
+      <span>•</span>
+      <span>{{ time }}</span>
+    </div>
+
+    <div class="quote-actions">
+      <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        Back home
+      </a>
+
+      {% if reroll_button %}
+        <a href="{{ url_for('random') }}" class="btn btn-primary">
+          Another quote
+        </a>
+      {% endif %}
+
+
+      <button class="btn btn-primary" onclick="copyQuote()">
+        Copy quote
+      </button>
+
+      <button class="btn btn-primary" onclick="permalinkQuote()">
+        Permalink
+      </button>
+    </div>
+
+    <script>
+      function copyQuote() {
+        const text = `“{{ quote }}” — {{ author }}`;
+        navigator.clipboard.writeText(text).then(() => {
+          alert("Quote copied!");
+        });
+      }
+    </script>
+
+    <script>
+      function permalinkQuote() {
+        const url = "https://benjjvi.pythonanywhere.com/quote/{{ id }}?_external=1";
+        navigator.clipboard.writeText(url).then(() => {
+          alert("Permalink copied!");
+        });
+      }
+    </script>
+
+
+  </article>
+</main>
 {% endblock %}

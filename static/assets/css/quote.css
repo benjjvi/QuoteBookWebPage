@@ -1,33 +1,95 @@
-/* quote.css */
-
-.quote-box {
-  max-width: 700px;
-  padding: 2rem;
-  background: #1c1c1c;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  text-align: center;
+/* Page wrapper */
+.quote-page {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1.5rem;
 }
 
-.quote {
-  font-size: 1.6rem;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
+.quote-card {
+  max-width: 720px;
+  width: fit-content;      
+  min-width: 280px;        /* prevent weird narrow cards */
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(6px);
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-self: flex-start;
+}
+
+
+/* Header */
+.quote-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.quote-id {
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+/* Quote text */
+.quote-text {
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  line-height: 1.55;
+  color: #ffffff;
   white-space: pre-line;
 }
 
-.author {
+/* Author */
+.quote-author {
   font-size: 1rem;
-  opacity: 0.8;
+  color: #dcdcdc;
+  opacity: 1;
+  align-self: flex-end;
 }
 
-.button-row {
+/* Context */
+.quote-context {
+  font-size: 0.95rem;
+  color: #e0e0e0;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  line-height: 1.5;
+}
+
+/* Meta row */
+.quote-meta {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: #cfcfcf;
+  align-self: flex-end;
+}
+
+/* Actions */
+.quote-actions {
   display: flex;
   gap: 1rem;
-  justify-content: center;
-  margin-top: 1.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
-.button-row form {
-  margin: 0;
+/* Buttons */
+.btn {
+  padding: 0.6rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: #ffffff;
+  color: #111;
+}
+
+.btn-secondary {
+  background: #2a2a2a;
+  color: #f5f5f5;
 }

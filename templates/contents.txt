@@ -2,13 +2,13 @@ add_quote
 ai_screenplay
 ai
 all_quotes
-base
+base /
 battle
 calendar
 credits
-error
-footer
-index
-quote
+error /
+footer /
+index /
+quote / random /
 quotes_by_day
 search
