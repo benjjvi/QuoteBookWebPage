@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
-.search-page {
+.day-page {
   grid-column: 1 / -1;
   display: grid;
   gap: 2rem;
@@ -9,7 +9,7 @@
   color: #f7f4ef;
 }
 
-.search-header {
+.day-header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -22,9 +22,9 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
-.search-header h1 {
+.day-header h1 {
   font-family: "Fraunces", "Georgia", serif;
-  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-size: clamp(2rem, 3vw, 2.6rem);
   margin: 0 0 0.4rem 0;
 }
 
@@ -43,60 +43,13 @@
   margin: 0;
 }
 
-.search-form {
-  background: rgba(15, 15, 18, 0.88);
-  border-radius: 22px;
-  padding: 1.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
-  display: grid;
-  gap: 0.8rem;
-}
-
-.search-form label {
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.search-input {
+.header-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
 }
 
-.search-input input {
-  flex: 1;
-  min-width: 220px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 0.9rem 1rem;
-  color: #ffffff;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.search-input input:focus {
-  outline: none;
-  border-color: rgba(255, 211, 122, 0.75);
-  box-shadow: 0 0 0 4px rgba(255, 211, 122, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.hint {
-  margin: 0;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.results-header h2 {
-  font-family: "Fraunces", "Georgia", serif;
-  font-size: 1.4rem;
-  margin: 0;
-}
-
-.results-grid {
+.day-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.5rem;
@@ -104,7 +57,7 @@
   margin: 0 auto;
 }
 
-.result-card {
+.quote-card {
   background: rgba(15, 15, 18, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
@@ -113,7 +66,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  min-height: 260px;
+  min-height: 240px;
 }
 
 .quote-text {
@@ -187,21 +140,17 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.result-card .btn-primary {
+.quote-card .btn-primary {
   margin-top: auto;
   width: 100%;
 }
 
 @media (max-width: 720px) {
-  .search-header {
+  .day-header {
     padding: 1.6rem;
   }
 
-  .search-form {
-    padding: 1.5rem;
-  }
-
-  .results-grid {
+  .day-grid {
     grid-template-columns: 1fr;
   }
 }

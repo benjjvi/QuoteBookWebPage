@@ -1,32 +1,96 @@
-.loading-image {
-  width: 120px;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  color: white;
-}
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
-.block-center {
+.ai-page {
+  grid-column: 1 / -1;
   display: flex;
-  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  height: 80vh; /* Adjust height as needed */
+  padding: 2rem 0 3rem;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: #f7f4ef;
 }
 
-.text-center {
-  text-align: center;
-  font-size: 1.5em;
-  color: white;
+.ai-card {
+  width: min(640px, 100%);
+  background: rgba(15, 15, 18, 0.9);
+  border-radius: 26px;
+  padding: 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  position: relative;
+  overflow: hidden;
 }
 
-.screenplayText {
-  white-space: pre-wrap; /* preserves newlines and spaces but allows wrapping */
-  word-wrap: break-word; /* breaks long words if needed */
-  overflow-wrap: break-word;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+.ai-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top left, rgba(255, 180, 90, 0.12), transparent 50%),
+    radial-gradient(circle at 75% 30%, rgba(106, 177, 255, 0.14), transparent 60%);
+  pointer-events: none;
+}
+
+.ai-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.ai-header h1 {
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  margin: 0 0 0.6rem 0;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: inline-block;
+  margin-bottom: 0.8rem;
+}
+
+.lead {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.ai-loader {
+  margin: 1.8rem 0 0;
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.spinner {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #ffd37a;
+  animation: spin 1s linear infinite;
+}
+
+.status {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
+
+.status.error {
+  color: #ff9a62;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .ai-card {
+    padding: 1.8rem;
+  }
 }

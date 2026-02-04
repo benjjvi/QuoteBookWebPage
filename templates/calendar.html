@@ -1,84 +1,76 @@
-{% extends "base.html" %} {% block title %} Calendar {{ year }}-{{
-"%02d"|format(month) }} {% endblock %} {% block extra_css %}
+{% extends "base.html" %}
+
+{% block title %}Calendar {{ year }}-{{ "%02d"|format(month) }}{% endblock %}
+
+{% block extra_css %}
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='assets/css/calendar.css') }}"
 />
-{% endblock %} {% block content %}
+{% endblock %}
 
-<a href="{{ url_for('index') }}" class="btn">Back home</a>
+{% block content %}
+<section class="calendar-page">
+  <header class="calendar-header">
+    <div>
+      <span class="eyebrow">Timeline</span>
+      <h1>Quote Calendar</h1>
+      <p class="lead">Tap a day to see everything that landed there.</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+  </header>
 
-<form
-  class="timeline-controls"
-  onsubmit="
-    event.preventDefault();
-    window.location.href = `/timeline/${this.year.value}/${this.month.value}`;
-  "
->
-
-  <!-- Month selector -->
-  <div class="custom-select-wrapper">
-    <select name="month" class="custom-select">
-      {% for m in months %}
-        <option value="{{ m }}" {% if m == month %}selected{% endif %}>
-          {{ m | month_name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <!-- Year selector -->
-  <div class="custom-select-wrapper">
-    <select name="year" class="custom-select">
-      {% for y in years %}
-        <option value="{{ y }}" {% if y == year %}selected{% endif %}>
-          {{ y }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <button type="submit" class="btn">Go</button>
-</form>
-
-
-<br>
-
-<div class="calendar">
-  {% for week in calendar_days %} {% for day in week %} {% if day.in_month and
-  day.count > 0 %}
-  <a
-    class="day clickable"
-    href="{{ url_for('quotes_by_day', timestamp=day.timestamp) }}"
+  <form
+    class="calendar-controls"
+    onsubmit="event.preventDefault(); window.location.href = `/timeline/${this.year.value}/${this.month.value}`;"
   >
-    <div class="circle-wrapper">
-      <div
-        class="circle"
-        style="
-            width: {{ 20 + (day.count * 4) }}px;
-            height: {{ 20 + (day.count * 4) }}px;
-            background-color: #4a90e2; /* Accent blue for heatmap */
-        "
-      >
-        <span class="circle-day">{{ day.date.day }}</span>
-      </div>
+    <label class="control-label" for="month">Month</label>
+    <div class="select-wrap">
+      <select name="month" id="month" class="calendar-select">
+        {% for m in months %}
+          <option value="{{ m }}" {% if m == month %}selected{% endif %}>
+            {{ m | month_name }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="select-icon">▾</span>
     </div>
 
-    {% if day.count > 0 %}
-    <div class="count">{{ day.count }}</div>
-    {% endif %}
-  </a>
+    <label class="control-label" for="year">Year</label>
+    <div class="select-wrap">
+      <select name="year" id="year" class="calendar-select">
+        {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>
+            {{ y }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="select-icon">▾</span>
+    </div>
 
-  {% else %}
-  <div class="day disabled">
-    <div class="day-number">{{ day.date.day }}</div>
+    <button type="submit" class="btn btn-primary">Go</button>
+  </form>
+
+  <div class="calendar-grid">
+    {% for week in calendar_days %}
+      {% for day in week %}
+        {% if day.in_month and day.count > 0 %}
+          <a
+            class="day-card clickable"
+            href="{{ url_for('quotes_by_day', timestamp=day.timestamp) }}"
+          >
+            <div class="day-badge" style="--size: {{ 26 + (day.count * 3) }}px;">
+              <span>{{ day.date.day }}</span>
+            </div>
+            <p class="day-count">{{ day.count }} quote{% if day.count != 1 %}s{% endif %}</p>
+          </a>
+        {% else %}
+          <div class="day-card disabled">
+            <span class="day-number">{{ day.date.day }}</span>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
   </div>
-  {% endif %} {% endfor %} {% endfor %}
-</div>
-
-<br>
-
-<a href="{{ url_for('index') }}">
-    <button class="btn">Back Home</button>
-  </a>
+</section>
 {% endblock %}

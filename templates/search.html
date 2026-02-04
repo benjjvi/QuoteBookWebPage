@@ -1,43 +1,73 @@
-{% extends "base.html" %} {% block title %}Search Quotes{% endblock %} {% block
-extra_css %}
+{% extends "base.html" %}
+
+{% block title %}Search Quotes{% endblock %}
+
+{% block extra_css %}
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='assets/css/search.css') }}"
 />
-{% endblock %} {% block content %}
-<div class="container">
-  <div class="top-bar">
-    <h1>Search Quotes</h1>
-    <a href="{{ url_for('index') }}" class="btn">Back home</a>
-  </div>
+{% endblock %}
 
-  <form method="post">
-    <input
-      type="text"
-      name="query"
-      placeholder="Search quotes..."
-      value="{{ query }}"
-      autofocus
-    />
-    <button type="submit" class="btn">Search</button>
+{% block content %}
+<section class="search-page">
+  <header class="search-header">
+    <div>
+      <span class="eyebrow">Search</span>
+      <h1>Search Quotes</h1>
+      <p class="lead">Find a line by phrase, speaker, or context.</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+  </header>
+
+  <form class="search-form" method="post">
+    <label for="query">Search query</label>
+    <div class="search-input">
+      <input
+        id="query"
+        type="text"
+        name="query"
+        placeholder="e.g. hallway, James, or a specific line"
+        value="{{ query }}"
+        autofocus
+      />
+      <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+    <p class="hint">Tip: searching a speaker name will also match their quotes.</p>
   </form>
 
   {% if query %}
-  <h2>{{ results|length }} results for “{{ query }}”</h2>
-  {% endif %} {% for q in results %}
-  <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="quote-box-link">
-    <div class="quote">
-      <div class="quote-text">{{ q.quote }}</div>
-
-      <div class="quote-meta">
-        — {{ [q.authors | join(", "), q.date, q.time, q.context]|select|join(',
-        ') }}
-      </div>
+    <div class="results-header">
+      <h2>{{ results|length }} results for “{{ query }}”</h2>
     </div>
-  </a>
+  {% endif %}
 
-  {% if not results %}
-  <p class="no-results">No quotes found.</p>
-  {% endif %} {% endfor %}
-</div>
+  <div class="results-grid">
+    {% for q in results %}
+      <article class="result-card">
+        <div class="quote-text">“{{ q.quote }}”</div>
+        <div class="quote-meta">
+          <span class="quote-author">{{ q.authors | join(", ") }}</span>
+          <span class="dot">•</span>
+          <span>{{ q.timestamp | uk_date }}</span>
+          <span class="dot">•</span>
+          <span>{{ q.timestamp | uk_time }}</span>
+        </div>
+        {% if q.context %}
+          <p class="quote-context">{{ q.context }}</p>
+        {% endif %}
+        <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn btn-primary">
+          View
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+
+  {% if query and not results %}
+    <div class="empty-state">
+      <h2>No quotes found</h2>
+      <p>Try a different phrase or a speaker name.</p>
+    </div>
+  {% endif %}
+</section>
 {% endblock %}

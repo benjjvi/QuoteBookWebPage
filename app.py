@@ -7,7 +7,7 @@ import secrets
 import string
 import time as timelib
 from datetime import datetime, time, timedelta
-import random
+import random as randlib
 from zoneinfo import ZoneInfo  # Python 3.9+
 
 from dotenv import load_dotenv
@@ -50,7 +50,7 @@ CACHE_DIR = "cache"
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = os.getenv("PORT", "8040")
-PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 10
+PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
 
 
 app.config.update(
@@ -271,9 +271,7 @@ def ai_screenplay():
         top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
         resp = ai_worker.get_ai(top_20)
 
-        resp = jsonify(resp=f"{resp.encode('utf-8').decode('unicode-escape')}")
-        app.logger.info(resp)
-        return resp
+        return jsonify(resp=resp)
     except Exception:
         abort(500)
 
@@ -282,10 +280,12 @@ def ai_screenplay():
 def ai_screenplay_render():
     try:
         data = json.loads(request.form["data"])
+        rendered_at = datetime.now().strftime("%d %b %Y, %H:%M")
         return render_template(
             "ai_screenplay.html",
             title="AI Screenplay",
             screenplay=data.get("screenplay", ""),
+            rendered_at=rendered_at,
         )
     except Exception:
         abort(500)
@@ -316,7 +316,7 @@ def battle():
         if len(qb.quotes) < 2:
             return "Not enough quotes for a battle", 400
 
-        quote_a, quote_b = random.sample(qb.quotes, 2)
+        quote_a, quote_b = randlib.sample(qb.quotes, 2)
 
         return render_template(
             "battle.html",
@@ -525,6 +525,8 @@ def quotes_by_day(timestamp):
             "quotes_by_day.html",
             quotes=quotes,
             day=day_dt.strftime("%d %B %Y"),
+            year=day_dt.year,
+            month=day_dt.month,
         )
     except Exception:
         abort(500)

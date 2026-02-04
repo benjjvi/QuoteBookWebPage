@@ -38,7 +38,7 @@
     <h2>Explore</h2>
 
     <div class="nav-grid">
-      <a href="{{ url_for('err') }}" class="nav-item nav-item-wide">
+      <a href="{{ url_for('all_quotes') }}" class="nav-item nav-item-wide">
         <img src="{{ url_for('static', filename='assets/img/book.svg') }}" alt="" />
         <span>All quotes</span>
       </a>
@@ -48,27 +48,27 @@
         <span>Random</span>
       </a>
 
-      <a href="{{ url_for('err') }}" class="nav-item">
+      <a href="{{ url_for('battle') }}" class="nav-item">
         <img src="{{ url_for('static', filename='assets/img/battle.svg') }}" alt="" />
         <span>Battle</span>
       </a>
 
-      <a href="{{ url_for('err') }}" class="nav-item">
+      <a href="{{ url_for('search') }}" class="nav-item">
         <img src="{{ url_for('static', filename='assets/img/search.svg') }}" alt="" />
         <span>Search</span>
       </a>
 
-      <a href="{{ url_for('err') }}" class="nav-item">
+      <a href="{{ url_for('add_quote') }}" class="nav-item">
         <img src="{{ url_for('static', filename='assets/img/add.svg') }}" alt="" />
         <span>Add quote</span>
       </a>
 
-      <a href="{{ url_for('err') }}" class="nav-item">
+      <a href="{{ url_for('ai') }}" class="nav-item">
         <img src="{{ url_for('static', filename='assets/img/robot.svg') }}" alt="" />
         <span>AI</span>
       </a>
 
-      <a href="{{ url_for('err') }}" class="nav-item">
+      <a href="{{ url_for('timeline', year=now.year, month=now.month) }}" class="nav-item">
         <img src="{{ url_for('static', filename='assets/img/calendar.svg') }}" alt="" />
         <span>Calendar</span>
       </a>

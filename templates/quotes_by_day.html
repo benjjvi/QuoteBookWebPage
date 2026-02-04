@@ -1,44 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %} Quotes — {{ day }} {% endblock %}
+{% block title %}Quotes — {{ day }}{% endblock %}
 
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/all_quotes.css') }}"
+  href="{{ url_for('static', filename='assets/css/quotes-by-day.css') }}"
 />
 {% endblock %}
 
 {% block content %}
-
-<section class="quotes-by-day container">
-  <h1 class="day-heading">{{ day }}</h1><a href="{{ url_for('index') }}" class="btn centered">Back home</a>
+<section class="day-page">
+  <header class="day-header">
+    <div>
+      <span class="eyebrow">Timeline</span>
+      <h1>Quotes from {{ day }}</h1>
+      <p class="lead">A snapshot of everything said on this day.</p>
+    </div>
+    <div class="header-actions">
+      <a href="{{ url_for('timeline', year=year, month=month) }}" class="btn btn-ghost">
+        Back to calendar
+      </a>
+      <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+    </div>
+  </header>
 
   {% if quotes %}
-    <div class="quotes-list">
+    <div class="day-grid">
       {% for q in quotes %}
-        <div class="quote-card">
-          <div class="quote-text">{{ q.quote }}</div>
-
-          <div class="quote-author">
-            — {{ q.authors | join(", ") }}
+        <article class="quote-card">
+          <div class="quote-text">“{{ q.quote }}”</div>
+          <div class="quote-meta">
+            <span class="quote-author">{{ q.authors | join(", ") }}</span>
             {% set dt = q.timestamp | to_uk_datetime %}
-            {% if dt.time %} · {{ dt.time }}{% endif %}
-
-            {% if q.context %} · {{ q.context }}{% endif %}
+            {% if dt.time %}
+              <span class="dot">•</span>
+              <span>{{ dt.time }}</span>
+            {% endif %}
           </div>
-
-          <a
-            href="{{ url_for('quote_by_id', quote_id=q.id) }}"
-            class="btn-quote"
-          >
+          {% if q.context %}
+            <p class="quote-context">{{ q.context }}</p>
+          {% endif %}
+          <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn btn-primary">
             View
           </a>
-        </div>
+        </article>
       {% endfor %}
     </div>
   {% else %}
-    <p class="no-quotes">No quotes recorded for this day.</p>
+    <div class="empty-state">
+      <h2>No quotes recorded for this day</h2>
+      <p>Try another day from the calendar.</p>
+    </div>
   {% endif %}
 </section>
 {% endblock %}

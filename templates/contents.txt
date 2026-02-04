@@ -1,14 +1,14 @@
-add_quote
-ai_screenplay
-ai
-all_quotes
+add_quote /
+ai_screenplay /
+ai /
+all_quotes /
 base /
-battle
+battle /
 calendar
-credits
+credits /
 error /
 footer /
 index /
 quote / random /
 quotes_by_day
-search
+search /

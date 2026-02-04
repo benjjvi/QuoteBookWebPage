@@ -1,0 +1,141 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
+
+.battle-page {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2rem;
+  padding-bottom: 2rem;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: #f7f4ef;
+}
+
+.battle-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  background: rgba(15, 15, 18, 0.9);
+  border-radius: 26px;
+  padding: 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.battle-header h1 {
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  margin: 0 0 0.4rem 0;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: inline-block;
+  margin-bottom: 0.8rem;
+}
+
+.lead {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.battle-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.battle-form {
+  margin: 0;
+}
+
+.quote-card {
+  width: 100%;
+  background: rgba(15, 15, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+}
+
+.quote-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 211, 122, 0.4);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.quote-text {
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  color: #fef7ea;
+  margin: 0;
+}
+
+.quote-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.vote-pill {
+  justify-self: start;
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd37a, #ff9a62);
+  color: #1b1308;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.versus {
+  font-size: 1rem;
+  letter-spacing: 0.4rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.btn {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  border-radius: 999px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #f2eee7;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 860px) {
+  .battle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .versus {
+    letter-spacing: 0.2rem;
+  }
+}

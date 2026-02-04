@@ -38,12 +38,6 @@ html, body {
   background: transparent; /* dark background */
 }
 
-.page-wrapper {
-  min-height: 100vh;          /* fill viewport height */
-  position: relative;          /* allow footer to position absolutely inside */
-  padding-bottom: 100px;       /* space for footer height */
-}
-
 /* Main content/grid */
 .site-wrapper {
   display: grid;
@@ -52,15 +46,6 @@ html, body {
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-/* Footer */
-footer {
-  position: absolute;      /* position footer at the bottom of wrapper */
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100px;           /* match the padding-bottom of page-wrapper */
 }
 
 

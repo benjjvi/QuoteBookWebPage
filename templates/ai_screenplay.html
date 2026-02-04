@@ -1,7 +1,50 @@
-{% extends "base.html" %} {% block title %}{{ title }}{% endblock %} {% block
-content %}
-<div class="container block-center">
-  <h1>AI Screenplay</h1>
-  <pre id="screenplayText"></pre>
-</div>
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/ai-screenplay.css') }}"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="screenplay-page">
+  <header class="screenplay-header">
+    <div class="title-block">
+      <span class="eyebrow">AI Studio</span>
+      <h1>AI Screenplay</h1>
+      <p class="subtitle">{{ rendered_at }}</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="downloadMarkdown">Download .md</button>
+      <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+    </div>
+  </header>
+
+  <article class="screenplay-card">
+    <pre id="screenplayText">{{ screenplay }}</pre>
+  </article>
+</section>
+
+<script>
+  const downloadBtn = document.getElementById("downloadMarkdown");
+  const screenplayText = document.getElementById("screenplayText");
+  const renderedAt = "{{ rendered_at }}";
+
+  downloadBtn.addEventListener("click", () => {
+    const header = `# AI Screenplay\\n\\n_${renderedAt}_\\n\\n`;
+    const content = header + (screenplayText.textContent || "");
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ai-screenplay.md";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+</script>
 {% endblock %}

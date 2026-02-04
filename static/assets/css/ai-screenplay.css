@@ -1,0 +1,113 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
+
+.screenplay-page {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2rem;
+  padding-bottom: 2rem;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: #f7f4ef;
+}
+
+.screenplay-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  background: rgba(15, 15, 18, 0.9);
+  border-radius: 26px;
+  padding: 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.screenplay-header h1 {
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  margin: 0 0 0.4rem 0;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: inline-block;
+  margin-bottom: 0.8rem;
+}
+
+.lead {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.screenplay-card {
+  background: rgba(15, 15, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 2rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+
+#screenplayText {
+  white-space: pre-wrap;
+  margin: 0;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.btn {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  border-radius: 999px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #f2eee7;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffd37a, #ff9a62);
+  color: #1b1308;
+}
+
+@media (max-width: 720px) {
+  .screenplay-header {
+    padding: 1.6rem;
+  }
+
+  .screenplay-card {
+    padding: 1.5rem;
+  }
+}
