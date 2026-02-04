@@ -2,25 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Error {{ code }}</title>
+    <title>Error {{ code }} · Quote Book</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Main styles -->
+    <meta name="description" content="{{ description }}" />
+    <meta name="theme-color" content="#0d0d0d" />
+
     <style>
+      /* =========================
+         BASE
+         ========================= */
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
         min-height: 100vh;
         display: flex;
-        justify-content: center;
         align-items: center;
+        justify-content: center;
         background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
         color: #f5f5f5;
         font-family:
           system-ui,
           -apple-system,
           BlinkMacSystemFont,
+          "Segoe UI",
           sans-serif;
       }
+
+      /* =========================
+         CARD
+         ========================= */
 
       .container {
         max-width: 480px;
@@ -32,39 +47,45 @@
       }
 
       h1 {
-        margin-top: 0;
+        margin: 0;
         font-size: 3rem;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
       }
 
       h2 {
-        margin: 0.5rem 0 1.5rem;
+        margin: 0.75rem 0 1.5rem;
         font-size: 1.1rem;
-        opacity: 0.8;
         font-weight: 500;
+        opacity: 0.85;
       }
 
       p {
-        opacity: 0.75;
+        margin: 0 0 2rem;
         line-height: 1.5;
-        margin-bottom: 2rem;
+        opacity: 0.75;
       }
+
+      /* =========================
+         ACTIONS
+         ========================= */
 
       .button-row {
         display: flex;
         gap: 1rem;
         justify-content: center;
+        flex-wrap: wrap;
       }
 
       .btn {
+        display: inline-block;
         padding: 0.7rem 1.8rem;
         border-radius: 999px;
-        border: none;
-        cursor: pointer;
         font-size: 0.95rem;
+        text-decoration: none;
         transition:
           transform 0.1s ease,
-          box-shadow 0.1s ease;
+          box-shadow 0.1s ease,
+          opacity 0.1s ease;
       }
 
       .btn-primary {
@@ -80,6 +101,7 @@
       .btn:hover {
         transform: translateY(-1px);
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        opacity: 0.95;
       }
 
       .btn:active {
@@ -87,57 +109,27 @@
         box-shadow: none;
       }
     </style>
-
-    <!-- Footer styles -->
-    <style>
-      /* Use flexbox on body to push footer to the bottom */
-      body {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh; /* full viewport height */
-      }
-
-      /* Main content grows to fill available space */
-      main {
-        flex: 1; /* takes up remaining space */
-      }
-
-      /* Footer styling */
-      footer {
-        background-color: rgba(0, 0, 0, 0, 1); /* light grey background */
-        text-align: center;
-        padding: 15px 0;
-        width: 100%;
-      }
-
-      .plainlink {
-        color: #00ffff; /* cyan link */
-        text-decoration: none;
-      }
-
-      .plainlink:hover {
-        color: #66ffff; /* lighter cyan on hover */
-        text-decoration: underline;
-      }
-    </style>
   </head>
+
   <body>
-    <div class="container">
+    <main class="container">
       <h1>{{ code }}</h1>
       <h2>{{ name }}</h2>
 
       <p>{{ description }}</p>
 
       <div class="button-row">
-        <a href="{{ url_for('index') }}">
-          <button class="btn btn-primary">Back home</button>
+        <a class="btn btn-primary" href="{{ url_for('index') }}">
+          Back home
         </a>
 
-        <a href="{{ request.referrer or url_for('index') }}">
-          <button class="btn btn-secondary">Go back</button>
+        <a
+          class="btn btn-secondary"
+          href="{{ request.referrer or url_for('index') }}"
+        >
+          Go back
         </a>
       </div>
-      {% include "footer.html" %}
-    </div>
+    </main>
   </body>
 </html>

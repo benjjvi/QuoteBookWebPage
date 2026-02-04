@@ -1,139 +1,142 @@
-/* ---------- Reset / Base ---------- */
-* {
+/* =========================
+   CSS RESET / BASELINE
+   ========================= */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
-  color: #f5f5f5;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-}
-
-/* ---------- Typography ---------- */
-h1 {
-  font-size: 2.4rem;
-  margin-bottom: 0.5rem;
-}
-
-h2 {
-  font-size: 1.1rem;
-  opacity: 0.8;
-  font-weight: 500;
-}
-
-p {
-  opacity: 0.75;
-  line-height: 1.5;
-}
-
-/* ---------- Layout ---------- */
-.container {
-  width: 100%;
-  padding: 2.5rem;
-}
-
-.centered {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.button-row {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-/* ---------- Buttons ---------- */
-.btn {
-  padding: 0.6rem 1.6rem;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  background: #2a2a2a;
-  color: #f5f5f5;
-  transition:
-    transform 0.1s ease,
-    box-shadow 0.1s ease;
-}
-
-.btn-primary {
-  background: #f5f5f5;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue",
+    Arial, sans-serif;
+  background-color: transparent;
   color: #111;
 }
 
-.btn-secondary {
-  background: #2a2a2a;
-  color: #f5f5f5;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+html, body {
+  height: 100%;
+  margin: 0;
+  background: transparent; /* dark background */
 }
 
-.btn:active {
-  transform: translateY(0);
-  box-shadow: none;
+/* Main content/grid */
+.site-wrapper {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* Remove underline from button-style links */
-a.btn,
-a.enter-btn {
-  text-decoration: none;
+
+
+
+/* =========================
+   LAYOUT
+   ========================= */
+
+.site-wrapper {
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* =========================
+   TYPOGRAPHY
+   ========================= */
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.2;
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 1rem 0;
+}
+
+small {
+  color: #555;
+}
+
+/* =========================
+   LINKS
+   ========================= */
+
+a {
   color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-/* ---------- Forms ---------- */
-input[type="text"],
-textarea {
-  width: 100%;
-  background: #0f0f0f;
-  color: #f5f5f5;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 0.6rem;
-  font-family: inherit;
+a:hover {
+  opacity: 0.8;
 }
 
-/* ---------- Tables ---------- */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
+/* =========================
+   UTILITIES
+   ========================= */
+
+.centered {
+  text-align: center;
 }
 
-th,
-td {
-  padding: 0.4rem 0.6rem;
-  text-align: left;
+.muted {
+  color: #666;
 }
 
-th {
-  opacity: 0.7;
-  font-weight: 500;
-  border-bottom: 1px solid #333;
+.spacer {
+  margin-top: 2rem;
+}
+
+/* =========================
+   ACCESSIBILITY
+   ========================= */
+
+:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+/* =========================
+   GLOBAL BACKGROUND
+   ========================= */
+
+#bg-canvas {
+  position: fixed;      /* stay in place behind content */
+  inset: 0;             /* top/right/bottom/left = 0 */
+  z-index: -1;          /* behind everything */
+  background-color: #0f0f0f; /* dark base color */
+  pointer-events: none; /* clicks pass through */
+}
+
+
+
+/* Make sure content floats above */
+body {
+  background: transparent;
 }

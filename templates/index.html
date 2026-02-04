@@ -1,84 +1,92 @@
-{% extends "base.html" %} {% block title %}Quote Book{% endblock %} {% block
-extra_css %}
+{% extends "base.html" %}
+
+{% block title %}Quote Book{% endblock %}
+
+{% block extra_css %}
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='assets/css/index.css') }}"
 />
-{% endblock %} {% block content %}
-<div class="container">
-  <!-- Header -->
-  <header class="home-header">
+{% endblock %}
+
+{% block content %}
+<section class="index-grid">
+  <!-- Intro / Stats -->
+  <div class="card card-intro">
     <h1>Quote Book</h1>
-    <p class="subtitle">
-      A living record of terrible, brilliant things people have said
+    <p class="muted">
+      Enough for a trip to HR, but not enough to go to jail.
     </p>
-  </header>
 
-  <!-- Stats / Top Quoters -->
-  <section class="stats-section">
-    <div class="stats-grid">
-      <!-- Top Quoters Table -->
-      <div class="top-quoters-table">
-        <h2>Top Quoters</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Speaker</th>
-              <th>Quotes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for name, count in speaker_counts[:5] %}
-            <tr>
-              <td>{{ name }}</td>
-              <td>{{ count }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-number">{{ total_quotes }}</span>
+        <span class="stat-label">total quotes</span>
       </div>
 
-      <!-- Quick Stats -->
-      <div class="quick-stats">
-        <h2>Stats</h2>
-        <p><strong>{{ total_quotes }}</strong> quotes</p>
-        <p><strong>{{ speaker_counts[0][0] }}</strong> quoted the most</p>
+      <div class="stat">
+        <span class="stat-label">Last checked</span>
+        <span class="stat-meta">
+          {{ now.strftime("%d %b %Y, %H:%M") }}
+        </span>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Buttons / Navigation -->
-  <section class="buttons-section">
-    <div class="button-grid">
-      <a href="{{ url_for('random_quote') }}" class="enter-btn">
-        <img src="{{ url_for('static', filename='assets/img/dice.svg') }}" />
+  <!-- Navigation -->
+  <div class="card card-nav">
+    <h2>Explore</h2>
+
+    <div class="nav-grid">
+      <a href="{{ url_for('all_quotes') }}" class="nav-item nav-item-wide">
+        <img src="{{ url_for('static', filename='assets/img/book.svg') }}" alt="" />
+        <span>All quotes</span>
       </a>
-      <a href="{{ url_for('add_quote') }}" class="enter-btn secondary">
-        <img src="{{ url_for('static', filename='assets/img/add.svg') }}" />
+
+      <a href="{{ url_for('random') }}" class="nav-item">
+        <img src="{{ url_for('static', filename='assets/img/dice.svg') }}" alt="" />
+        <span>Random</span>
       </a>
-      <a href="{{ url_for('all_quotes') }}" class="enter-btn secondary">
-        <img src="{{ url_for('static', filename='assets/img/book.svg') }}" />
+
+      <a href="{{ url_for('battle') }}" class="nav-item">
+        <img src="{{ url_for('static', filename='assets/img/battle.svg') }}" alt="" />
+        <span>Battle</span>
       </a>
-      <a href="{{ url_for('search') }}" class="enter-btn secondary">
-        <img src="{{ url_for('static', filename='assets/img/search.svg') }}" />
+
+      <a href="{{ url_for('search') }}" class="nav-item">
+        <img src="{{ url_for('static', filename='assets/img/search.svg') }}" alt="" />
+        <span>Search</span>
       </a>
-      <a href="{{ url_for('ai') }}" class="enter-btn secondary">
-        <img src="{{ url_for('static', filename='assets/img/robot.svg') }}" />
+
+      <a href="{{ url_for('add_quote') }}" class="nav-item">
+        <img src="{{ url_for('static', filename='assets/img/add.svg') }}" alt="" />
+        <span>Add quote</span>
       </a>
-      <a
-        href="{{ url_for('timeline',
-                          year=now.year,
-                          month=now.month) }}"
-        class="enter-btn secondary"
-      >
-        <img
-          src="{{ url_for('static', filename='assets/img/calendar.svg') }}"
-        />
+
+      <a href="{{ url_for('ai') }}" class="nav-item">
+        <img src="{{ url_for('static', filename='assets/img/robot.svg') }}" alt="" />
+        <span>AI</span>
       </a>
-      <a href="{{ url_for('battle') }}" class="enter-btn secondary">
-        <img src="{{ url_for('static', filename='assets/img/battle.svg') }}" />
+
+      <a href="{{ url_for('timeline', year=now.year, month=now.month) }}" class="nav-item">
+        <img src="{{ url_for('static', filename='assets/img/calendar.svg') }}" alt="" />
+        <span>Calendar</span>
       </a>
     </div>
-  </section>
-</div>
+  </div>
+
+  <!-- Speakers -->
+  <div class="card card-speakers">
+    <h2>Speakers</h2>
+
+    <ul class="speaker-list">
+      {% for speaker, count in speaker_counts[:5] %}
+        <li>
+          <span class="speaker-name">{{ speaker }}</span>
+          <span class="speaker-count">{{ count }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
 {% endblock %}

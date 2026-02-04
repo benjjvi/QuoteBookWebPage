@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
-.battle-page {
+.day-page {
   grid-column: 1 / -1;
   display: grid;
   gap: 2rem;
@@ -9,7 +9,7 @@
   color: #f7f4ef;
 }
 
-.battle-header {
+.day-header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -22,9 +22,9 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
-.battle-header h1 {
+.day-header h1 {
   font-family: "Fraunces", "Georgia", serif;
-  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-size: clamp(2rem, 3vw, 2.6rem);
   margin: 0 0 0.4rem 0;
 }
 
@@ -43,65 +43,70 @@
   margin: 0;
 }
 
-.battle-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: center;
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
 }
 
-.battle-form {
-  margin: 0;
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .quote-card {
-  width: 100%;
   background: rgba(15, 15, 18, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  padding: 2rem;
+  border-radius: 22px;
+  padding: 1.6rem;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-  display: grid;
-  gap: 1rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
-}
-
-.quote-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 211, 122, 0.4);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 240px;
 }
 
 .quote-text {
   font-family: "Fraunces", "Georgia", serif;
-  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  font-size: 1.2rem;
   color: #fef7ea;
-  margin: 0;
 }
 
 .quote-meta {
-  margin: 0;
-  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.65);
 }
 
-.vote-pill {
-  justify-self: start;
-  padding: 0.5rem 1.2rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
-  font-size: 0.85rem;
+.quote-author {
   font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.versus {
-  font-size: 1rem;
-  letter-spacing: 0.4rem;
-  color: rgba(255, 255, 255, 0.5);
+.dot {
+  opacity: 0.4;
+}
+
+.quote-context {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  background: rgba(15, 15, 18, 0.88);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
   text-align: center;
 }
 
@@ -124,18 +129,28 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
 }
 
+.btn-primary {
+  background: linear-gradient(135deg, #ffd37a, #ff9a62);
+  color: #1b1308;
+}
+
 .btn-ghost {
   background: transparent;
   color: #f2eee7;
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-@media (max-width: 860px) {
-  .battle-grid {
-    grid-template-columns: 1fr;
+.quote-card .btn-primary {
+  margin-top: auto;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .day-header {
+    padding: 1.6rem;
   }
 
-  .versus {
-    letter-spacing: 0.2rem;
+  .day-grid {
+    grid-template-columns: 1fr;
   }
 }

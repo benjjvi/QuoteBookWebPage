@@ -1,36 +1,36 @@
 <!-- templates/footer.html -->
-<footer>
-  <p>
-    © 2026 benjjvi.
-    <a class="plainlink" href="{{ url_for('credits') }}">Credits</a>
-  </p>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-meta">
+      © 2026 benjjvi ·
+      <a href="{{ url_for('credits') }}">Credits & License</a>
+    </p>
 
-  <!-- Latest quote container -->
-  <p id="latest-quote" style="margin-top: 6px; font-style: italic; opacity: 0.8;">
-    Well this is awkward. We couldn't load the funnies.
-  </p>
+    <p id="latest-quote" class="footer-meta">
+      Well this is awkward. We couldn't load the funnies.
+    </p>
+  </div>
 
-  <!-- JS to fetch latest quote -->
   <script>
-    async function fetchLatestQuote() {
+    (async function fetchLatestQuote() {
+      const quoteEl = document.getElementById("latest-quote");
+
       try {
-        const res = await fetch('/api/latest');
-        if (!res.ok) throw new Error('Network response was not ok');
+        const res = await fetch("/api/latest");
+        if (!res.ok) throw new Error("Bad response");
 
         const data = await res.json();
-        const quoteEl = document.getElementById('latest-quote');
 
-        if (data.quote && data.authors) {
-          quoteEl.textContent = `Most recent quote: "${data.quote}" — ${data.authors.join(', ')}`;
+        if (data.quote && data.authors && data.authors.length) {
+          quoteEl.textContent =
+            `Most recent quote: “${data.quote}” — ${data.authors.join(", ")}`;
         } else {
-          quoteEl.textContent = 'No latest quote available.';
+          quoteEl.textContent = "No recent quotes yet.";
         }
       } catch (err) {
-        console.error('Failed to fetch latest quote:', err);
-        document.getElementById('latest-quote').textContent = 'Failed to load latest quote.';
+        console.error("Failed to fetch latest quote:", err);
+        quoteEl.textContent = "Failed to load latest quote.";
       }
-    }
-
-    fetchLatestQuote();
+    })();
   </script>
 </footer>

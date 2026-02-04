@@ -1,77 +1,84 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <head>
-      <!-- Basic Meta -->
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-      <meta
-        name="description"
-        content="A living record of terrible, brilliant things people have said."
-      />
-      <meta name="author" content="benjjvi" />
+    <!-- Basic Meta -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-      <!-- Favicon -->
-      <link
-        rel="icon"
-        href="{{ url_for('static', filename='favicon.ico') }}"
-        type="image/x-icon"
-      />
+    <meta
+      name="description"
+      content="A living record of terrible, brilliant things people have said."
+    />
+    <meta name="author" content="benjjvi" />
 
-      <!-- Apple Touch Icon (for iOS home screen) -->
-      <link
-        rel="apple-touch-icon"
-        sizes="180x180"
-        href="{{ url_for('static', filename='favicon.png') }}"
-      />
+    <!-- Theme color (mobile UI) -->
+    <meta name="theme-color" content="#ffffff" />
 
-      <!-- Theme color (affects Chrome mobile UI) -->
-      <meta name="theme-color" content="#ffffff" />
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+      type="image/x-icon"
+    />
 
-      <!-- Open Graph (for social sharing previews) -->
-      <meta property="og:title" content="Your Site Title" />
-      <meta
-        property="og:description"
-        content="A living record of terrible, brilliant things people have said."
-      />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content="https://benjjvi.pythonanywhere.com/" />
-      <meta
-        property="og:image"
-        content="{{ url_for('static', filename='favicon.png') }}"
-      />
+    <!-- Apple Touch Icon -->
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="{{ url_for('static', filename='favicon.png') }}"
+    />
 
-      <!-- Twitter Card (for Twitter previews) -->
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content="Quote Book" />
-      <meta
-        name="twitter:description"
-        content="A living record of terrible, brilliant things people have said."
-      />
-      <meta
-        name="twitter:image"
-        content="{{ url_for('static', filename='favicon.png') }}"
-      />
+    <!-- Open Graph -->
+    <meta property="og:title" content="Quote Book" />
+    <meta
+      property="og:description"
+      content="A living record of terrible, brilliant things people have said."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://benjjvi.pythonanywhere.com/" />
+    <meta
+      property="og:image"
+      content="{{ url_for('static', filename='favicon.png') }}"
+    />
 
-      <!-- Canonical URL to avoid duplicate content -->
-      <link rel="canonical" href="https://benjjvi.pythonanywhere.com/" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Quote Book" />
+    <meta
+      name="twitter:description"
+      content="A living record of terrible, brilliant things people have said."
+    />
+    <meta
+      name="twitter:image"
+      content="{{ url_for('static', filename='favicon.png') }}"
+    />
 
-      <title>{% block title %}Quote Book{% endblock %}</title>
+    <!-- Canonical -->
+    <link rel="canonical" href="https://benjjvi.pythonanywhere.com/" />
 
-      <!-- CSS -->
-      <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='assets/css/main.css') }}"
-      />
-      <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='assets/css/footer.css') }}"
-      />
-      {% block extra_css %}{% endblock %}
-    </head>
-    <body>
-      {% block content %}{% endblock %} {% include "footer.html" %}
-    </body>
+    <title>{% block title %}Quote Book{% endblock %}</title>
+
+    <!-- Base CSS -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='assets/css/main.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='assets/css/footer.css') }}"
+    />
+    {% block extra_css %}{% endblock %}
   </head>
+
+  <body>
+    <canvas id="bg-canvas"></canvas>
+
+    <main class="site-wrapper">
+      {% block content %}{% endblock %}
+    </main>
+
+    {% include "footer.html" %}
+    <script src="{{ url_for('static', filename='assets/js/background.js') }}"></script>
+  </body>
 </html>

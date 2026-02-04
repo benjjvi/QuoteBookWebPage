@@ -1,88 +1,101 @@
-{% extends "base.html" %} {% block title %}All Quotes{% endblock %} {% block
-extra_css %}
+{% extends "base.html" %}
+
+{% block title %}All Quotes{% endblock %}
+
+{% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/all_quotes.css') }}"
+  href="{{ url_for('static', filename='assets/css/all-quotes.css') }}"
 />
-{% endblock %} {% block content %}
-<div class="container">
-  <div class="top-bar">
-    <h1>All Quotes</h1>
-    <a href="{{ url_for('index') }}" class="btn">Back home</a>
+{% endblock %}
+
+{% block content %}
+<section class="all-quotes-page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Library</span>
+      <h1>All Quotes</h1>
+      <p class="lead">Every line, every legend, all in one place.</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+  </header>
+
+  <div class="controls-bar">
+    <form method="get" class="filter-form">
+      <input type="hidden" name="page" value="1" />
+      <label for="speaker">Filter by speaker</label>
+      <div class="select-wrap">
+        <select
+          name="speaker"
+          id="speaker"
+          class="speaker-select"
+          onchange="this.form.submit()"
+        >
+          <option value="">All speakers</option>
+          {% for spk, count in speakers %}
+            <option
+              value="{{ spk }}"
+              {% if spk == selected_speaker %}selected{% endif %}
+            >
+              {{ spk }} ({{ count }})
+            </option>
+          {% endfor %}
+        </select>
+        <span class="select-icon">▾</span>
+      </div>
+      <noscript><button type="submit" class="btn btn-primary">Filter</button></noscript>
+    </form>
+
+    {% if selected_speaker %}
+      <div class="filter-pill">
+        <span>Showing:</span>
+        <strong>{{ selected_speaker }}</strong>
+        <a href="{{ url_for('all_quotes') }}" class="pill-clear">Clear</a>
+      </div>
+    {% endif %}
   </div>
 
-  <form method="get">
-    <input type="hidden" name="page" value="1">
-
-    <label for="speaker">Filter by speaker:</label>
-    <div class="speaker-select-wrapper">
-      <select
-        name="speaker"
-        id="speaker"
-        class="speaker-select"
-        onchange="this.form.submit()"
-      >
-
-        <option value="">All Speakers</option>
-        {% for spk, count in speakers %}
-          <option
-            value="{{ spk }}"
-            {% if spk == selected_speaker %}selected{% endif %}
-          >
-            {{ spk }} ({{ count }})
-          </option>
-        {% endfor %}
-
-      </select>
-    </div>
-    <noscript><button type="submit">Filter</button></noscript>
-  </form>
-
-  {% for q in quotes %}
-    <div class="quote-card">
-      <div class="quote-text">{{ q.quote }}</div>
-
-      <div class="quote-author">
-        —
-        {{
-          [
-            q.authors | join(", "),
-            q.timestamp | uk_date,
-            q.timestamp | uk_time,
-            q.context
-          ]
-          | select
-          | join(", ")
-        }}
+  <div class="quote-grid">
+    {% for q in quotes %}
+      <article class="quote-card">
+        <div class="quote-text">“{{ q.quote }}”</div>
+        <div class="quote-meta">
+          <span class="quote-author">{{ q.authors | join(", ") }}</span>
+          <span class="dot">•</span>
+          <span>{{ q.timestamp | uk_date }}</span>
+          <span class="dot">•</span>
+          <span>{{ q.timestamp | uk_time }}</span>
+        </div>
+        {% if q.context %}
+          <p class="quote-context">{{ q.context }}</p>
+        {% endif %}
+        <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn btn-primary">
+          View
+        </a>
+      </article>
+    {% else %}
+      <div class="empty-state">
+        <h2>No quotes found</h2>
+        <p>Try another speaker or clear the filter.</p>
       </div>
-
-      <br />
-
-      <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn-quote">
-        View
-      </a>
-    </div>
-  {% else %}
-  <p>No quotes found.</p>
-  {% endfor %}
+    {% endfor %}
+  </div>
 
   {% if total_pages > 1 %}
-  <div class="pagination">
-    {% if page > 1 %}
-      <a
-        href="{{ url_for('all_quotes', speaker=selected_speaker, page=page-1) }}"
-        class="btn"
-      >
-        ← Prev
-      </a>
-    {% endif %}
+    <div class="pagination">
+      {% if page > 1 %}
+        <a
+          href="{{ url_for('all_quotes', speaker=selected_speaker, page=page-1) }}"
+          class="btn btn-ghost"
+        >
+          ← Prev
+        </a>
+      {% endif %}
 
-    <span class="page-indicator">
       <form method="get" class="page-jump">
         {% if selected_speaker %}
-          <input type="hidden" name="speaker" value="{{ selected_speaker }}">
+          <input type="hidden" name="speaker" value="{{ selected_speaker }}" />
         {% endif %}
-
         <label>
           Page
           <input
@@ -97,21 +110,17 @@ extra_css %}
         </label>
       </form>
 
-    </span>
-
-    {% if page < total_pages %}
-      <a
-        href="{{ url_for('all_quotes', speaker=selected_speaker, page=page+1) }}"
-        class="btn"
-      >
-        Next →
-      </a>
-    {% endif %}
-  </div>
-{% endif %}
-
-
-</div>
+      {% if page < total_pages %}
+        <a
+          href="{{ url_for('all_quotes', speaker=selected_speaker, page=page+1) }}"
+          class="btn btn-ghost"
+        >
+          Next →
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
 
 <script>
   document.addEventListener("focusin", (e) => {
@@ -120,5 +129,4 @@ extra_css %}
     }
   });
 </script>
-
 {% endblock %}

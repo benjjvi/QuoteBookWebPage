@@ -1,42 +1,92 @@
-{% extends "base.html" %} {% block title %}Add Quote{% endblock %} {% block
-extra_css %}
+{% extends "base.html" %}
+
+{% block title %}Add a Quote{% endblock %}
+
+{% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/add_quote.css') }}"
+  href="{{ url_for('static', filename='assets/css/add-quote.css') }}"
 />
-{% endblock %} {% block content %}
-<div class="container">
-  <h1>Add a Quote</h1>
+{% endblock %}
 
-  <form method="post" action="{{ url_for('add_quote') }}">
-    <label for="quote_text">Quote</label>
-    <textarea
-      id="quote_text"
-      name="quote_text"
-      placeholder="Write the quote exactly as it was said…"
-      required
-    ></textarea>
+{% block content %}
+<section class="add-quote-page">
+  <div class="add-quote-card">
+    <header class="add-quote-header">
+      <span class="eyebrow">New entry</span>
+      <h1>Add a Quote</h1>
+      <p class="lead">
+        Capture the line, the context, and the people who said it. The rest is
+        just atmosphere.
+      </p>
+    </header>
 
-    <label for="author_info">Author</label>
-    <input
-      type="text"
-      id="author_info"
-      name="author_info"
-      placeholder="Speaker Name (e.g., Albert Einstein)"
-    />
+    <div class="add-quote-body">
+      <form class="quote-form" method="POST" action="{{ url_for('add_quote') }}">
+        <div class="field">
+          <label for="quote_text">Quote</label>
+          <textarea
+            id="quote_text"
+            name="quote_text"
+            rows="5"
+            placeholder="Type the quote exactly as it was said..."
+            required
+          ></textarea>
+          <p class="field-hint">Required. Keep it verbatim if you can.</p>
+        </div>
 
-    <label for="context">Context</label>
-    <input
-      type="text"
-      id="context"
-      name="context"
-      placeholder="Context (e.g., place, funny info)"
-    />
+        <div class="field">
+          <label for="author_info">Who said it?</label>
+          <input
+            id="author_info"
+            name="author_info"
+            type="text"
+            placeholder="e.g. Sam, Priya, and Lee"
+            autocomplete="name"
+          />
+          <p class="field-hint">
+            Separate multiple names with commas or the word “and”.
+          </p>
+        </div>
 
-    <div class="button-row">
-      <button type="submit" class="btn btn-primary">Add Quote</button>
-      <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+        <div class="field">
+          <label for="context">Context</label>
+          <textarea
+            id="context"
+            name="context"
+            rows="3"
+            placeholder="Optional: where, when, or what was happening"
+          ></textarea>
+          <p class="field-hint">Optional. Helps future-you remember.</p>
+        </div>
+
+        <div class="form-actions">
+          <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+          <button type="submit" class="btn btn-primary">Add quote</button>
+        </div>
+      </form>
+
+      <aside class="guide-panel" aria-label="Tips for adding a quote">
+        <h2>Quick tips</h2>
+        <ul class="tips-list">
+          <li>Use exact phrasing for the best search results.</li>
+          <li>Context can be a place, a moment, or a short setup.</li>
+          <li>Multiple authors: “Ben, James, and Kim”.</li>
+        </ul>
+
+        <div class="example-card">
+          <p class="example-label">Example entry</p>
+          <p class="example-quote">“We don’t need a plan, we have vibes.”</p>
+          <p class="example-meta">— Alex and Jordan · Hallway, 2am</p>
+        </div>
+
+        <div class="chip-row">
+          <span class="chip">Auto timestamped</span>
+          <span class="chip">Saved instantly</span>
+          <span class="chip">Searchable later</span>
+        </div>
+      </aside>
     </div>
-  </form>
-</div>
+  </div>
+</section>
 {% endblock %}

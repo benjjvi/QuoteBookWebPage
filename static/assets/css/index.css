@@ -1,67 +1,177 @@
-/* index.css */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
-.container {
-  max-width: 420px;
-  text-align: center;
+/* =========================
+   PAGE THEME OVERRIDE
+   ========================= */
+
+body {
+  background-color: #0f0f0f;
+  color: #f5f5f5;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
 }
 
-.subtitle {
-  color: #999;
-  margin-bottom: 32px;
-}
+/* =========================
+   GRID LAYOUT
+   ========================= */
 
-.button-grid {
+.index-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 buttons per row */
-  gap: 16px; /* spacing between buttons inside the grid */
-  max-width: 520px;
-  margin: 0 auto 24px; /* bottom margin adds space between rows of grids */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
 }
 
-/* each section is a row that wraps buttons */
-.button-section {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 buttons per row */
-  gap: 16px; /* spacing between buttons */
+
+/* =========================
+   CARDS
+   ========================= */
+
+.card {
+  background: rgba(15, 15, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 1.6rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
 }
 
-/* optional: style individual buttons */
-.button {
-  padding: 12px 16px;
-  text-align: center;
-  cursor: pointer;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #f5f5f5;
+.card h1,
+.card h2 {
+  margin-top: 0;
+  font-family: "Fraunces", "Georgia", serif;
 }
 
-.enter-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* =========================
+   INTRO / STATS
+   ========================= */
 
-  aspect-ratio: 1 / 1;
-  width: 100%;
-  max-width: 100%;
-  padding: 12px;
-
-  border-radius: 12px;
-  border: 1px solid #ccc;
-  background: #f5f5f5;
+.card-intro h1 {
+  font-size: 2rem;
 }
 
-.enter-btn.secondary {
-  background: #e6e6e6;
-}
-
-.enter-btn img {
-  width: 95%;
-  height: 95%;
-  object-fit: contain;
+.card-intro .muted {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .stats {
-  margin-top: 10px;
-  margin-bottom: 15px;
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #ffd37a;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.stat-meta {
   font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* =========================
+   NAVIGATION
+   ========================= */
+
+.nav-item-wide {
+  grid-column: span 2;
+}
+
+.card-nav .nav-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 1rem;
+}
+
+.nav-item {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.nav-item img {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0.5rem;
+  opacity: 0.85;
+}
+
+.nav-item span {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.nav-item:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 211, 122, 0.12);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================
+   ICON COLOUR FIX
+   ========================= */
+
+.nav-item img {
+  filter: invert(1) brightness(0.9);
+}
+
+
+/* =========================
+   SPEAKERS
+   ========================= */
+
+.speaker-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.speaker-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.speaker-name {
+  opacity: 0.9;
+}
+
+.speaker-count {
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
 }
