@@ -19,7 +19,7 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue",
     Arial, sans-serif;
-  background-color: transparent;
+  background-color: #0f0f0f;
   color: #111;
 }
 
@@ -35,7 +35,7 @@ body {
 html, body {
   height: 100%;
   margin: 0;
-  background: transparent; /* dark background */
+  background: #0f0f0f;
 }
 
 /* Main content/grid */
@@ -138,5 +138,5 @@ a:hover {
 
 /* Make sure content floats above */
 body {
-  background: transparent;
+  background: #0f0f0f;
 }
