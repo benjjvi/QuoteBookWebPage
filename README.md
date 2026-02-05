@@ -1,4 +1,4 @@
-# 📖 QuoteBookWebPage
+# QuoteBookWebPage
 
 A simple **Flask‑powered web application** that lets you browse and share your Quote Book as a neat, user‑friendly web page.
 
@@ -6,26 +6,27 @@ This project takes your collection of quotes (like your **Spoons Quotes quote bo
 
 ---
 
-## 🚀 Features
+## Features
 
-- 🔍 See quotes beautifully displayed in a web interface
-- 🌐 Built with **Flask** for simplicity and extensibility
-- 🎨 Frontend with HTML/CSS/JS in `templates/` and `static/`
-- 🐍 Python backend in `app.py`
-- 📦 Easily deploy locally or on hosting like **Render / Heroku / GitHub Pages (via static export)**
+- See quotes beautifully displayed in a web interface
+- Built with **Flask** for simplicity and extensibility
+- Frontend with HTML/CSS/JS in `templates/` and `static/`
+- Python backend in `app.py`
+- Animated background canvas with a dark theme
+- Easily deploy locally or on hosting like **Render / Heroku / GitHub Pages (via static export)**
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
-### 📋 Prerequisites
+### Prerequisites
 
 Make sure you have the following installed:
 
 - Python 3.8+
 - pip (Python package manager)
 
-### 🧰 Setup
+### Setup
 
 1. Clone the repo:
 
@@ -54,31 +55,43 @@ Make sure you have the following installed:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 QuoteBookWebPage/
 ├── app.py                   # Flask app entrypoint
 ├── templates/               # HTML templates
 ├── static/                  # CSS/JS/SVG assets
-├── qbformats.py             # Quote parsing logic
+├── qb_formats.py            # Quote parsing logic
 ├── ai_helpers.py            # AI helpers
 ├── PATTERNS.py              # NSFW patterns
 ├── profanities.json         # NSFW patterns
 ├── qb.qbf.template          # Example quote format
-└──  requirements.txt         # Python dependencies
+└── requirements.txt          # Python dependencies
 ```
 ---
 
-## 🎨 Screenshots
+## Screenshots
 
-### 📸 Screenshot – Homepage
+### Homepage
 
-![Homepage view](./docs/1.png)
+![Homepage view](./docs/screenshots/homepage.png)
+
+### Browse Quotes
+
+![Browse quotes view](./docs/screenshots/browse-quotes.png)
+
+### Search
+
+![Search view](./docs/screenshots/search.png)
+
+### Quote Detail
+
+![Quote detail view](./docs/screenshots/quote-detail.png)
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
 The app:
 
@@ -89,7 +102,7 @@ The app:
 
 ---
 
-## 📦 Deploying
+## Deploying
 
 You can deploy this app easily:
 
@@ -102,7 +115,7 @@ You can deploy this app easily:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork it!
 2. Create your feature branch: git checkout -b feature/YourIdea
@@ -112,8 +125,8 @@ You can deploy this app easily:
 
 ---
 
-## 🙌 Thanks
+## Thanks
 
-Made with ☕ and quotes.
+Made with coffee and quotes.
 This project uses icons from [Lucide](https://lucide.dev). Profanities were gathered from [this repo](https://github.com/dsojevic/profanity-list) by [dsojevic](https://github.com/dsojevic).
 Happy quoting! ✨
