@@ -6,9 +6,23 @@ let particles = [];
 const PARTICLE_COUNT = 200;
 const MAX_DISTANCE = 120;
 
+function getDocumentHeight() {
+  const body = document.body;
+  const html = document.documentElement;
+  return Math.max(
+    body.scrollHeight,
+    body.offsetHeight,
+    html.clientHeight,
+    html.scrollHeight,
+    html.offsetHeight
+  );
+}
+
 function resize() {
   width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
+  height = canvas.height = Math.max(window.innerHeight, getDocumentHeight());
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
 }
 
 window.addEventListener("resize", resize);
@@ -91,3 +105,11 @@ if (!prefersReducedMotion) {
     // Respect reduced motion preference: no animation
 }
 
+if ("ResizeObserver" in window) {
+  const observer = new ResizeObserver(() => resize());
+  observer.observe(document.body);
+}
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => resize());
+}

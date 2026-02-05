@@ -11,6 +11,7 @@
 html {
   font-size: 16px;
   line-height: 1.5;
+  background: #0f0f0f;
 }
 
 body {
@@ -19,8 +20,10 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue",
     Arial, sans-serif;
-  background-color: #0f0f0f;
+  background: transparent;
   color: #111;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -33,9 +36,8 @@ body {
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
-  background: #0f0f0f;
 }
 
 /* Main content/grid */
@@ -127,16 +129,18 @@ a:hover {
    ========================= */
 
 #bg-canvas {
-  position: fixed;      /* stay in place behind content */
-  inset: 0;             /* top/right/bottom/left = 0 */
-  z-index: -1;          /* behind everything */
+  position: absolute;      /* cover full document height */
+  inset: 0;                /* top/right/bottom/left = 0 */
+  z-index: 0;              /* behind content but above page background */
   background-color: #0f0f0f; /* dark base color */
-  pointer-events: none; /* clicks pass through */
+  pointer-events: none;    /* clicks pass through */
 }
 
 
 
 /* Make sure content floats above */
-body {
-  background: #0f0f0f;
+.site-wrapper,
+.site-footer {
+  position: relative;
+  z-index: 1;
 }
