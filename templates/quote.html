@@ -55,6 +55,11 @@
       <button type="button" class="btn btn-primary" onclick="permalinkQuote()">
         Permalink
       </button>
+      {% if edit_enabled and edit_authed %}
+        <a href="{{ url_for('edit_quote', quote_id=quote_id) }}" class="btn btn-secondary">
+          Edit
+        </a>
+      {% endif %}
     </div>
 
     <script>

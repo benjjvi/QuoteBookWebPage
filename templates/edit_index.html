@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Quotes{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/edit-quote.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/all-quotes.css') }}"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="edit-page">
+  <div class="edit-card">
+    <header class="edit-header">
+      <span class="eyebrow">Editor</span>
+      <h1>Edit Quotes</h1>
+      <p class="lead">
+        Choose a quote below to edit.
+      </p>
+      <a href="{{ url_for('index') }}" class="btn btn-ghost btn-exit">
+        Back home
+      </a>
+    </header>
+
+    {% if not is_authed %}
+      <form method="post" class="pin-form">
+        <input type="hidden" name="action" value="pin" />
+        <label for="pin" class="pin-label">Enter 4-digit PIN</label>
+        <input
+          id="pin"
+          name="pin"
+          type="password"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="4"
+          autocomplete="one-time-code"
+          class="pin-input"
+        />
+        {% if pin_error %}
+          <p class="form-error">{{ pin_error }}</p>
+        {% endif %}
+
+        <div class="pin-pad" aria-label="PIN pad">
+          {% for digit in [1,2,3,4,5,6,7,8,9] %}
+            <button type="button" class="pin-key" data-digit="{{ digit }}">
+              {{ digit }}
+            </button>
+          {% endfor %}
+          <button type="button" class="pin-key pin-key-secondary" data-action="clear">
+            Clear
+          </button>
+          <button type="button" class="pin-key" data-digit="0">0</button>
+          <button type="button" class="pin-key pin-key-secondary" data-action="delete">
+            Delete
+          </button>
+        </div>
+
+        <div class="pin-actions">
+          <button type="submit" class="btn btn-primary">Unlock</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="quote-grid">
+        {% for q in quotes %}
+          <article class="quote-card">
+            <div class="quote-text">“{{ q.quote }}”</div>
+            <div class="quote-meta">
+              <span class="quote-author">{{ q.authors | join(", ") }}</span>
+              <span class="dot">•</span>
+              <span>{{ q.timestamp | uk_date }}</span>
+              <span class="dot">•</span>
+              <span>{{ q.timestamp | uk_time }}</span>
+            </div>
+            {% if q.context %}
+              <p class="quote-context">{{ q.context }}</p>
+            {% endif %}
+            <a href="{{ url_for('edit_quote', quote_id=q.id) }}" class="btn btn-primary">
+              Edit
+            </a>
+          </article>
+        {% else %}
+          <div class="empty-state">
+            <h2>No quotes found</h2>
+            <p>Add a quote first, then you can edit it here.</p>
+          </div>
+        {% endfor %}
+      </div>
+      {% if total_pages > 1 %}
+        <div class="pagination">
+          {% if page > 1 %}
+            <a href="{{ url_for('edit_index', page=page-1) }}" class="btn btn-ghost">
+              ← Prev
+            </a>
+          {% endif %}
+
+          <form method="get" class="page-jump">
+            <label>
+              Page
+              <input
+                type="number"
+                name="page"
+                value="{{ page }}"
+                min="1"
+                max="{{ total_pages }}"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                class="page-input"
+              />
+              of {{ total_pages }}
+            </label>
+          </form>
+
+          {% if page < total_pages %}
+            <a href="{{ url_for('edit_index', page=page+1) }}" class="btn btn-ghost">
+              Next →
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  (() => {
+    const pinInput = document.getElementById("pin");
+    if (!pinInput) return;
+
+    const pad = document.querySelector(".pin-pad");
+    if (!pad) return;
+
+    pad.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const digit = button.dataset.digit;
+      const action = button.dataset.action;
+
+      if (digit) {
+        if (pinInput.value.length < 4) {
+          pinInput.value += digit;
+        }
+      } else if (action === "clear") {
+        pinInput.value = "";
+      } else if (action === "delete") {
+        pinInput.value = pinInput.value.slice(0, -1);
+      }
+      pinInput.focus();
+    });
+  })();
+</script>
+{% endblock %}

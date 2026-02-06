@@ -229,3 +229,4 @@ package*.json
 app.log
 qb.db
 qb.qbf.bak
+cache/*.json

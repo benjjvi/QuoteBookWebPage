@@ -77,6 +77,12 @@
         <img src="{{ url_for('static', filename='assets/img/stats.svg') }}" alt="" />
         <span>Stats</span>
       </a>
+      {% if edit_enabled %}
+        <a href="{{ url_for('edit_index') }}" class="nav-item">
+          <img src="{{ url_for('static', filename='assets/img/add.svg') }}" alt="" />
+          <span>Edit</span>
+        </a>
+      {% endif %}
     </div>
   </div>
 

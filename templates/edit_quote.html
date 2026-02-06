@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Quote #{{ quote.id }}{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/edit-quote.css') }}"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="edit-page">
+  <div class="edit-card">
+    <header class="edit-header">
+      <span class="eyebrow">Editor</span>
+      <h1>Edit Quote #{{ quote.id }}</h1>
+      <p class="lead">
+        Update the quote, authors, or context.
+      </p>
+    </header>
+
+    {% if not is_authed %}
+      <form method="post" class="pin-form">
+        <input type="hidden" name="action" value="pin" />
+        <label for="pin" class="pin-label">Enter 4-digit PIN</label>
+        <input
+          id="pin"
+          name="pin"
+          type="password"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="4"
+          autocomplete="one-time-code"
+          class="pin-input"
+        />
+        {% if pin_error %}
+          <p class="form-error">{{ pin_error }}</p>
+        {% endif %}
+
+        <div class="pin-pad" aria-label="PIN pad">
+          {% for digit in [1,2,3,4,5,6,7,8,9] %}
+            <button type="button" class="pin-key" data-digit="{{ digit }}">
+              {{ digit }}
+            </button>
+          {% endfor %}
+          <button type="button" class="pin-key pin-key-secondary" data-action="clear">
+            Clear
+          </button>
+          <button type="button" class="pin-key" data-digit="0">0</button>
+          <button type="button" class="pin-key pin-key-secondary" data-action="delete">
+            Delete
+          </button>
+        </div>
+
+        <div class="pin-actions">
+          <a href="{{ url_for('quote_by_id', quote_id=quote.id) }}" class="btn btn-ghost">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">Unlock</button>
+        </div>
+      </form>
+    {% else %}
+      <form method="post" class="edit-form">
+        <input type="hidden" name="action" value="edit" />
+
+        <label for="quote_text">Quote</label>
+        <textarea
+          id="quote_text"
+          name="quote_text"
+          rows="4"
+          required
+        >{{ quote.quote }}</textarea>
+
+        <label for="author_info">Authors</label>
+        <input
+          id="author_info"
+          name="author_info"
+          type="text"
+          value="{{ quote.authors | join(', ') }}"
+        />
+
+        <label for="context">Context (optional)</label>
+        <textarea id="context" name="context" rows="3">{{ quote.context }}</textarea>
+
+        {% if edit_error %}
+          <p class="form-error">{{ edit_error }}</p>
+        {% endif %}
+
+        <div class="form-actions">
+          <a href="{{ url_for('quote_by_id', quote_id=quote.id) }}" class="btn btn-ghost">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  (() => {
+    const pinInput = document.getElementById("pin");
+    if (!pinInput) return;
+
+    const pad = document.querySelector(".pin-pad");
+    if (!pad) return;
+
+    pad.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const digit = button.dataset.digit;
+      const action = button.dataset.action;
+
+      if (digit) {
+        if (pinInput.value.length < 4) {
+          pinInput.value += digit;
+        }
+      } else if (action === "clear") {
+        pinInput.value = "";
+      } else if (action === "delete") {
+        pinInput.value = pinInput.value.slice(0, -1);
+      }
+      pinInput.focus();
+    });
+  })();
+</script>
+{% endblock %}

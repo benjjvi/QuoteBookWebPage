@@ -244,9 +244,7 @@ class QuoteBook:
             if score > 0:
                 scored_results.append((score, q))
 
-        scored_results.sort(
-            key=lambda item: (-item[0], -item[1].timestamp, item[1].id)
-        )
+        scored_results.sort(key=lambda item: (-item[0], -item[1].timestamp, item[1].id))
         return [q for _, q in scored_results]
 
     def get_quotes_between(self, start_ts, end_ts):
@@ -292,6 +290,17 @@ class QuoteBook:
         self.quotes.append(quote)
         self._upsert_quote(quote)
         self._recalculate_stats()
+
+    def update_quote(self, quote_id: int, quote_text: str, authors, context: str):
+        quote = self.get_quote_by_id(quote_id)
+        if not quote:
+            return None
+        quote.quote = self._ensure_terminal_punctuation(quote_text)
+        quote.authors = authors
+        quote.context = context
+        self._upsert_quote(quote)
+        self._recalculate_stats()
+        return quote
 
     def next_id(self) -> int:
         if not self.quotes:
