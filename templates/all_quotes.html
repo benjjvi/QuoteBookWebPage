@@ -99,9 +99,11 @@
         <label>
           Page
           <input
-            type="text"
+            type="number"
             name="page"
             value="{{ page }}"
+            min="1"
+            max="{{ total_pages }}"
             inputmode="numeric"
             pattern="[0-9]*"
             class="page-input"

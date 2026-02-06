@@ -1,8 +1,8 @@
+import logging
 import re
 from calendar import monthrange
 from collections import defaultdict
 from datetime import date, datetime
-import logging
 from zoneinfo import ZoneInfo
 
 UK_TZ = ZoneInfo("Europe/London")
@@ -71,9 +71,7 @@ def build_calendar_data(quotes, year: int, month: int):
             }
         )
 
-    logger.debug(
-        "Built calendar data for %s-%s (%s days).", year, month, days_in_month
-    )
+    logger.debug("Built calendar data for %s-%s (%s days).", year, month, days_in_month)
     return calendar_data
 
 

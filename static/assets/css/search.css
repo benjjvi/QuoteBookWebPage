@@ -74,7 +74,10 @@
   color: #ffffff;
   font-size: 1rem;
   font-family: inherit;
-  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .search-input input:focus {
@@ -168,7 +171,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .btn:hover {

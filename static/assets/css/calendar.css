@@ -102,7 +102,10 @@
   gap: 0.6rem;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .day-card.clickable:hover {
@@ -119,7 +122,11 @@
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 211, 122, 0.9), rgba(255, 154, 98, 0.9));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 211, 122, 0.9),
+    rgba(255, 154, 98, 0.9)
+  );
   display: grid;
   place-items: center;
   font-weight: 600;
@@ -149,7 +156,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .btn:hover {

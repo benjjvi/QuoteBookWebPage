@@ -10,15 +10,13 @@
 {% endblock %}
 
 {% block content %}
-<main class="quote-page">
+<section class="quote-page">
   <article class="quote-card">
-
     {% if not reroll_button %}
       <header class="quote-header">
         <span class="quote-id">Quote #{{ id }}</span>
       </header>
     {% endif %}
-
 
     <blockquote class="quote-text">
       “{{ quote }}”
@@ -50,36 +48,39 @@
           Another quote
         </a>
       {% endif %}
-
-
-      <button class="btn btn-primary" onclick="copyQuote()">
+      <button type="button" class="btn btn-primary" onclick="copyQuote()">
         Copy quote
       </button>
 
-      <button class="btn btn-primary" onclick="permalinkQuote()">
+      <button type="button" class="btn btn-primary" onclick="permalinkQuote()">
         Permalink
       </button>
     </div>
 
     <script>
+      function writeToClipboard(value, successMessage) {
+        if (!navigator.clipboard) {
+          window.prompt("Copy to clipboard:", value);
+          return;
+        }
+
+        navigator.clipboard.writeText(value).then(() => {
+          alert(successMessage);
+        }).catch(() => {
+          window.prompt("Copy to clipboard:", value);
+        });
+      }
+
       function copyQuote() {
         const text = `“{{ quote }}” — {{ author }}`;
-        navigator.clipboard.writeText(text).then(() => {
-          alert("Quote copied!");
-        });
+        writeToClipboard(text, "Quote copied!");
       }
-    </script>
 
-    <script>
       function permalinkQuote() {
         const url = "https://benjjvi.pythonanywhere.com/quote/{{ id }}?_external=1";
-        navigator.clipboard.writeText(url).then(() => {
-          alert("Permalink copied!");
-        });
+        writeToClipboard(url, "Permalink copied!");
       }
     </script>
-
-
   </article>
-</main>
+</section>
 {% endblock %}

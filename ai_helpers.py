@@ -94,7 +94,7 @@ class AI:
                     and cache.get("hash") == top_20_hash
                 ):
                     logger.info("Using cached AI screenplay.")
-                    return json.dumps(cache["data"])
+                    return cache["data"]
 
             except (json.JSONDecodeError, KeyError):
                 pass  # corrupted cache → regenerate
@@ -111,8 +111,8 @@ class AI:
                     with open(cache_file, "r") as f:
                         cache = json.load(f)
 
-                    if cache.get("data", {}).get("hash") == top_20_hash:
-                        return json.dumps(cache["data"])
+                    if cache.get("hash") == top_20_hash:
+                        return cache.get("data", "")
 
                 except (json.JSONDecodeError, KeyError):
                     raise FileNotFoundError(
@@ -158,14 +158,15 @@ class AI:
             "max_tokens": 1200,
         }
 
+        logger.debug("Requesting screenplay from OpenRouter (%s).", payload["model"])
         response = requests.post(
             self.OPENROUTER_URL, headers=headers, json=payload, timeout=60
         )
         response.raise_for_status()
 
         answer = response.json()["choices"][0]["message"]["content"]
-
-        # save
+        if not answer:
+            logger.warning("OpenRouter returned an empty screenplay response.")
 
         return answer
 
@@ -339,7 +340,9 @@ if __name__ == "__main__":
     ai = AI()
     qb = qb_formats.QuoteBook("qb.qbf")
     quotes = qb.quotes
-    scored_quotes = [(q, ai.classify_funny_score(q.quote, q.authors, q.stats)) for q in quotes]
+    scored_quotes = [
+        (q, ai.classify_funny_score(q.quote, q.authors, q.stats)) for q in quotes
+    ]
     top_20 = ai.get_top_20_with_cache(scored_quotes)
 
     sc = ai.get_ai(top_20)

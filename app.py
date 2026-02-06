@@ -3,11 +3,10 @@ import json
 import logging
 import math
 import os
+import random as randlib
 import secrets
-import string
 import time as timelib
 from datetime import datetime, time, timedelta
-import random as randlib
 from zoneinfo import ZoneInfo  # Python 3.9+
 
 from dotenv import load_dotenv
@@ -28,8 +27,6 @@ import ai_helpers
 import datetime_handler
 import qb_formats
 
-logger = logging.getLogger(__name__)
-
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] %(levelname)s: %(message)s",
@@ -44,10 +41,7 @@ qb = qb_formats.QuoteBook()
 ai_worker = ai_helpers.AI()
 
 
-# Define the character set: uppercase, lowercase, digits
-chars = string.ascii_letters + string.digits
-
-CACHE_DIR = "cache"
+UK_TZ = ZoneInfo("Europe/London")
 
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 HOST = os.getenv("HOST", "127.0.0.1")
@@ -63,6 +57,7 @@ app.config.update(
 
 
 def wants_json_response() -> bool:
+    """Return True when the client prefers JSON (API routes and JSON accept headers)."""
     if request.path.startswith("/api/"):
         return True
     best = request.accept_mimetypes.best
@@ -70,14 +65,12 @@ def wants_json_response() -> bool:
         return False
     return (
         best == "application/json"
-        and request.accept_mimetypes[best]
-        >= request.accept_mimetypes["text/html"]
+        and request.accept_mimetypes[best] >= request.accept_mimetypes["text/html"]
     )
 
 
 def to_uk_datetime(ts):
-    uk_tz = ZoneInfo("Europe/London")
-    dt = datetime.fromtimestamp(ts, tz=uk_tz)
+    dt = datetime.fromtimestamp(ts, tz=UK_TZ)
     day = dt.day
     suffix = (
         "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
@@ -86,17 +79,17 @@ def to_uk_datetime(ts):
 
 
 def uk_date(epoch):
-    return datetime.fromtimestamp(epoch, ZoneInfo("Europe/London")).strftime("%d %B %Y")
+    return datetime.fromtimestamp(epoch, UK_TZ).strftime("%d %B %Y")
 
 
 def uk_time(epoch):
-    return datetime.fromtimestamp(epoch, ZoneInfo("Europe/London")).strftime("%H:%M")
+    return datetime.fromtimestamp(epoch, UK_TZ).strftime("%H:%M")
 
 
 def month_name(month: int) -> str:
     try:
         return datetime(2000, int(month), 1).strftime("%B")
-    except Exception:
+    except (TypeError, ValueError):
         return ""
 
 
@@ -183,10 +176,11 @@ def log_request(response):
 @app.teardown_request
 def log_exception(exception):
     if exception:
-        app.logger.info(
-            "Unhandled exception on %s %s",
+        app.logger.warning(
+            "Unhandled exception on %s %s: %s",
             request.method,
             request.path,
+            type(exception).__name__,
         )
 
 
@@ -215,7 +209,7 @@ def index():
         "index.html",
         total_quotes=qb.total_quotes,
         speaker_counts=qb.speaker_counts,
-        now=datetime.now(ZoneInfo("Europe/London")),
+        now=datetime.now(UK_TZ),
     )
 
 
@@ -314,9 +308,7 @@ def battle():
             loser.stats["battles"] += 1
 
             qb._save()
-            app.logger.info(
-                "Battle result: winner=%s loser=%s", winner_id, loser_id
-            )
+            app.logger.info("Battle result: winner=%s loser=%s", winner_id, loser_id)
         else:
             app.logger.warning(
                 "Battle POST with missing quote(s): winner=%s loser=%s",
@@ -337,15 +329,14 @@ def battle():
         quote_b=quote_b,
     )
 
+
 @app.route("/random")
 def random():
     q = qb.get_random_quote()
     app.logger.info("Random quote served: %s", q.id)
 
     # Decode UTC timestamp into UK local date and time
-    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
-        q.timestamp
-    )
+    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
 
     return render_template(
         "quote.html",
@@ -368,9 +359,7 @@ def quote_by_id(quote_id):
         abort(404)
 
     # Decode UTC timestamp into UK local date and time
-    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
-        q.timestamp
-    )
+    date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
 
     return render_template(
         "quote.html",
@@ -557,6 +546,7 @@ def health():
 def cuppa():
     abort(418)
 
+
 @app.route("/err")
 def err():
     abort(500)
@@ -568,14 +558,19 @@ def handle_http_error(e):
         return jsonify(error=e.name, description=e.description), e.code
 
     return (
-        render_template("error.html", code=e.code, name=e.name, description=e.description),
+        render_template(
+            "error.html", code=e.code, name=e.name, description=e.description
+        ),
         e.code,
     )
 
 
 @app.errorhandler(Exception)
 def handle_unexpected_error(e):
-    app.logger.exception("Unhandled exception", exc_info=e)
+    app.logger.error(
+        "Unhandled exception",
+        exc_info=(type(e), e, e.__traceback__),
+    )
     description = (
         "The server encountered an internal error and was unable to complete your request. "
         "Either the server is overloaded or there is an error in the application."
@@ -585,10 +580,15 @@ def handle_unexpected_error(e):
         return jsonify(error="Internal Server Error", description=description), 500
 
     return (
-        render_template("error.html", code=500, name="Internal Server Error", description=description),
+        render_template(
+            "error.html",
+            code=500,
+            name="Internal Server Error",
+            description=description,
+        ),
         500,
     )
 
 
 if __name__ == "__main__":
-    app.run(debug=False if IS_PROD else True, host=HOST, port=PORT)
+    app.run(debug=not IS_PROD, host=HOST, port=PORT)

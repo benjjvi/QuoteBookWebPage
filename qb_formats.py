@@ -91,6 +91,7 @@ class QuoteBook:
             except sqlite3.Error:
                 existing_count = 0
 
+        # Only migrate when the database has no rows.
         if existing_count > 0:
             return
 
@@ -101,8 +102,12 @@ class QuoteBook:
         if not os.path.exists(json_path):
             return
 
-        with open(json_path, "r", encoding="utf-8") as f:
-            raw_quotes = json.load(f)
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                raw_quotes = json.load(f)
+        except json.JSONDecodeError as exc:
+            logger.error("Failed to parse %s: %s", json_path, exc)
+            return
 
         if not raw_quotes:
             return
@@ -121,18 +126,25 @@ class QuoteBook:
                         json.dumps(q.get("authors", []), ensure_ascii=False),
                         q.get("timestamp", 0),
                         q.get("context", ""),
-                        json.dumps(q.get("stats", DEFAULT_STATS.copy()), ensure_ascii=False),
+                        json.dumps(
+                            q.get("stats", DEFAULT_STATS.copy()), ensure_ascii=False
+                        ),
                     )
                     for q in raw_quotes
                 ],
             )
 
-        logger.info("Migrated %s quotes from %s to %s", len(raw_quotes), json_path, self.filepath)
+        logger.info(
+            "Migrated %s quotes from %s to %s",
+            len(raw_quotes),
+            json_path,
+            self.filepath,
+        )
 
     def _load(self) -> None:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, quote, authors, timestamp, context, stats FROM quotes"
+                "SELECT id, quote, authors, timestamp, context, stats FROM quotes ORDER BY id"
             ).fetchall()
 
         self.quotes = [

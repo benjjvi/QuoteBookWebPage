@@ -21,7 +21,6 @@ body {
   align-items: start;
 }
 
-
 /* =========================
    CARDS
    ========================= */
@@ -114,6 +113,7 @@ body {
   height: 28px;
   margin-bottom: 0.5rem;
   opacity: 0.85;
+  filter: invert(1) brightness(0.9);
 }
 
 .nav-item span {
@@ -126,15 +126,6 @@ body {
   background: rgba(255, 211, 122, 0.12);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
-
-/* =========================
-   ICON COLOUR FIX
-   ========================= */
-
-.nav-item img {
-  filter: invert(1) brightness(0.9);
-}
-
 
 /* =========================
    SPEAKERS
@@ -162,16 +153,4 @@ body {
 .speaker-count {
   opacity: 0.6;
   font-size: 0.85rem;
-}
-
-.dashboard {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.5rem;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
 }

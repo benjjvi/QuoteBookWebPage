@@ -24,8 +24,16 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top left, rgba(255, 180, 90, 0.12), transparent 50%),
-    radial-gradient(circle at 80% 30%, rgba(106, 177, 255, 0.14), transparent 60%);
+    radial-gradient(
+      circle at top left,
+      rgba(255, 180, 90, 0.12),
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 30%,
+      rgba(106, 177, 255, 0.14),
+      transparent 60%
+    );
   pointer-events: none;
 }
 
@@ -93,7 +101,10 @@
   color: #ffffff;
   font-size: 1rem;
   font-family: inherit;
-  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .field input:focus,
@@ -133,7 +144,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .btn:hover {
