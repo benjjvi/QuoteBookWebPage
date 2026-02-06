@@ -7,6 +7,8 @@ import random as randlib
 import secrets
 import time as timelib
 from datetime import datetime, time, timedelta
+from collections import Counter
+import re
 from zoneinfo import ZoneInfo  # Python 3.9+
 
 from dotenv import load_dotenv
@@ -431,6 +433,117 @@ def search():
         results=results,  # List[Quote]
         len_results=len(results),
         query=query,
+    )
+
+
+@app.route("/stats")
+def stats():
+    # Aggregate all stats here to keep templates simple.
+    quotes = qb.quotes
+    total_quotes = qb.total_quotes
+    unique_authors = len(qb.speaker_counts)
+    top_authors = qb.speaker_counts[:5]
+
+    word_counts = [len(re.findall(r"\b\w+\b", q.quote)) for q in quotes]
+    avg_words = round(sum(word_counts) / len(word_counts), 1) if word_counts else 0
+    avg_chars = round(sum(len(q.quote) for q in quotes) / len(quotes), 1) if quotes else 0
+
+    longest_quote = max(quotes, key=lambda q: len(q.quote), default=None)
+    shortest_quote = min(quotes, key=lambda q: len(q.quote), default=None)
+
+    newest_quote = max(quotes, key=lambda q: q.timestamp, default=None)
+    oldest_quote = min(quotes, key=lambda q: q.timestamp, default=None)
+
+    day_counts = Counter()
+    hour_counts = Counter()
+    for quote in quotes:
+        dt = datetime.fromtimestamp(quote.timestamp, tz=UK_TZ)
+        day_counts[dt.date()] += 1
+        hour_counts[dt.hour] += 1
+
+    busiest_day = None
+    if day_counts:
+        day, count = day_counts.most_common(1)[0]
+        busiest_day = {
+            "label": day.strftime("%d %b %Y"),
+            "count": count,
+        }
+
+    hour_buckets = [
+        ("Late night", "12am-3am", range(0, 3)),
+        ("Early morning", "3am-6am", range(3, 6)),
+        ("Morning", "6am-9am", range(6, 9)),
+        ("Late morning", "9am-12pm", range(9, 12)),
+        ("Afternoon", "12pm-3pm", range(12, 15)),
+        ("Late afternoon", "3pm-6pm", range(15, 18)),
+        ("Evening", "6pm-9pm", range(18, 21)),
+        ("Late evening", "9pm-12am", range(21, 24)),
+    ]
+    bucket_data = []
+    for label, range_label, hours in hour_buckets:
+        count = sum(hour_counts[h] for h in hours)
+        bucket_data.append(
+            {
+                "label": label,
+                "range_label": range_label,
+                "count": count,
+            }
+        )
+    max_bucket = max((bucket["count"] for bucket in bucket_data), default=1)
+    for bucket in bucket_data:
+        bucket["percent"] = int((bucket["count"] / max_bucket) * 100) if max_bucket else 0
+
+    total_battle_entries = sum(q.stats.get("battles", 0) for q in quotes)
+    total_battles = total_battle_entries // 2 if total_battle_entries else 0
+    most_battled = max(
+        quotes, key=lambda q: q.stats.get("battles", 0), default=None
+    )
+
+    top_winners = sorted(
+        quotes, key=lambda q: q.stats.get("wins", 0), reverse=True
+    )
+    top_winners = [q for q in top_winners if q.stats.get("wins", 0) > 0][:5]
+
+    min_battles_for_rate = 3
+    win_rate_candidates = []
+    for q in quotes:
+        battles = q.stats.get("battles", 0)
+        if battles >= min_battles_for_rate:
+            win_rate = q.stats.get("wins", 0) / battles
+            win_rate_candidates.append((q, win_rate))
+
+    best_win_rates = sorted(win_rate_candidates, key=lambda x: x[1], reverse=True)[:5]
+
+    # AI heuristic scoring (no external API call).
+    funny_scores = []
+    for q in quotes:
+        score = ai_worker.classify_funny_score(q.quote, q.authors, q.stats)
+        funny_scores.append((q, score))
+    funny_scores.sort(key=lambda x: x[1], reverse=True)
+    top_funny = funny_scores[:5]
+    avg_funny = round(
+        sum(score for _, score in funny_scores) / len(funny_scores), 2
+    ) if funny_scores else 0
+
+    return render_template(
+        "stats.html",
+        total_quotes=total_quotes,
+        unique_authors=unique_authors,
+        top_authors=top_authors,
+        avg_words=avg_words,
+        avg_chars=avg_chars,
+        longest_quote=longest_quote,
+        shortest_quote=shortest_quote,
+        newest_quote=newest_quote,
+        oldest_quote=oldest_quote,
+        busiest_day=busiest_day,
+        hour_buckets=bucket_data,
+        total_battles=total_battles,
+        most_battled=most_battled,
+        top_winners=top_winners,
+        best_win_rates=best_win_rates,
+        top_funny=top_funny,
+        avg_funny=avg_funny,
     )
 
 
