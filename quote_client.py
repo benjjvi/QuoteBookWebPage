@@ -119,7 +119,9 @@ class QuoteClient:
             return self._local.speaker_counts
 
         payload = self._get_json("/api/speakers")
-        return [(item["speaker"], item["count"]) for item in payload.get("speakers", [])]
+        return [
+            (item["speaker"], item["count"]) for item in payload.get("speakers", [])
+        ]
 
     def add_quote(self, quote_text: str, authors, context: str, timestamp: int):
         """Insert a quote via local DB or remote API."""
@@ -143,6 +145,28 @@ class QuoteClient:
                 "timestamp": timestamp,
             },
         )
+        return self._quote_from_dict(payload)
+
+    def update_quote(self, quote_id: int, quote_text: str, authors, context: str):
+        """Update a quote via local DB or remote API."""
+        if self._local:
+            return self._local.update_quote(
+                quote_id=quote_id,
+                quote_text=quote_text,
+                authors=authors,
+                context=context,
+            )
+
+        payload = self._put_json(
+            f"/api/quotes/{quote_id}",
+            {
+                "quote": quote_text,
+                "authors": authors,
+                "context": context,
+            },
+        )
+        if not payload:
+            return None
         return self._quote_from_dict(payload)
 
     def record_battle(self, winner_id: int, loser_id: int):
@@ -203,6 +227,16 @@ class QuoteClient:
         if self.base_url:
             logger.info("Quote client request: POST %s", url)
         response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+        return response.json()
+
+    def _put_json(self, path: str, payload: dict) -> dict:
+        url = self._url(path)
+        if self.base_url:
+            logger.info("Quote client request: PUT %s", url)
+        response = requests.put(url, json=payload, timeout=10)
+        if response.status_code == 404:
+            return {}
         response.raise_for_status()
         return response.json()
 

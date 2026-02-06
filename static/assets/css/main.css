@@ -139,3 +139,86 @@ a:hover {
   position: relative;
   z-index: 1;
 }
+
+/* =========================
+   COOKIE BANNER
+   ========================= */
+
+.cookie-banner {
+  position: fixed;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 5;
+  display: none;
+  justify-content: center;
+}
+
+.cookie-banner.is-visible {
+  display: flex;
+}
+
+.cookie-content {
+  width: min(820px, 100%);
+  background: rgba(12, 12, 14, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 1.2rem 1.5rem;
+  color: #f7f4ef;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
+}
+
+.cookie-content p {
+  margin: 0.35rem 0 0;
+  color: rgba(247, 244, 239, 0.75);
+}
+
+.cookie-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cookie-actions .btn {
+  border-radius: 999px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.85rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.cookie-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+}
+
+.cookie-actions .btn-ghost {
+  background: transparent;
+  color: #f2eee7;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.cookie-actions .btn-primary {
+  background: linear-gradient(135deg, #ffd37a, #ff9a62);
+  color: #1b1308;
+}
+
+@media (max-width: 640px) {
+  .cookie-banner {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+}

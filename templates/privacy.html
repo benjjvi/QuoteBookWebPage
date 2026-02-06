@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Cookie Policy{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/privacy.css') }}"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="privacy-page">
+  <div class="privacy-card">
+    <span class="eyebrow">Policy</span>
+    <h1>Cookie Policy</h1>
+    <p class="lead">
+      This site uses cookies and local storage to keep things running smoothly.
+    </p>
+
+    <h2>What we store</h2>
+    <ul>
+      <li>
+        Session cookies to keep you logged in for edit access (PIN unlock).
+      </li>
+      <li>
+        A local preference indicating whether you accepted or declined the cookie prompt.
+      </li>
+    </ul>
+
+    <h2>Why we store it</h2>
+    <ul>
+      <li>To remember your edit access during a session.</li>
+      <li>To avoid showing the cookie prompt repeatedly.</li>
+    </ul>
+
+    <h2>How to clear</h2>
+    <p>
+      You can clear cookies and site data from your browser settings at any time.
+    </p>
+
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+  </div>
+</section>
+{% endblock %}

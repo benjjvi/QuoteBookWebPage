@@ -196,18 +196,56 @@ class QuoteBook:
     # ------------------------
 
     def search_quotes(self, query: str):
+        query = (query or "").strip()
+        if not query:
+            return []
+
         query_lower = query.lower()
-        results = []
+        query_tokens = re.findall(r"\b\w+\b", query_lower)
+        query_token_set = set(query_tokens)
 
+        scored_results = []
         for q in self.quotes:
-            if (
-                query_lower in q.quote.lower()
-                or any(query_lower in author.lower() for author in q.authors)
-                or (q.context and query_lower in q.context.lower())
-            ):
-                results.append(q)
+            quote_text = q.quote.lower()
+            authors_text = " ".join(q.authors).lower()
+            context_text = (q.context or "").lower()
 
-        return results
+            score = 0.0
+
+            # Phrase boosts
+            if query_lower in quote_text:
+                score += 8.0
+            if query_lower in authors_text:
+                score += 10.0
+            if query_lower in context_text:
+                score += 5.0
+
+            # Token-level boosts
+            quote_tokens = set(re.findall(r"\b\w+\b", quote_text))
+            author_tokens = set(re.findall(r"\b\w+\b", authors_text))
+            context_tokens = set(re.findall(r"\b\w+\b", context_text))
+
+            for token in query_tokens:
+                if token in quote_tokens:
+                    score += 2.0
+                if token in author_tokens:
+                    score += 3.0
+                if token in context_tokens:
+                    score += 1.0
+
+            if query_token_set and all(
+                token in quote_tokens
+                or token in author_tokens
+                or token in context_tokens
+                for token in query_token_set
+            ):
+                score += 3.0
+
+            if score > 0:
+                scored_results.append((score, q))
+
+        scored_results.sort(key=lambda item: (-item[0], -item[1].timestamp, item[1].id))
+        return [q for _, q in scored_results]
 
     def get_quotes_between(self, start_ts, end_ts):
         return [q for q in self.quotes if start_ts <= q.timestamp <= end_ts]
@@ -236,10 +274,33 @@ class QuoteBook:
     # Mutations
     # ------------------------
 
+    @staticmethod
+    def _ensure_terminal_punctuation(text: str) -> str:
+        if not text:
+            return text
+        stripped = text.rstrip()
+        if not stripped:
+            return text
+        if stripped[-1] in ".!?…":
+            return text
+        return f"{stripped}."
+
     def add_quote(self, quote: Quote):
+        quote.quote = self._ensure_terminal_punctuation(quote.quote)
         self.quotes.append(quote)
         self._upsert_quote(quote)
         self._recalculate_stats()
+
+    def update_quote(self, quote_id: int, quote_text: str, authors, context: str):
+        quote = self.get_quote_by_id(quote_id)
+        if not quote:
+            return None
+        quote.quote = self._ensure_terminal_punctuation(quote_text)
+        quote.authors = authors
+        quote.context = context
+        self._upsert_quote(quote)
+        self._recalculate_stats()
+        return quote
 
     def next_id(self) -> int:
         if not self.quotes:

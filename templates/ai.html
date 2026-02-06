@@ -14,61 +14,74 @@
   <div class="ai-card">
     <div class="ai-header">
       <span class="eyebrow">AI Studio</span>
-      <h1>Generating screenplay</h1>
-      <p class="lead">
-        Pulling the funniest quotes and weaving them into a screenplay.
-      </p>
+      {% if ai_available %}
+        <h1>Generating screenplay</h1>
+        <p class="lead">
+          Pulling the funniest quotes and weaving them into a screenplay.
+        </p>
+      {% else %}
+        <h1>AI is unavailable</h1>
+        <p class="lead">
+          Set <code>OPENROUTER_KEY</code> in your environment to enable
+          screenplay generation.
+        </p>
+        <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+      {% endif %}
     </div>
 
-    <div class="ai-loader">
-      <div class="spinner" aria-hidden="true"></div>
-      <p class="status" id="loadingText" role="status" aria-live="polite">
-        Loading AI screenplay...
-      </p>
-    </div>
+    {% if ai_available %}
+      <div class="ai-loader">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="status" id="loadingText" role="status" aria-live="polite">
+          Loading AI screenplay...
+        </p>
+      </div>
+    {% endif %}
   </div>
 </section>
 
-<script>
-  function decodeEscapes(text) {
-    if (!text || typeof text !== "string") return text;
-    return text
-      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
-        String.fromCharCode(parseInt(hex, 16))
-      )
-      .replace(/\\n/g, "\n")
-      .replace(/\\r/g, "\r")
-      .replace(/\\t/g, "\t")
-      .replace(/\\"/g, "\"")
-      .replace(/\\\\/g, "\\");
-  }
+{% if ai_available %}
+  <script>
+    function decodeEscapes(text) {
+      if (!text || typeof text !== "string") return text;
+      return text
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+          String.fromCharCode(parseInt(hex, 16))
+        )
+        .replace(/\\n/g, "\n")
+        .replace(/\\r/g, "\r")
+        .replace(/\\t/g, "\t")
+        .replace(/\\"/g, "\"")
+        .replace(/\\\\/g, "\\");
+    }
 
-  fetch("/ai_screenplay")
-    .then((res) => {
-      if (!res.ok) throw new Error("Network response was not OK");
-      return res.json();
-    })
-    .then((data) => {
-      const screenplay = decodeEscapes(data.resp || "");
-      const payload = JSON.stringify({ screenplay });
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = "/ai_screenplay_render";
+    fetch("/ai_screenplay")
+      .then((res) => {
+        if (!res.ok) throw new Error("Network response was not OK");
+        return res.json();
+      })
+      .then((data) => {
+        const screenplay = decodeEscapes(data.resp || "");
+        const payload = JSON.stringify({ screenplay });
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "/ai_screenplay_render";
 
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = "data";
-      input.value = payload;
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "data";
+        input.value = payload;
 
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
-    })
-    .catch((err) => {
-      console.error(err);
-      const text = document.getElementById("loadingText");
-      text.innerText = "Error loading AI screenplay";
-      text.classList.add("error");
-    });
-</script>
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+      })
+      .catch((err) => {
+        console.error(err);
+        const text = document.getElementById("loadingText");
+        text.innerText = "Error loading AI screenplay";
+        text.classList.add("error");
+      });
+  </script>
+{% endif %}
 {% endblock %}

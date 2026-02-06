@@ -8,6 +8,7 @@ import secrets
 import time as timelib
 from collections import Counter
 from datetime import datetime, time, timedelta
+from urllib.parse import urljoin
 from zoneinfo import ZoneInfo  # Python 3.9+
 
 from dotenv import load_dotenv
@@ -20,6 +21,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from werkzeug.exceptions import HTTPException
@@ -47,13 +49,16 @@ UK_TZ = ZoneInfo("Europe/London")
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = os.getenv("PORT", "8040")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip()
+EDIT_PIN = os.getenv("EDIT_PIN", "").strip()
 PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
 
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,  # prevents JS from reading cookie
-    SESSION_COOKIE_SECURE=True,  # only send cookie over HTTPS
+    SESSION_COOKIE_SECURE=IS_PROD,  # only send cookie over HTTPS in prod
     SESSION_COOKIE_SAMESITE="Lax",  # protects against CSRF
+    PERMANENT_SESSION_LIFETIME=timedelta(minutes=15),
 )
 
 
@@ -92,6 +97,15 @@ def month_name(month: int) -> str:
         return datetime(2000, int(month), 1).strftime("%B")
     except (TypeError, ValueError):
         return ""
+
+
+def build_public_url(path: str) -> str:
+    base = PUBLIC_BASE_URL or request.url_root
+    if not base:
+        return path
+    if not base.endswith("/"):
+        base = f"{base}/"
+    return urljoin(base, path.lstrip("/"))
 
 
 app.jinja_env.filters["month_name"] = month_name
@@ -211,6 +225,7 @@ def index():
         total_quotes=quote_store.get_total_quotes(),
         speaker_counts=quote_store.get_speaker_counts(),
         now=datetime.now(UK_TZ),
+        edit_enabled=bool(EDIT_PIN),
     )
 
 
@@ -251,16 +266,22 @@ def add_quote():
 
 @app.route("/ai")
 def ai():
-    return render_template("ai.html")
+    return render_template("ai.html", ai_available=ai_worker.can_generate)
 
 
 @app.route("/ai_screenplay")
 def ai_screenplay():
+    if not ai_worker.can_generate:
+        return (
+            jsonify(
+                error="AI screenplay generation is disabled. Set OPENROUTER_KEY to enable."
+            ),
+            503,
+        )
     app.logger.info("AI screenplay requested.")
     quotes = quote_store.get_all_quotes()
     scored_quotes = [
-        (q, ai_worker.classify_funny_score(q.quote, q.authors, q.stats))
-        for q in quotes
+        (q, ai_worker.classify_funny_score(q.quote, q.authors, q.stats)) for q in quotes
     ]
     top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
     resp = ai_worker.get_ai(top_20)
@@ -331,6 +352,9 @@ def random():
         context=q.context,
         reroll_button=True,
         quote_id=q.id,
+        permalink=build_public_url(url_for("quote_by_id", quote_id=q.id)),
+        edit_enabled=bool(EDIT_PIN),
+        edit_authed=bool(session.get("edit_authed")),
     )
 
 
@@ -354,6 +378,112 @@ def quote_by_id(quote_id):
         context=q.context,
         reroll_button=False,
         quote_id=quote_id,
+        permalink=build_public_url(url_for("quote_by_id", quote_id=quote_id)),
+        edit_enabled=bool(EDIT_PIN),
+        edit_authed=bool(session.get("edit_authed")),
+    )
+
+
+@app.route("/quote/<int:quote_id>/edit", methods=["GET", "POST"])
+def edit_quote(quote_id):
+    if not EDIT_PIN:
+        return (
+            render_template(
+                "error.html",
+                code=503,
+                name="Edit Disabled",
+                description="Editing is disabled. Set EDIT_PIN to enable editing.",
+            ),
+            503,
+        )
+
+    quote = quote_store.get_quote_by_id(quote_id)
+    if not quote:
+        abort(404)
+
+    pin_error = None
+    edit_error = None
+
+    if request.method == "POST":
+        action = request.form.get("action", "").strip().lower()
+
+        if action == "pin":
+            pin = (request.form.get("pin") or "").strip()
+            if pin == EDIT_PIN:
+                session["edit_authed"] = True
+                session.permanent = True
+                return redirect(url_for("edit_quote", quote_id=quote_id))
+            pin_error = "Incorrect PIN. Try again."
+
+        if action == "edit":
+            if not session.get("edit_authed"):
+                pin_error = "Please enter your PIN to edit."
+            else:
+                quote_text = request.form.get("quote_text", "").strip()
+                context = request.form.get("context", "").strip()
+                author_raw = request.form.get("author_info", "Unknown").strip()
+
+                if not quote_text:
+                    edit_error = "Quote text cannot be empty."
+                else:
+                    authors = quote_store.parse_authors(author_raw)
+                    updated = quote_store.update_quote(
+                        quote_id=quote_id,
+                        quote_text=quote_text,
+                        authors=authors,
+                        context=context,
+                    )
+                    if not updated:
+                        abort(404)
+                    return redirect(url_for("quote_by_id", quote_id=quote_id))
+
+    return render_template(
+        "edit_quote.html",
+        quote=quote,
+        pin_error=pin_error,
+        edit_error=edit_error,
+        is_authed=bool(session.get("edit_authed")),
+    )
+
+
+@app.route("/edit", methods=["GET", "POST"])
+def edit_index():
+    if not EDIT_PIN:
+        return (
+            render_template(
+                "error.html",
+                code=503,
+                name="Edit Disabled",
+                description="Editing is disabled. Set EDIT_PIN to enable editing.",
+            ),
+            503,
+        )
+
+    pin_error = None
+
+    if request.method == "POST":
+        action = request.form.get("action", "").strip().lower()
+        if action == "pin":
+            pin = (request.form.get("pin") or "").strip()
+            if pin == EDIT_PIN:
+                session["edit_authed"] = True
+                session.permanent = True
+                return redirect(url_for("edit_index"))
+            pin_error = "Incorrect PIN. Try again."
+
+    page = request.args.get("page", 1, type=int)
+    quotes = []
+    total_pages = 1
+    if session.get("edit_authed"):
+        quotes, page, total_pages = quote_store.get_quote_page(None, page, 10)
+
+    return render_template(
+        "edit_index.html",
+        quotes=quotes,
+        page=page,
+        total_pages=total_pages,
+        pin_error=pin_error,
+        is_authed=bool(session.get("edit_authed")),
     )
 
 
@@ -407,7 +537,9 @@ def stats():
 
     word_counts = [len(re.findall(r"\b\w+\b", q.quote)) for q in quotes]
     avg_words = round(sum(word_counts) / len(word_counts), 1) if word_counts else 0
-    avg_chars = round(sum(len(q.quote) for q in quotes) / len(quotes), 1) if quotes else 0
+    avg_chars = (
+        round(sum(len(q.quote) for q in quotes) / len(quotes), 1) if quotes else 0
+    )
 
     longest_quote = max(quotes, key=lambda q: len(q.quote), default=None)
     shortest_quote = min(quotes, key=lambda q: len(q.quote), default=None)
@@ -452,17 +584,15 @@ def stats():
         )
     max_bucket = max((bucket["count"] for bucket in bucket_data), default=1)
     for bucket in bucket_data:
-        bucket["percent"] = int((bucket["count"] / max_bucket) * 100) if max_bucket else 0
+        bucket["percent"] = (
+            int((bucket["count"] / max_bucket) * 100) if max_bucket else 0
+        )
 
     total_battle_entries = sum(q.stats.get("battles", 0) for q in quotes)
     total_battles = total_battle_entries // 2 if total_battle_entries else 0
-    most_battled = max(
-        quotes, key=lambda q: q.stats.get("battles", 0), default=None
-    )
+    most_battled = max(quotes, key=lambda q: q.stats.get("battles", 0), default=None)
 
-    top_winners = sorted(
-        quotes, key=lambda q: q.stats.get("wins", 0), reverse=True
-    )
+    top_winners = sorted(quotes, key=lambda q: q.stats.get("wins", 0), reverse=True)
     top_winners = [q for q in top_winners if q.stats.get("wins", 0) > 0][:5]
 
     min_battles_for_rate = 3
@@ -482,9 +612,11 @@ def stats():
         funny_scores.append((q, score))
     funny_scores.sort(key=lambda x: x[1], reverse=True)
     top_funny = funny_scores[:5]
-    avg_funny = round(
-        sum(score for _, score in funny_scores) / len(funny_scores), 2
-    ) if funny_scores else 0
+    avg_funny = (
+        round(sum(score for _, score in funny_scores) / len(funny_scores), 2)
+        if funny_scores
+        else 0
+    )
 
     return render_template(
         "stats.html",
@@ -608,6 +740,11 @@ def api_latest_quote():
 @app.route("/credits")
 def credits():
     return render_template("credits.html")
+
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
 
 
 @app.route("/health")

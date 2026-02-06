@@ -23,10 +23,13 @@ logger = logging.getLogger(__name__)
 
 class AI:
     def __init__(self):
-        self.OPENROUTER_KEY = os.getenv("OPENROUTER_KEY", "")
+        self.OPENROUTER_KEY = os.getenv("OPENROUTER_KEY", "").strip()
         self.OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-        if self.OPENROUTER_KEY == "":
-            raise ValueError("OPENROUTER_KEY not set in environment variables")
+        self.can_generate = bool(self.OPENROUTER_KEY)
+        if not self.can_generate:
+            logger.warning(
+                "OPENROUTER_KEY not set; AI screenplay generation is disabled."
+            )
         self.sentiment = SentimentIntensityAnalyzer()
 
         with open("profanities.json", "r", encoding="utf-8") as f:
@@ -133,6 +136,8 @@ class AI:
         return ai_response
 
     def generate_screenplay(self, quotes):
+        if not self.can_generate:
+            raise RuntimeError("OPENROUTER_KEY not set; AI generation disabled.")
         prompt = self.build_screenplay_prompt(quotes)
 
         headers = {

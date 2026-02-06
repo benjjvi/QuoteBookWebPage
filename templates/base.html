@@ -79,7 +79,48 @@
       {% block content %}{% endblock %}
     </main>
 
+    <div class="cookie-banner" id="cookieBanner" role="dialog" aria-live="polite">
+      <div class="cookie-content">
+        <div>
+          <strong>Cookies</strong>
+          <p>
+            We use cookies to keep this site running and remember your preferences.
+            <a href="{{ url_for('privacy') }}">Read the cookie policy</a>.
+          </p>
+        </div>
+        <div class="cookie-actions">
+          <button type="button" class="btn btn-ghost" id="cookieDecline">
+            Decline
+          </button>
+          <button type="button" class="btn btn-primary" id="cookieAccept">
+            Accept
+          </button>
+        </div>
+      </div>
+    </div>
+
     {% include "footer.html" %}
     <script src="{{ url_for('static', filename='assets/js/background.js') }}"></script>
+    <script>
+      (() => {
+        const banner = document.getElementById("cookieBanner");
+        const accept = document.getElementById("cookieAccept");
+        const decline = document.getElementById("cookieDecline");
+        if (!banner || !accept || !decline) return;
+
+        const key = "qb_cookie_consent";
+        if (!localStorage.getItem(key)) {
+          banner.classList.add("is-visible");
+        }
+
+        function closeWith(value) {
+          localStorage.setItem(key, value);
+          banner.classList.remove("is-visible");
+        }
+
+        accept.addEventListener("click", () => closeWith("accepted"));
+        decline.addEventListener("click", () => closeWith("declined"));
+      })();
+    </script>
   </body>
 </html>

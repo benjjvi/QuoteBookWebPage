@@ -1,6 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
-.ai-page {
+.privacy-page {
   grid-column: 1 / -1;
   display: flex;
   justify-content: center;
@@ -9,8 +9,8 @@
   color: #f7f4ef;
 }
 
-.ai-card {
-  width: min(640px, 100%);
+.privacy-card {
+  width: min(720px, 100%);
   background: rgba(15, 15, 18, 0.9);
   border-radius: 26px;
   padding: 2.2rem;
@@ -20,7 +20,7 @@
   overflow: hidden;
 }
 
-.ai-card::before {
+.privacy-card::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -38,15 +38,20 @@
   pointer-events: none;
 }
 
-.ai-card > * {
+.privacy-card > * {
   position: relative;
   z-index: 1;
 }
 
-.ai-header h1 {
+.privacy-card h1 {
   font-family: "Fraunces", "Georgia", serif;
   font-size: clamp(2rem, 3vw, 2.8rem);
   margin: 0 0 0.6rem 0;
+}
+
+.privacy-card h2 {
+  font-size: 1.2rem;
+  margin: 1.6rem 0 0.6rem;
 }
 
 .eyebrow {
@@ -61,8 +66,20 @@
 .lead {
   font-size: 1rem;
   color: rgba(255, 255, 255, 0.7);
-  max-width: 60ch;
-  margin: 0;
+  margin: 0 0 1.2rem;
+}
+
+ul {
+  margin: 0 0 1rem 1.2rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+li {
+  margin-bottom: 0.4rem;
+}
+
+p {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .btn {
@@ -93,45 +110,8 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
-}
-
-.ai-loader {
-  margin: 1.8rem 0 0;
-  display: grid;
-  gap: 1rem;
-  justify-items: center;
-}
-
-.spinner {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: 6px solid rgba(255, 255, 255, 0.12);
-  border-top-color: #ffd37a;
-  animation: spin 1s linear infinite;
-}
-
-.status {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.75);
-  margin: 0;
-}
-
-.status.error {
-  color: #ff9a62;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 640px) {
-  .ai-card {
+  .privacy-card {
     padding: 1.8rem;
   }
 }

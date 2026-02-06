@@ -11,7 +11,9 @@ import qb_formats
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -41,7 +43,7 @@ def add_cors_headers(response):
     origin = os.getenv("CORS_ORIGIN", "*")
     response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,OPTIONS"
     return response
 
 
@@ -66,9 +68,7 @@ def api_latest():
 
 @app.route("/api/speakers")
 def api_speakers():
-    return jsonify(
-        speakers=[{"speaker": s, "count": c} for s, c in qb.speaker_counts]
-    )
+    return jsonify(speakers=[{"speaker": s, "count": c} for s, c in qb.speaker_counts])
 
 
 @app.route("/api/quotes")
@@ -121,6 +121,34 @@ def api_quote_by_id(quote_id: int):
     if not quote:
         return jsonify({"error": "Quote not found"}), 404
     return jsonify(quote_to_dict(quote))
+
+
+@app.route("/api/quotes/<int:quote_id>", methods=["PUT"])
+def api_update_quote(quote_id: int):
+    data = request.get_json(silent=True) or {}
+    quote_text = (data.get("quote") or "").strip()
+    context = (data.get("context") or "").strip()
+    authors_raw = data.get("authors")
+
+    if not quote_text:
+        return jsonify({"error": "quote is required"}), 400
+
+    if isinstance(authors_raw, list):
+        authors = [str(a).strip() for a in authors_raw if str(a).strip()]
+    else:
+        authors = qb.parse_authors(str(authors_raw or "Unknown"))
+
+    updated = qb.update_quote(
+        quote_id=quote_id,
+        quote_text=quote_text,
+        authors=authors,
+        context=context,
+    )
+    if not updated:
+        return jsonify({"error": "Quote not found"}), 404
+
+    logger.info("Updated quote %s via API", quote_id)
+    return jsonify(quote_to_dict(updated))
 
 
 @app.route("/api/quotes/between")
