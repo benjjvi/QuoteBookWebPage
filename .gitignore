@@ -227,3 +227,5 @@ cleanup.sh
 node_modules
 package*.json
 app.log
+qb.db
+qb.qbf.bak

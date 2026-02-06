@@ -2,7 +2,7 @@
 
 A simple **Flask‑powered web application** that lets you browse and share your Quote Book as a neat, user‑friendly web page.
 
-This project takes your collection of quotes (like your **Spoons Quotes quote book**) and renders them in an interactive, searchable, and beautifully formatted website — perfect for sharing with friends or publishing online.
+This project takes your collection of quotes (like your **Spoons Quotes quote book**) and renders them in an interactive, searchable, and beautifully formatted website — perfect for sharing with friends or publishing online. Quotes are stored in a local SQLite database (`qb.db`).
 
 ---
 
@@ -12,6 +12,7 @@ This project takes your collection of quotes (like your **Spoons Quotes quote bo
 - Built with **Flask** for simplicity and extensibility
 - Frontend with HTML/CSS/JS in `templates/` and `static/`
 - Python backend in `app.py`
+- SQLite storage (`qb.db`) with automatic migration from `qb.qbf`
 - Animated background canvas with a dark theme
 - Easily deploy locally or on hosting like **Render / Heroku / GitHub Pages (via static export)**
 
@@ -41,9 +42,11 @@ Make sure you have the following installed:
    python -m pip install -r requirements.txt
    ```
 
-3. Set up environment. There is an example version in example.env
+3. Set up environment. There is an example version in `example.env`.
 
-4. Set up your quote book. There is an example in qb.qbf.template.
+4. Set up your quote book. There is an example in `qb.qbf.template`.
+
+   On first run, the app will automatically migrate `qb.qbf` into `qb.db` if the database is empty.
 
 5. Run the app:
 
@@ -62,11 +65,12 @@ QuoteBookWebPage/
 ├── app.py                   # Flask app entrypoint
 ├── templates/               # HTML templates
 ├── static/                  # CSS/JS/SVG assets
-├── qb_formats.py            # Quote parsing logic
+├── qb_formats.py            # Quote storage (SQLite) + parsing logic
 ├── ai_helpers.py            # AI helpers
 ├── PATTERNS.py              # NSFW patterns
 ├── profanities.json         # NSFW patterns
 ├── qb.qbf.template          # Example quote format
+├── qb.db                    # SQLite database (auto-created)
 └── requirements.txt          # Python dependencies
 ```
 ---
@@ -95,7 +99,7 @@ QuoteBookWebPage/
 
 The app:
 
-- Loads quotes in a custom format (see `qbformats.py`)
+- Loads quotes from SQLite (see `qb_formats.py`)
 - Uses Flask routes (in `app.py`) to serve pages
 - Renders content via Jinja templates in `templates/`
 - Assets like CSS and JavaScript live inside `static/`
