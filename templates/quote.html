@@ -77,7 +77,7 @@
       }
 
       function permalinkQuote() {
-        const url = "https://benjjvi.pythonanywhere.com/quote/{{ id }}?_external=1";
+        const url = "{{ permalink }}";
         writeToClipboard(url, "Permalink copied!");
       }
     </script>

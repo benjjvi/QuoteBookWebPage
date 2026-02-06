@@ -9,6 +9,7 @@ import time as timelib
 from collections import Counter
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo  # Python 3.9+
+from urllib.parse import urljoin
 
 from dotenv import load_dotenv
 from flask import (
@@ -47,6 +48,7 @@ UK_TZ = ZoneInfo("Europe/London")
 IS_PROD = os.getenv("IS_PROD", "False").lower() in ("true", "1", "t")
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = os.getenv("PORT", "8040")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip()
 PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
 
 
@@ -92,6 +94,15 @@ def month_name(month: int) -> str:
         return datetime(2000, int(month), 1).strftime("%B")
     except (TypeError, ValueError):
         return ""
+
+
+def build_public_url(path: str) -> str:
+    base = PUBLIC_BASE_URL or request.url_root
+    if not base:
+        return path
+    if not base.endswith("/"):
+        base = f"{base}/"
+    return urljoin(base, path.lstrip("/"))
 
 
 app.jinja_env.filters["month_name"] = month_name
@@ -251,11 +262,18 @@ def add_quote():
 
 @app.route("/ai")
 def ai():
-    return render_template("ai.html")
+    return render_template("ai.html", ai_available=ai_worker.can_generate)
 
 
 @app.route("/ai_screenplay")
 def ai_screenplay():
+    if not ai_worker.can_generate:
+        return (
+            jsonify(
+                error="AI screenplay generation is disabled. Set OPENROUTER_KEY to enable."
+            ),
+            503,
+        )
     app.logger.info("AI screenplay requested.")
     quotes = quote_store.get_all_quotes()
     scored_quotes = [
@@ -331,6 +349,7 @@ def random():
         context=q.context,
         reroll_button=True,
         quote_id=q.id,
+        permalink=build_public_url(url_for("quote_by_id", quote_id=q.id)),
     )
 
 
@@ -354,6 +373,7 @@ def quote_by_id(quote_id):
         context=q.context,
         reroll_button=False,
         quote_id=quote_id,
+        permalink=build_public_url(url_for("quote_by_id", quote_id=quote_id)),
     )
 
 
