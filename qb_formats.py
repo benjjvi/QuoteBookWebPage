@@ -1,10 +1,20 @@
 import json
+import logging
 import os
 import random
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import Dict, List
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_STATS: Dict[str, int] = {
+    "wins": 0,
+    "losses": 0,
+    "battles": 0,
+    "score": 0,
+}
 
 
 @dataclass
@@ -14,12 +24,7 @@ class Quote:
     authors: List[str]
     timestamp: int
     context: str
-    stats: Dict[str, int] = field(default_factory=lambda: {
-        "wins": 0,
-        "losses": 0,
-        "battles": 0,
-        "score": 0,
-    })
+    stats: Dict[str, int] = field(default_factory=lambda: DEFAULT_STATS.copy())
 
 
 class QuoteBook:
@@ -29,14 +34,11 @@ class QuoteBook:
         self.quotes: List[Quote] = []
 
         self._load()
-
-        # Stats
-        self.total_quotes = len(self.quotes) + 1
-        self.speaker_counts = self.get_sorted_quote_counts()
-
-        print(
-            f"Loaded {self.total_quotes} quotes "
-            f"with {len(self.speaker_counts)} unique speakers."
+        self._recalculate_stats()
+        logger.info(
+            "Loaded %s quotes with %s unique speakers.",
+            self.total_quotes,
+            len(self.speaker_counts),
         )
 
     # ------------------------
@@ -57,15 +59,13 @@ class QuoteBook:
                 authors=q.get("authors", []),
                 timestamp=q.get("timestamp", 0),
                 context=q.get("context", ""),
-                stats=q.get("stats", {"wins": 0,
-                    "losses": 0,
-                    "battles": 0,
-                    "score": 0})
+                stats=q.get("stats", DEFAULT_STATS.copy()),
             )
             for q in raw_quotes
         ]
 
         self.last_mtime = os.path.getmtime(self.filepath)
+        logger.debug("Loaded %s quotes from %s", len(self.quotes), self.filepath)
 
     # ------------------------
     # Quote access
@@ -162,6 +162,11 @@ class QuoteBook:
             )
 
         self.last_mtime = os.path.getmtime(self.filepath)
+        logger.debug("Saved %s quotes to %s", len(self.quotes), self.filepath)
+
+    def _recalculate_stats(self):
+        self.total_quotes = len(self.quotes) + 1
+        self.speaker_counts = self.get_sorted_quote_counts()
 
     # ------------------------
     # Reloading
@@ -171,12 +176,15 @@ class QuoteBook:
         try:
             mtime = os.path.getmtime(self.filepath)
         except FileNotFoundError:
+            logger.error("Quote book file missing: %s", self.filepath)
             return 500
 
         if not force and mtime == self.last_mtime:
             return 304  # Not Modified
 
-        self.__init__()
+        logger.info("Reloading quote book from disk.")
+        self._load()
+        self._recalculate_stats()
         return 200
 
 

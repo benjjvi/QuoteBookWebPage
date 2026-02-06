@@ -2,7 +2,11 @@ import re
 from calendar import monthrange
 from collections import defaultdict
 from datetime import date, datetime
+import logging
 from zoneinfo import ZoneInfo
+
+UK_TZ = ZoneInfo("Europe/London")
+logger = logging.getLogger(__name__)
 
 
 def build_calendar_data(quotes, year: int, month: int):
@@ -22,13 +26,11 @@ def build_calendar_data(quotes, year: int, month: int):
     ]
     """
 
-    uk_tz = ZoneInfo("Europe/London")
-
     # Group quotes by UK-local date
     quotes_by_day = defaultdict(list)
 
     for q in quotes:
-        dt = datetime.fromtimestamp(q.timestamp, tz=uk_tz)
+        dt = datetime.fromtimestamp(q.timestamp, tz=UK_TZ)
         quotes_by_day[dt.date()].append(q)
 
     days_in_month = monthrange(year, month)[1]
@@ -54,7 +56,7 @@ def build_calendar_data(quotes, year: int, month: int):
             continue
 
         # Pick midday for stable positioning
-        midday = datetime(year, month, day, 12, 0, tzinfo=uk_tz)
+        midday = datetime(year, month, day, 12, 0, tzinfo=UK_TZ)
 
         # Scale circle radius (tweak numbers freely)
         radius = int(6 + (count / max_count) * 14)
@@ -69,12 +71,15 @@ def build_calendar_data(quotes, year: int, month: int):
             }
         )
 
+    logger.debug(
+        "Built calendar data for %s-%s (%s days).", year, month, days_in_month
+    )
     return calendar_data
 
 
 def get_current_uk_timestamp():
     """Return the current time in the UK as a UTC timestamp (int)."""
-    now = datetime.now(ZoneInfo("Europe/London"))
+    now = datetime.now(UK_TZ)
     return int(now.timestamp())
 
 
@@ -95,20 +100,18 @@ def parse_timestamp_input(input_str: str) -> int:
 
     # Try parsing formats
     formats = ["%d %B %H:%M", "%d %b %H:%M"]  # day month + 24h time
+    now_year = datetime.now(UK_TZ).year
     for fmt in formats:
         try:
             dt_local = datetime.strptime(input_clean, fmt)
             # Assign UK timezone and current year
-            from datetime import datetime
-            from zoneinfo import ZoneInfo
-
-            uk_tz = ZoneInfo("Europe/London")
-            dt_local = dt_local.replace(year=datetime.now().year, tzinfo=uk_tz)
+            dt_local = dt_local.replace(year=now_year, tzinfo=UK_TZ)
             return int(dt_local.timestamp())
         except ValueError:
             continue
 
     # If cannot parse, fallback to current time
+    logger.warning("Failed to parse timestamp input: '%s'", input_str)
     return get_current_uk_timestamp()
 
 
@@ -119,8 +122,7 @@ def format_uk_datetime_from_timestamp(ts: int) -> tuple[str, str]:
     Example output: ('12th February', '02:23')
     """
 
-    uk_tz = ZoneInfo("Europe/London")
-    dt = datetime.fromtimestamp(ts, tz=uk_tz)
+    dt = datetime.fromtimestamp(ts, tz=UK_TZ)
 
     # Build day with suffix
     day = dt.day

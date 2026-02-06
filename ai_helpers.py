@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import os
 import re
 import time
@@ -17,6 +18,8 @@ CACHE_DIR = "cache"
 CACHE_FILE = os.path.join(CACHE_DIR, "top_20_cache.json")
 CACHE_TTL_SECONDS = 60 * 60 * 3  # 3 hours
 
+logger = logging.getLogger(__name__)
+
 
 class AI:
     def __init__(self):
@@ -26,7 +29,7 @@ class AI:
             raise ValueError("OPENROUTER_KEY not set in environment variables")
         self.sentiment = SentimentIntensityAnalyzer()
 
-        with open("profanities.json", "r") as f:
+        with open("profanities.json", "r", encoding="utf-8") as f:
             self.profanity_list = json.load(f)
 
     def build_screenplay_prompt(self, quotes):
@@ -90,7 +93,7 @@ class AI:
                     cache.get("expires_at", 0) > now
                     and cache.get("hash") == top_20_hash
                 ):
-                    print("Using cached AI screenplay...")
+                    logger.info("Using cached AI screenplay.")
                     return json.dumps(cache["data"])
 
             except (json.JSONDecodeError, KeyError):
@@ -98,11 +101,11 @@ class AI:
 
         # --- Step 3: regenerate cache ---
         try:
-            print("Generating new AI screenplay...")
+            logger.info("Generating new AI screenplay.")
             ai_response = self.generate_screenplay(top_20)
         except Exception as e:
-            print(f"Error generating AI screenplay: {e}")
-            print("Falling back to cached response if available...")
+            logger.exception("Error generating AI screenplay: %s", e)
+            logger.info("Falling back to cached response if available...")
             if os.path.exists(cache_file):
                 try:
                     with open(cache_file, "r") as f:
@@ -125,7 +128,7 @@ class AI:
         with open(cache_file, "w") as f:
             json.dump(cache_payload, f, indent=2)
 
-        ai_response.replace("â", "'")
+        ai_response = ai_response.replace("â", "'")
 
         return ai_response
 
@@ -189,6 +192,7 @@ class AI:
     def classify_funny_score(self, quote, authors, stats):
         # Score quotes based on amount of profanities, general humor, and absurdity.
         score = -0.5
+        stats = stats or {}
 
         # split the quote into words
         words = re.findall(r"\b\w+\b", quote.lower())
@@ -258,21 +262,17 @@ class AI:
             score += 0.4
 
         # get battle results and add to funnyness. one score is worth +0.2 funny points
-        try:
-            battle_wins = stats.get("wins", 0)
-            battles_fought = stats.get("battles", 0)
-            if battles_fought > 0:
-                win_rate = battle_wins / battles_fought
-                print("Win rate:", win_rate)
-                score += min(win_rate * 5 * 0.2, 10.0)  # cap at +10.0
+        battle_wins = stats.get("wins", 0)
+        battles_fought = stats.get("battles", 0)
+        if battles_fought > 0:
+            win_rate = battle_wins / battles_fought
+            logger.debug("Win rate: %s", win_rate)
+            score += min(win_rate * 5 * 0.2, 10.0)  # cap at +10.0
 
             battles_lost = stats.get("losses", 0)
-            if battles_fought > 0:
-                loss_rate = battles_lost / battles_fought
-                print("Loss rate:", loss_rate)
-                score -= min(loss_rate * 5 * 0.2, 2.0)  # cap at -2.0
-        except Exception as e:
-            print("Error calculating battle stats:", e)
+            loss_rate = battles_lost / battles_fought
+            logger.debug("Loss rate: %s", loss_rate)
+            score -= min(loss_rate * 5 * 0.2, 2.0)  # cap at -2.0
 
         return round(self.normalise(score), 2)
 
@@ -311,14 +311,14 @@ class AI:
                     cache.get("expires_at", 0) > now
                     and cache.get("data", {}).get("hash") == top_20_hash
                 ):
-                    print("Using cached top 20...")
+                    logger.info("Using cached top 20.")
                     return cache
 
             except (json.JSONDecodeError, KeyError):
                 pass  # corrupted cache → regenerate
 
         # --- Step 4: save fresh cache ---
-        print("Regenerating top 20 cache...")
+        logger.info("Regenerating top 20 cache.")
         expires_at = now + CACHE_TTL_SECONDS
 
         cache_payload = {
@@ -343,4 +343,4 @@ if __name__ == "__main__":
     top_20 = ai.get_top_20_with_cache(scored_quotes)
 
     sc = ai.get_ai(top_20)
-    print(sc)
+    logger.info(sc)
