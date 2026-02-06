@@ -56,6 +56,44 @@ Make sure you have the following installed:
 
 6. Open your browser and navigate to 127.0.0.1:8040
 
+### Optional launcher
+
+Use the interactive launcher to pick client/server (and standalone mode):
+
+```bash
+python run.py
+```
+
+---
+
+## Split API + Web (Optional)
+
+You can run the quote data service separately and have the web app call it over HTTP. This keeps the Flask frontend as-is, but moves the quote book into a standalone API.
+
+### 1. Start the API server
+
+```bash
+export QUOTEBOOK_DB=qb.db
+export API_HOST=0.0.0.0
+export API_PORT=8050
+export CORS_ORIGIN=*
+
+python api_server.py
+```
+
+### 2. Point the web app at the API
+
+```bash
+export QUOTE_API_URL=http://127.0.0.1:8050
+python app.py
+```
+
+If `APP_STANDALONE=true`, the web app uses the local SQLite database directly (even if `QUOTE_API_URL` is set).
+
+Environment toggles:
+- `APP_MODE=CLIENT|SERVER` selects what `run.py` launches.
+- `APP_STANDALONE=true|false` forces local DB usage when running the client.
+
 ---
 
 ## Project Structure
@@ -63,6 +101,9 @@ Make sure you have the following installed:
 ```
 QuoteBookWebPage/
 ├── app.py                   # Flask app entrypoint
+├── api_server.py            # Quote API service (optional)
+├── run.py                   # Interactive launcher
+├── quote_client.py          # API client + local fallback
 ├── templates/               # HTML templates
 ├── static/                  # CSS/JS/SVG assets
 ├── qb_formats.py            # Quote storage (SQLite) + parsing logic

@@ -1,11 +1,12 @@
 import calendar as pycalendar
 import json
 import logging
-import math
 import os
 import random as randlib
+import re
 import secrets
 import time as timelib
+from collections import Counter
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo  # Python 3.9+
 
@@ -25,7 +26,7 @@ from werkzeug.exceptions import HTTPException
 
 import ai_helpers
 import datetime_handler
-import qb_formats
+from quote_client import get_quote_client
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +38,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", secrets.token_hex(32))
-qb = qb_formats.QuoteBook()
+quote_store = get_quote_client()
 ai_worker = ai_helpers.AI()
 
 
@@ -186,7 +187,7 @@ def log_exception(exception):
 
 @app.before_request
 def refresh_qb():
-    status = qb.reload()
+    status = quote_store.reload()
     if status == 200:
         app.logger.info("Quote book reloaded.")
     if status != 200 and status != 304:
@@ -207,8 +208,8 @@ def robots_txt():
 def index():
     return render_template(
         "index.html",
-        total_quotes=qb.total_quotes,
-        speaker_counts=qb.speaker_counts,
+        total_quotes=quote_store.get_total_quotes(),
+        speaker_counts=quote_store.get_speaker_counts(),
         now=datetime.now(UK_TZ),
     )
 
@@ -224,37 +225,25 @@ def add_quote():
         # Only proceed if there is quote text
         if quote_text:
             # Parse authors
-            authors = qb.parse_authors(author_raw)
+            authors = quote_store.parse_authors(author_raw)
 
             # Get current UK timestamp in UTC
             timestamp = datetime_handler.get_current_uk_timestamp()
 
-            # Build new quote object
-            new_quote = qb_formats.Quote(
-                id=qb.next_id(),
-                quote=quote_text,
+            # Add quote to quote store (local DB or remote API)
+            new_quote = quote_store.add_quote(
+                quote_text=quote_text,
                 authors=authors,
-                timestamp=timestamp,  # UTC timestamp
                 context=context,
+                timestamp=timestamp,
             )
-
-            # Add quote to quote book
-            qb.add_quote(new_quote)
             app.logger.info(
                 "Added quote %s by %s",
                 new_quote.id,
                 ", ".join(new_quote.authors),
             )
 
-            # Reload quotes
-            status = qb.reload()
-            if status not in (200, 304):
-                if status < 400 or status > 600:
-                    abort(500)
-                else:
-                    abort(status)
-            else:
-                return redirect(url_for("index"))
+            return redirect(url_for("index"))
 
     # GET request or empty quote_text
     return render_template("add_quote.html")
@@ -268,9 +257,10 @@ def ai():
 @app.route("/ai_screenplay")
 def ai_screenplay():
     app.logger.info("AI screenplay requested.")
+    quotes = quote_store.get_all_quotes()
     scored_quotes = [
         (q, ai_worker.classify_funny_score(q.quote, q.authors, q.stats))
-        for q in qb.quotes
+        for q in quotes
     ]
     top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
     resp = ai_worker.get_ai(top_20)
@@ -296,18 +286,8 @@ def battle():
         winner_id = int(request.form["winner"])
         loser_id = int(request.form["loser"])
 
-        winner = next((q for q in qb.quotes if q.id == winner_id), None)
-        loser = next((q for q in qb.quotes if q.id == loser_id), None)
-
+        winner, loser = quote_store.record_battle(winner_id, loser_id)
         if winner and loser:
-            winner.stats["wins"] += 1
-            winner.stats["battles"] += 1
-            winner.stats["score"] += 1
-
-            loser.stats["losses"] += 1
-            loser.stats["battles"] += 1
-
-            qb._save()
             app.logger.info("Battle result: winner=%s loser=%s", winner_id, loser_id)
         else:
             app.logger.warning(
@@ -318,10 +298,11 @@ def battle():
 
         return redirect(url_for("battle"))
 
-    if len(qb.quotes) < 2:
+    quotes = quote_store.get_all_quotes()
+    if len(quotes) < 2:
         return "Not enough quotes for a battle", 400
 
-    quote_a, quote_b = randlib.sample(qb.quotes, 2)
+    quote_a, quote_b = randlib.sample(quotes, 2)
 
     return render_template(
         "battle.html",
@@ -332,7 +313,9 @@ def battle():
 
 @app.route("/random")
 def random():
-    q = qb.get_random_quote()
+    q = quote_store.get_random_quote()
+    if not q:
+        abort(404)
     app.logger.info("Random quote served: %s", q.id)
 
     # Decode UTC timestamp into UK local date and time
@@ -353,7 +336,7 @@ def random():
 
 @app.route("/quote/<int:quote_id>")
 def quote_by_id(quote_id):
-    q = qb.get_quote_by_id(quote_id)
+    q = quote_store.get_quote_by_id(quote_id)
     if not q:
         app.logger.info("Quote not found: %s", quote_id)
         abort(404)
@@ -379,31 +362,10 @@ def all_quotes():
     speaker_filter = request.args.get("speaker", None)
     page = request.args.get("page", 1, type=int)
 
-    # Filter quotes if a speaker is selected
-    if speaker_filter:
-        speaker_lower = speaker_filter.lower()
-        filtered_quotes = [
-            q
-            for q in qb.quotes
-            if any(speaker_lower == author.lower() for author in q.authors)
-        ]
-    else:
-        filtered_quotes = qb.quotes
-
-    # Pagination maths
-    total_quotes = len(filtered_quotes)
-    total_pages = max(
-        1, math.ceil(total_quotes / PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE)
+    paginated_quotes, page, total_pages = quote_store.get_quote_page(
+        speaker_filter, page, PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE
     )
-
-    page = max(1, min(page, total_pages))  # clamp page safely
-    start = (page - 1) * PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE
-    end = start + PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE
-
-    paginated_quotes = filtered_quotes[start:end]
-
-    # Sort speakers by count (most common first)
-    sorted_speakers = sorted(qb.speaker_counts, key=lambda x: x[1], reverse=True)
+    sorted_speakers = quote_store.get_speaker_counts()
 
     return render_template(
         "all_quotes.html",
@@ -423,7 +385,7 @@ def search():
     if request.method == "POST":
         query = request.form.get("query", "").strip()
         if query:
-            results = qb.search_quotes(query)
+            results = quote_store.search_quotes(query)
             app.logger.info("Search query: '%s' (%s results)", query, len(results))
 
     return render_template(
@@ -431,6 +393,118 @@ def search():
         results=results,  # List[Quote]
         len_results=len(results),
         query=query,
+    )
+
+
+@app.route("/stats")
+def stats():
+    # Aggregate all stats here to keep templates simple.
+    quotes = quote_store.get_all_quotes()
+    total_quotes = quote_store.get_total_quotes()
+    speaker_counts = quote_store.get_speaker_counts()
+    unique_authors = len(speaker_counts)
+    top_authors = speaker_counts[:5]
+
+    word_counts = [len(re.findall(r"\b\w+\b", q.quote)) for q in quotes]
+    avg_words = round(sum(word_counts) / len(word_counts), 1) if word_counts else 0
+    avg_chars = round(sum(len(q.quote) for q in quotes) / len(quotes), 1) if quotes else 0
+
+    longest_quote = max(quotes, key=lambda q: len(q.quote), default=None)
+    shortest_quote = min(quotes, key=lambda q: len(q.quote), default=None)
+
+    newest_quote = max(quotes, key=lambda q: q.timestamp, default=None)
+    oldest_quote = min(quotes, key=lambda q: q.timestamp, default=None)
+
+    day_counts = Counter()
+    hour_counts = Counter()
+    for quote in quotes:
+        dt = datetime.fromtimestamp(quote.timestamp, tz=UK_TZ)
+        day_counts[dt.date()] += 1
+        hour_counts[dt.hour] += 1
+
+    busiest_day = None
+    if day_counts:
+        day, count = day_counts.most_common(1)[0]
+        busiest_day = {
+            "label": day.strftime("%d %b %Y"),
+            "count": count,
+        }
+
+    hour_buckets = [
+        ("Late night", "12am-3am", range(0, 3)),
+        ("Early morning", "3am-6am", range(3, 6)),
+        ("Morning", "6am-9am", range(6, 9)),
+        ("Late morning", "9am-12pm", range(9, 12)),
+        ("Afternoon", "12pm-3pm", range(12, 15)),
+        ("Late afternoon", "3pm-6pm", range(15, 18)),
+        ("Evening", "6pm-9pm", range(18, 21)),
+        ("Late evening", "9pm-12am", range(21, 24)),
+    ]
+    bucket_data = []
+    for label, range_label, hours in hour_buckets:
+        count = sum(hour_counts[h] for h in hours)
+        bucket_data.append(
+            {
+                "label": label,
+                "range_label": range_label,
+                "count": count,
+            }
+        )
+    max_bucket = max((bucket["count"] for bucket in bucket_data), default=1)
+    for bucket in bucket_data:
+        bucket["percent"] = int((bucket["count"] / max_bucket) * 100) if max_bucket else 0
+
+    total_battle_entries = sum(q.stats.get("battles", 0) for q in quotes)
+    total_battles = total_battle_entries // 2 if total_battle_entries else 0
+    most_battled = max(
+        quotes, key=lambda q: q.stats.get("battles", 0), default=None
+    )
+
+    top_winners = sorted(
+        quotes, key=lambda q: q.stats.get("wins", 0), reverse=True
+    )
+    top_winners = [q for q in top_winners if q.stats.get("wins", 0) > 0][:5]
+
+    min_battles_for_rate = 3
+    win_rate_candidates = []
+    for q in quotes:
+        battles = q.stats.get("battles", 0)
+        if battles >= min_battles_for_rate:
+            win_rate = q.stats.get("wins", 0) / battles
+            win_rate_candidates.append((q, win_rate))
+
+    best_win_rates = sorted(win_rate_candidates, key=lambda x: x[1], reverse=True)[:5]
+
+    # AI heuristic scoring (no external API call).
+    funny_scores = []
+    for q in quotes:
+        score = ai_worker.classify_funny_score(q.quote, q.authors, q.stats)
+        funny_scores.append((q, score))
+    funny_scores.sort(key=lambda x: x[1], reverse=True)
+    top_funny = funny_scores[:5]
+    avg_funny = round(
+        sum(score for _, score in funny_scores) / len(funny_scores), 2
+    ) if funny_scores else 0
+
+    return render_template(
+        "stats.html",
+        total_quotes=total_quotes,
+        unique_authors=unique_authors,
+        top_authors=top_authors,
+        avg_words=avg_words,
+        avg_chars=avg_chars,
+        longest_quote=longest_quote,
+        shortest_quote=shortest_quote,
+        newest_quote=newest_quote,
+        oldest_quote=oldest_quote,
+        busiest_day=busiest_day,
+        hour_buckets=bucket_data,
+        total_battles=total_battles,
+        most_battled=most_battled,
+        top_winners=top_winners,
+        best_win_rates=best_win_rates,
+        top_funny=top_funny,
+        avg_funny=avg_funny,
     )
 
 
@@ -442,6 +516,7 @@ def timeline(year, month):
     month_days = cal.monthdatescalendar(year, month)
 
     calendar_days = []
+    quotes = quote_store.get_all_quotes()
 
     for week in month_days:
         week_days = []
@@ -452,8 +527,8 @@ def timeline(year, month):
             start_ts = int(day_start.timestamp())
             end_ts = int(day_end.timestamp())
 
-            quotes = qb.get_quotes_between(start_ts, end_ts)
-            count = len(quotes)
+            day_quotes = [q for q in quotes if start_ts <= q.timestamp <= end_ts]
+            count = len(day_quotes)
 
             week_days.append(
                 {
@@ -466,7 +541,7 @@ def timeline(year, month):
 
         calendar_days.append(week_days)
 
-    years = sorted({datetime.fromtimestamp(q.timestamp, uk_tz).year for q in qb.quotes})
+    years = sorted({datetime.fromtimestamp(q.timestamp, uk_tz).year for q in quotes})
 
     months = list(range(1, 13))
 
@@ -501,7 +576,7 @@ def quotes_by_day(timestamp):
     start_ts = int(start_of_day.timestamp())
     end_ts = int(end_of_day.timestamp())
 
-    quotes = qb.get_quotes_between(start_ts, end_ts)
+    quotes = quote_store.get_quotes_between(start_ts, end_ts)
 
     return render_template(
         "quotes_by_day.html",
@@ -514,12 +589,10 @@ def quotes_by_day(timestamp):
 
 @app.route("/api/latest")
 def api_latest_quote():
-    # Get the newest quote by ID
-    if not qb.quotes:
+    newest_quote = quote_store.get_latest_quote()
+    if not newest_quote:
         app.logger.warning("API latest requested with no quotes.")
         return jsonify({"error": "No quotes found"}), 404
-
-    newest_quote = max(qb.quotes, key=lambda q: q.id)
     app.logger.info("API latest quote served: %s", newest_quote.id)
 
     return jsonify(

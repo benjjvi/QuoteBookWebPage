@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Stats{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='assets/css/stats.css') }}"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="stats-page">
+  <header class="stats-header">
+    <div>
+      <span class="eyebrow">Insights</span>
+      <h1>Quote Book Stats</h1>
+      <p class="lead">A snapshot of the chaos, the classics, and the battle champs.</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+  </header>
+
+  <div class="stats-grid">
+    <article class="stat-card">
+      <p class="stat-label">Total quotes</p>
+      <p class="stat-value">{{ total_quotes }}</p>
+      <p class="stat-meta">Across {{ unique_authors }} speakers</p>
+    </article>
+
+    <article class="stat-card">
+      <p class="stat-label">Avg words per quote</p>
+      <p class="stat-value">{{ avg_words }}</p>
+      <p class="stat-meta">Avg characters: {{ avg_chars }}</p>
+    </article>
+
+    <article class="stat-card">
+      <p class="stat-label">Avg funny score</p>
+      <p class="stat-value">{{ avg_funny }}</p>
+      <p class="stat-meta">Based on AI heuristics</p>
+    </article>
+
+    <article class="stat-card">
+      <p class="stat-label">Total battles</p>
+      <p class="stat-value">{{ total_battles }}</p>
+      <p class="stat-meta">Head-to-head showdowns</p>
+    </article>
+  </div>
+
+  <div class="stats-split">
+    <section class="panel">
+      <h2>Highlights</h2>
+      <ul class="stat-list">
+        {% if newest_quote %}
+          <li>
+            <span>Latest quote</span>
+            <span>{{ newest_quote.timestamp | uk_date }} · {{ newest_quote.timestamp | uk_time }}</span>
+          </li>
+        {% endif %}
+        {% if oldest_quote %}
+          <li>
+            <span>Oldest quote</span>
+            <span>{{ oldest_quote.timestamp | uk_date }} · {{ oldest_quote.timestamp | uk_time }}</span>
+          </li>
+        {% endif %}
+        {% if busiest_day %}
+          <li>
+            <span>Busiest day</span>
+            <span>{{ busiest_day.label }} ({{ busiest_day.count }})</span>
+          </li>
+        {% endif %}
+        {% if most_battled %}
+          <li>
+            <span>Most battled quote</span>
+            <span>#{{ most_battled.id }} ({{ most_battled.stats.battles }} battles)</span>
+          </li>
+        {% endif %}
+        {% if longest_quote %}
+          <li>
+            <span>Longest quote</span>
+            <span>{{ longest_quote.quote | truncate(60, True, "…") }}</span>
+          </li>
+        {% endif %}
+        {% if shortest_quote %}
+          <li>
+            <span>Shortest quote</span>
+            <span>{{ shortest_quote.quote | truncate(60, True, "…") }}</span>
+          </li>
+        {% endif %}
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Top speakers</h2>
+      <ul class="stat-list">
+        {% for speaker, count in top_authors %}
+          <li>
+            <span>{{ speaker }}</span>
+            <span>{{ count }}</span>
+          </li>
+        {% else %}
+          <li><span>No speakers yet</span><span>—</span></li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>When quotes happen</h2>
+      <button type="button" class="toggle-btn" id="timeToggle" data-mode="label">
+        Show times
+      </button>
+    </div>
+    <ul class="bar-list">
+      {% for bucket in hour_buckets %}
+        <li>
+          <span class="bar-label" data-label="{{ bucket.label }}" data-range="{{ bucket.range_label }}">
+            {{ bucket.label }}
+          </span>
+          <span class="bar-track">
+            <span class="bar-fill" style="--value: {{ bucket.percent }}%"></span>
+          </span>
+          <span class="bar-value">{{ bucket.count }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>Battle leaderboards</h2>
+    <div class="panel-grid">
+      <div>
+        <h3>Most wins</h3>
+        <ul class="stat-list">
+          {% for quote in top_winners %}
+            <li>
+              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span>{{ quote.stats.wins }} wins</span>
+            </li>
+          {% else %}
+            <li><span>No battles yet</span><span>—</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div>
+        <h3>Best win rates</h3>
+        <ul class="stat-list">
+          {% for quote, win_rate in best_win_rates %}
+            <li>
+              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span>{{ (win_rate * 100) | round(1) }}%</span>
+            </li>
+          {% else %}
+            <li><span>Not enough battles</span><span>—</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Funniest lines (AI score)</h2>
+    <div class="quote-grid">
+      {% for quote, score in top_funny %}
+        <article class="mini-quote">
+          <p class="mini-quote-text">“{{ quote.quote }}”</p>
+          <p class="mini-quote-meta">— {{ quote.authors | join(", ") }}</p>
+          <p class="mini-quote-score">Score: {{ score }}</p>
+        </article>
+      {% else %}
+        <div class="empty-state">
+          <h3>No quotes yet</h3>
+          <p>Add a few quotes to see the leaderboard.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  </section>
+
+  <script>
+    const timeToggle = document.getElementById("timeToggle");
+    const timeLabels = document.querySelectorAll(".bar-label");
+
+    if (timeToggle) {
+      timeToggle.addEventListener("click", () => {
+        const showingLabels = timeToggle.dataset.mode === "label";
+        timeLabels.forEach((label) => {
+          label.textContent = showingLabels
+            ? label.dataset.range
+            : label.dataset.label;
+        });
+        timeToggle.dataset.mode = showingLabels ? "range" : "label";
+        timeToggle.textContent = showingLabels ? "Show labels" : "Show times";
+      });
+    }
+  </script>
+{% endblock %}
