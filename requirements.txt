@@ -1,4 +1,5 @@
 Flask==3.1.2
+pywebpush==1.14.0
 python-dotenv==1.2.1
 requests==2.32.4
 Werkzeug==3.1.5

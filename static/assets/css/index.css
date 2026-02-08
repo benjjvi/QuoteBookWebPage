@@ -39,6 +39,15 @@ body {
   font-family: "Fraunces", "Georgia", serif;
 }
 
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: inline-block;
+  margin-bottom: 0.7rem;
+}
+
 /* =========================
    INTRO / STATS
    ========================= */
@@ -77,6 +86,143 @@ body {
 .stat-meta {
   font-size: 0.9rem;
   opacity: 0.8;
+}
+
+/* =========================
+   PWA ACTIONS
+   ========================= */
+
+.pwa-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.install-status {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.install-help {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.btn {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  border-radius: 999px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffd37a, #ff9a62);
+  color: #1b1308;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #f2eee7;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-install {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  box-shadow: 0 12px 28px rgba(255, 154, 98, 0.22);
+}
+
+.btn-debug {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.8rem;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* =========================
+   NOTIFICATION PROMPT
+   ========================= */
+
+.notify-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  place-items: center;
+  background: rgba(8, 8, 10, 0.6);
+  backdrop-filter: blur(6px);
+  z-index: 20;
+  padding: 1.5rem;
+}
+
+.notify-modal.is-visible {
+  display: grid;
+}
+
+.notify-card {
+  width: min(460px, 100%);
+  background: rgba(15, 15, 18, 0.95);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.8rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  color: #f7f4ef;
+}
+
+.notify-card h2 {
+  font-family: "Fraunces", "Georgia", serif;
+  margin: 0 0 0.6rem 0;
+  font-size: 1.5rem;
+}
+
+.notify-card .lead {
+  margin-bottom: 1.2rem;
+}
+
+.notify-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.notify-status {
+  margin: 0.9rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* =========================

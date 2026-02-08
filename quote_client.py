@@ -44,8 +44,18 @@ class QuoteClient:
         total = payload.get("total", 0)
         return total + 1
 
-    def get_quote_page(self, speaker: Optional[str], page: int, per_page: int):
+    def get_quote_page(
+        self,
+        speaker: Optional[str],
+        page: int,
+        per_page: int,
+        order: str = "oldest",
+    ):
         """Return a paginated slice of quotes plus page metadata."""
+        normalized_order = (order or "oldest").strip().lower()
+        if normalized_order not in ("oldest", "newest", "desc", "reverse"):
+            normalized_order = "oldest"
+        reverse_sort = normalized_order in ("newest", "desc", "reverse")
         if self._local:
             quotes = self._local.quotes
             if speaker:
@@ -55,6 +65,9 @@ class QuoteClient:
                     for q in quotes
                     if any(speaker_lower == author.lower() for author in q.authors)
                 ]
+            quotes = sorted(
+                quotes, key=lambda q: (q.timestamp, q.id), reverse=reverse_sort
+            )
             total = len(quotes)
             total_pages = max(1, (total + per_page - 1) // per_page)
             page = max(1, min(page, total_pages))
@@ -65,6 +78,8 @@ class QuoteClient:
         params = {"page": page, "per_page": per_page}
         if speaker:
             params["speaker"] = speaker
+        if normalized_order:
+            params["order"] = normalized_order
         payload = self._get_json("/api/quotes", params=params)
         quotes = [self._quote_from_dict(q) for q in payload.get("quotes", [])]
         return quotes, payload.get("page", page), payload.get("total_pages", 1)

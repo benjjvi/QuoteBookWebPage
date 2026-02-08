@@ -55,7 +55,11 @@
         .replace(/\\\\/g, "\\");
     }
 
-    fetch("/ai_screenplay")
+    fetch("/ai_screenplay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "{{ ai_request_token }}" }),
+    })
       .then((res) => {
         if (!res.ok) throw new Error("Network response was not OK");
         return res.json();

@@ -112,6 +112,33 @@ a:hover {
   margin-top: 2rem;
 }
 
+.offline-only {
+  display: none;
+}
+
+body.is-offline .offline-only {
+  display: block;
+}
+
+body.is-offline .offline-hide {
+  display: none !important;
+}
+
+.offline-card {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  background: rgba(15, 15, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  color: #f7f4ef;
+}
+
+.offline-card h1 {
+  margin-bottom: 0.6rem;
+}
+
 /* =========================
    ACCESSIBILITY
    ========================= */

@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<section class="all-quotes-page">
+<section class="all-quotes-page" data-per-page="{{ per_page }}">
   <header class="page-header">
     <div>
       <span class="eyebrow">Library</span>
@@ -43,6 +43,23 @@
         </select>
         <span class="select-icon">▾</span>
       </div>
+      <label for="order">Sort by</label>
+      <div class="select-wrap">
+        <select
+          name="order"
+          id="order"
+          class="speaker-select"
+          onchange="this.form.submit()"
+        >
+          <option value="oldest" {% if sort_order != "newest" %}selected{% endif %}>
+            Oldest first
+          </option>
+          <option value="newest" {% if sort_order == "newest" %}selected{% endif %}>
+            Newest first
+          </option>
+        </select>
+        <span class="select-icon">▾</span>
+      </div>
       <noscript><button type="submit" class="btn btn-primary">Filter</button></noscript>
     </form>
 
@@ -50,7 +67,7 @@
       <div class="filter-pill">
         <span>Showing:</span>
         <strong>{{ selected_speaker }}</strong>
-        <a href="{{ url_for('all_quotes') }}" class="pill-clear">Clear</a>
+        <a href="{{ url_for('all_quotes', order=sort_order) }}" class="pill-clear">Clear</a>
       </div>
     {% endif %}
   </div>
@@ -85,7 +102,7 @@
     <div class="pagination">
       {% if page > 1 %}
         <a
-          href="{{ url_for('all_quotes', speaker=selected_speaker, page=page-1) }}"
+          href="{{ url_for('all_quotes', speaker=selected_speaker, order=sort_order, page=page-1) }}"
           class="btn btn-ghost"
         >
           ← Prev
@@ -95,6 +112,9 @@
       <form method="get" class="page-jump">
         {% if selected_speaker %}
           <input type="hidden" name="speaker" value="{{ selected_speaker }}" />
+        {% endif %}
+        {% if sort_order %}
+          <input type="hidden" name="order" value="{{ sort_order }}" />
         {% endif %}
         <label>
           Page
@@ -114,7 +134,7 @@
 
       {% if page < total_pages %}
         <a
-          href="{{ url_for('all_quotes', speaker=selected_speaker, page=page+1) }}"
+          href="{{ url_for('all_quotes', speaker=selected_speaker, order=sort_order, page=page+1) }}"
           class="btn btn-ghost"
         >
           Next →
@@ -129,6 +149,237 @@
     if (e.target.classList.contains("page-input")) {
       e.target.select();
     }
+  });
+
+  document.addEventListener("change", (e) => {
+    if (e.target.classList.contains("page-input")) {
+      const form = e.target.closest("form");
+      if (form) {
+        form.submit();
+      }
+    }
+  });
+
+  document.addEventListener("blur", (e) => {
+    if (e.target.classList.contains("page-input")) {
+      const form = e.target.closest("form");
+      if (form) {
+        form.submit();
+      }
+    }
+  }, true);
+
+  const escapeHtml = (value) => {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+  };
+
+  const formatDate = (epochSeconds) => {
+    const date = new Date((Number(epochSeconds) || 0) * 1000);
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  };
+
+  const formatTime = (epochSeconds) => {
+    const date = new Date((Number(epochSeconds) || 0) * 1000);
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
+
+  const renderQuotes = (quotes) => {
+    const grid = document.querySelector(".quote-grid");
+    if (!grid) return;
+    if (!quotes || quotes.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <h2>No quotes found</h2>
+          <p>Try another speaker or clear the filter.</p>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = quotes
+      .map((q) => {
+        const authorList = Array.isArray(q.authors) ? q.authors.join(", ") : "";
+        const context = q.context ? `<p class="quote-context">${escapeHtml(q.context)}</p>` : "";
+        return `
+          <article class="quote-card">
+            <div class="quote-text">“${escapeHtml(q.quote)}”</div>
+            <div class="quote-meta">
+              <span class="quote-author">${escapeHtml(authorList)}</span>
+              <span class="dot">•</span>
+              <span>${formatDate(q.timestamp)}</span>
+              <span class="dot">•</span>
+              <span>${formatTime(q.timestamp)}</span>
+            </div>
+            ${context}
+            <a href="/quote/${encodeURIComponent(q.id)}" class="btn btn-primary">
+              View
+            </a>
+          </article>
+        `;
+      })
+      .join("");
+  };
+
+  const renderPagination = (page, totalPages, speaker, order) => {
+    const container = document.querySelector(".pagination");
+    if (!container) return;
+
+    if (totalPages <= 1) {
+      container.innerHTML = "";
+      return;
+    }
+
+    const buildUrl = (targetPage) => {
+      const params = new URLSearchParams();
+      if (speaker) params.set("speaker", speaker);
+      if (order) params.set("order", order);
+      params.set("page", String(targetPage));
+      return `${window.location.pathname}?${params.toString()}`;
+    };
+
+    const prevLink =
+      page > 1
+        ? `<a href="${buildUrl(page - 1)}" class="btn btn-ghost">← Prev</a>`
+        : "";
+    const nextLink =
+      page < totalPages
+        ? `<a href="${buildUrl(page + 1)}" class="btn btn-ghost">Next →</a>`
+        : "";
+
+    const speakerField = speaker
+      ? `<input type="hidden" name="speaker" value="${escapeHtml(speaker)}" />`
+      : "";
+    const orderField = order
+      ? `<input type="hidden" name="order" value="${escapeHtml(order)}" />`
+      : "";
+
+    container.innerHTML = `
+      ${prevLink}
+      <form method="get" class="page-jump">
+        ${speakerField}
+        ${orderField}
+        <label>
+          Page
+          <input
+            type="number"
+            name="page"
+            value="${page}"
+            min="1"
+            max="${totalPages}"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            class="page-input"
+          />
+          of ${totalPages}
+        </label>
+      </form>
+      ${nextLink}
+    `;
+  };
+
+  const applyOfflineParams = (params) => {
+    const url = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, "", url);
+  };
+
+  const getOfflineParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    const speaker = params.get("speaker") || "";
+    const order = params.get("order") || "oldest";
+    const page = Number(params.get("page") || "1");
+    const perPageAttr =
+      document.querySelector(".all-quotes-page")?.dataset?.perPage || "9";
+    const perPage = Number(perPageAttr) || 9;
+    return { speaker, order, page, perPage, params };
+  };
+
+  const loadOfflineQuotes = async (paramsOverride) => {
+    if (!window.qbPwa?.getOfflineQuotePage) return false;
+    const { speaker, order, page, perPage, params } =
+      paramsOverride || getOfflineParams();
+
+    const data = await window.qbPwa.getOfflineQuotePage({
+      speaker,
+      order,
+      page,
+      perPage,
+    });
+    if (!data) return false;
+
+    renderQuotes(data.quotes);
+    renderPagination(data.page, data.totalPages, speaker, order);
+
+    if (params) {
+      params.set("page", String(data.page));
+      if (speaker) {
+        params.set("speaker", speaker);
+      } else {
+        params.delete("speaker");
+      }
+      if (order) {
+        params.set("order", order);
+      } else {
+        params.delete("order");
+      }
+      applyOfflineParams(params);
+    }
+
+    return true;
+  };
+
+  const scheduleOfflineRender = (attempt = 0) => {
+    if (navigator.onLine) return;
+    if (window.qbPwa?.getOfflineQuotePage) {
+      loadOfflineQuotes().then((ok) => {
+        if (!ok && attempt < 12) {
+          setTimeout(() => scheduleOfflineRender(attempt + 1), 300);
+        }
+      });
+      return;
+    }
+    if (attempt < 12) {
+      setTimeout(() => scheduleOfflineRender(attempt + 1), 300);
+    }
+  };
+
+  const interceptOfflineControls = () => {
+    const form = document.querySelector(".filter-form");
+    const pagination = document.querySelector(".pagination");
+
+    const handleSubmit = (event) => {
+      if (navigator.onLine) return;
+      event.preventDefault();
+      const speaker = form?.querySelector("#speaker")?.value || "";
+      const order = form?.querySelector("#order")?.value || "oldest";
+      const pageInput = document.querySelector(".page-input");
+      const page = Number(pageInput?.value || "1");
+      const params = new URLSearchParams();
+      if (speaker) params.set("speaker", speaker);
+      if (order) params.set("order", order);
+      params.set("page", String(page));
+      loadOfflineQuotes({ speaker, order, page, perPage: getOfflineParams().perPage, params });
+    };
+
+    form?.addEventListener("submit", handleSubmit);
+    pagination?.addEventListener("submit", handleSubmit);
+  };
+
+  window.addEventListener("offline", () => scheduleOfflineRender());
+  window.addEventListener("load", () => {
+    scheduleOfflineRender();
+    interceptOfflineControls();
   });
 </script>
 {% endblock %}

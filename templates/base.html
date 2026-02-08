@@ -15,6 +15,11 @@
     <!-- Theme color (mobile UI) -->
     <meta name="theme-color" content="#0f0f0f" />
     <meta name="color-scheme" content="dark" />
+    <meta name="application-name" content="Quote Book" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Quote Book" />
+    <meta name="mobile-web-app-capable" content="yes" />
 
     <!-- Favicon -->
     <link
@@ -22,12 +27,16 @@
       href="{{ url_for('static', filename='favicon.ico') }}"
       type="image/x-icon"
     />
+    <link
+      rel="manifest"
+      href="{{ url_for('manifest_webmanifest') }}"
+    />
 
     <!-- Apple Touch Icon -->
     <link
       rel="apple-touch-icon"
       sizes="180x180"
-      href="{{ url_for('static', filename='favicon.png') }}"
+      href="{{ url_for('static', filename='icons/icon-180.png') }}"
     />
 
     <!-- Open Graph -->
@@ -101,6 +110,7 @@
 
     {% include "footer.html" %}
     <script src="{{ url_for('static', filename='assets/js/background.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/pwa-sync.js') }}"></script>
     <script>
       (() => {
         const banner = document.getElementById("cookieBanner");
@@ -120,6 +130,25 @@
 
         accept.addEventListener("click", () => closeWith("accepted"));
         decline.addEventListener("click", () => closeWith("declined"));
+      })();
+    </script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("{{ url_for('sw_js') }}", { scope: "/" })
+            .catch((err) => console.warn("Service worker registration failed", err));
+        });
+      }
+    </script>
+    <script>
+      (() => {
+        const updateStatus = () => {
+          document.body.classList.toggle("is-offline", !navigator.onLine);
+        };
+        updateStatus();
+        window.addEventListener("online", updateStatus);
+        window.addEventListener("offline", updateStatus);
       })();
     </script>
   </body>

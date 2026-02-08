@@ -31,54 +31,74 @@
         </span>
       </div>
     </div>
+
+    <div class="pwa-actions">
+      <button type="button" class="btn btn-primary btn-install" id="installBtn">
+        Install app
+      </button>
+    </div>
+    <p class="install-status" id="installStatus" aria-live="polite"></p>
+    <div class="install-help" id="installHelp" hidden></div>
   </div>
 
   <!-- Navigation -->
   <div class="card card-nav">
     <h2>Explore</h2>
 
-    <div class="nav-grid">
-      <a href="{{ url_for('all_quotes') }}" class="nav-item nav-item-wide">
+    <div class="nav-grid" id="navGrid">
+      <a
+        href="{{ url_for('all_quotes') }}"
+        class="nav-item nav-item-wide"
+        data-offline-allowed="true"
+      >
         <img src="{{ url_for('static', filename='assets/img/book.svg') }}" alt="" />
         <span>All quotes</span>
       </a>
 
-      <a href="{{ url_for('random') }}" class="nav-item">
+      <a
+        href="{{ url_for('random') }}"
+        class="nav-item"
+        data-offline-allowed="true"
+      >
         <img src="{{ url_for('static', filename='assets/img/dice.svg') }}" alt="" />
         <span>Random</span>
       </a>
 
-      <a href="{{ url_for('battle') }}" class="nav-item">
+      <a href="{{ url_for('battle') }}" class="nav-item" data-offline-allowed="false">
         <img src="{{ url_for('static', filename='assets/img/battle.svg') }}" alt="" />
         <span>Battle</span>
       </a>
 
-      <a href="{{ url_for('search') }}" class="nav-item">
+      <a href="{{ url_for('search') }}" class="nav-item" data-offline-allowed="false">
         <img src="{{ url_for('static', filename='assets/img/search.svg') }}" alt="" />
         <span>Search</span>
       </a>
 
-      <a href="{{ url_for('add_quote') }}" class="nav-item">
+      <a href="{{ url_for('add_quote') }}" class="nav-item" data-offline-allowed="false">
         <img src="{{ url_for('static', filename='assets/img/add.svg') }}" alt="" />
         <span>Add quote</span>
       </a>
 
-      <a href="{{ url_for('ai') }}" class="nav-item">
+      <a href="{{ url_for('ai') }}" class="nav-item" data-offline-allowed="false">
         <img src="{{ url_for('static', filename='assets/img/robot.svg') }}" alt="" />
         <span>AI</span>
       </a>
 
-      <a href="{{ url_for('timeline', year=now.year, month=now.month) }}" class="nav-item">
+      <a
+        href="{{ url_for('timeline', year=now.year, month=now.month) }}"
+        class="nav-item"
+        data-offline-allowed="false"
+      >
         <img src="{{ url_for('static', filename='assets/img/calendar.svg') }}" alt="" />
         <span>Calendar</span>
       </a>
 
-      <a href="{{ url_for('stats') }}" class="nav-item">
+      <a href="{{ url_for('stats') }}" class="nav-item" data-offline-allowed="false">
         <img src="{{ url_for('static', filename='assets/img/stats.svg') }}" alt="" />
         <span>Stats</span>
       </a>
       {% if edit_enabled %}
-        <a href="{{ url_for('edit_index') }}" class="nav-item">
+        <a href="{{ url_for('edit_index') }}" class="nav-item" data-offline-allowed="false">
           <img src="{{ url_for('static', filename='assets/img/add.svg') }}" alt="" />
           <span>Edit</span>
         </a>
@@ -100,4 +120,302 @@
     </ul>
   </div>
 </section>
+
+<div class="notify-modal" id="notifyModal" hidden aria-hidden="true">
+  <div class="notify-card" role="dialog" aria-modal="true" aria-labelledby="notifyTitle">
+    <span class="eyebrow">Notifications</span>
+    <h2 id="notifyTitle">Get new quote alerts?</h2>
+    <p class="lead">
+      If you want, we can send a notification each time a new quote is added.
+    </p>
+    <div class="notify-actions">
+      <button type="button" class="btn btn-primary" id="notifyAccept">
+        Allow notifications
+      </button>
+      <button type="button" class="btn btn-ghost" id="notifyDecline">
+        Not now
+      </button>
+    </div>
+    <p class="notify-status" id="notifyStatus" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const installBtn = document.getElementById("installBtn");
+    const installHelp = document.getElementById("installHelp");
+    const installStatus = document.getElementById("installStatus");
+    if (!installBtn) return;
+
+    let deferredPrompt = null;
+
+    const isStandalone = () =>
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone;
+
+    const isSecureOrigin = () => {
+      const host = window.location.hostname;
+      return (
+        window.location.protocol === "https:" ||
+        host === "localhost" ||
+        host === "127.0.0.1"
+      );
+    };
+
+    const setStatus = (message) => {
+      if (!installStatus) return;
+      installStatus.textContent = message || "";
+      installStatus.style.display = message ? "" : "none";
+    };
+
+    const showHelp = (html) => {
+      if (!installHelp) return;
+      installHelp.hidden = false;
+      installHelp.innerHTML = html;
+    };
+
+    const hideHelp = () => {
+      if (!installHelp) return;
+      installHelp.hidden = true;
+      installHelp.innerHTML = "";
+    };
+
+    const updateInstalledState = () => {
+      const installed = isStandalone();
+      installBtn.style.display = installed ? "none" : "";
+      if (installed) {
+        installBtn.disabled = true;
+        installBtn.textContent = "Installed";
+        setStatus("");
+        hideHelp();
+      } else {
+        installBtn.disabled = false;
+        installBtn.textContent = "Install app";
+        setStatus("");
+      }
+    };
+
+    const buildHelp = () => {
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      const isMac = /Macintosh/i.test(ua);
+      const isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|Edg|OPR|OPiOS/i.test(ua);
+
+      if (isIOS && isSafari) {
+        return `
+          <strong>Install on iPhone/iPad:</strong><br />
+          Tap the Share icon, then choose <em>Add to Home Screen</em>.
+        `;
+      }
+
+      if (isMac && isSafari) {
+        return `
+          <strong>Install on macOS Safari:</strong><br />
+          Use <em>File → Add to Dock</em>.
+        `;
+      }
+
+      return `
+        <strong>Install instructions:</strong><br />
+        Open the browser menu and look for <em>Install</em> or <em>Add to Home Screen</em>.
+      `;
+    };
+
+    updateInstalledState();
+    window.addEventListener("visibilitychange", () => {
+      if (!document.hidden) updateInstalledState();
+    });
+
+    if (!isSecureOrigin()) {
+      installBtn.disabled = true;
+      setStatus("Install requires HTTPS.");
+      showHelp(
+        "<strong>Install unavailable:</strong><br />This feature needs HTTPS (or localhost)."
+      );
+      return;
+    }
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      setStatus("Install available.");
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredPrompt = null;
+      updateInstalledState();
+    });
+
+    installBtn.addEventListener("click", async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        try {
+          const choice = await deferredPrompt.userChoice;
+          if (choice?.outcome === "accepted") {
+            setStatus("Install accepted.");
+          } else {
+            setStatus("Install dismissed.");
+          }
+        } catch (err) {
+          setStatus("Install prompt failed.");
+        } finally {
+          deferredPrompt = null;
+        }
+        return;
+      }
+
+      showHelp(buildHelp());
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    const vapidPublicKey = "{{ vapid_public_key }}";
+    const pushSubscribeToken = "{{ push_subscribe_token }}";
+    const modal = document.getElementById("notifyModal");
+    const acceptBtn = document.getElementById("notifyAccept");
+    const declineBtn = document.getElementById("notifyDecline");
+    const statusEl = document.getElementById("notifyStatus");
+
+    if (!modal || !acceptBtn || !declineBtn) return;
+
+    const isStandalone =
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone;
+
+    const supportsPush =
+      "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+    const isSecureOrigin = () => {
+      const host = window.location.hostname;
+      return (
+        window.location.protocol === "https:" ||
+        host === "localhost" ||
+        host === "127.0.0.1"
+      );
+    };
+
+    const setStatus = (message) => {
+      if (!statusEl) return;
+      statusEl.textContent = message || "";
+    };
+
+    const showModal = () => {
+      modal.hidden = false;
+      modal.classList.add("is-visible");
+      modal.setAttribute("aria-hidden", "false");
+    };
+
+    const hideModal = () => {
+      modal.hidden = true;
+      modal.classList.remove("is-visible");
+      modal.setAttribute("aria-hidden", "true");
+      setStatus("");
+    };
+
+    const urlBase64ToUint8Array = (base64String) => {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData = atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    };
+
+    const shouldPrompt = async () => {
+      if (!isStandalone) return false;
+      if (!supportsPush) return false;
+      if (!vapidPublicKey) return false;
+      if (!navigator.onLine) return false;
+      if (!isSecureOrigin()) return false;
+      if (localStorage.getItem("qb_push_prompted")) return false;
+      if (Notification.permission === "denied") return false;
+
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) return false;
+      } catch (err) {
+        return false;
+      }
+
+      return true;
+    };
+
+    const subscribeUser = async () => {
+      const reg = await navigator.serviceWorker.ready;
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+
+      const response = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subscription,
+          userAgent: navigator.userAgent,
+          token: pushSubscribeToken,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Subscription failed");
+      }
+    };
+
+    const handleAccept = async () => {
+      localStorage.setItem("qb_push_prompted", "accepted");
+      setStatus("Requesting permission…");
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          setStatus("Notifications blocked.");
+          return;
+        }
+        await subscribeUser();
+        setStatus("Notifications enabled.");
+        setTimeout(() => hideModal(), 900);
+      } catch (err) {
+        setStatus("Unable to enable notifications.");
+      }
+    };
+
+    const handleDecline = () => {
+      localStorage.setItem("qb_push_prompted", "declined");
+      hideModal();
+    };
+
+    acceptBtn.addEventListener("click", handleAccept);
+    declineBtn.addEventListener("click", handleDecline);
+
+    window.addEventListener("load", async () => {
+      if (await shouldPrompt()) {
+        showModal();
+      }
+    });
+  })();
+</script>
+
+<script>
+  const updateOfflineNav = () => {
+    const isOffline = !navigator.onLine;
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      const allowed = item.dataset.offlineAllowed === "true";
+      if (isOffline && !allowed) {
+        item.style.display = "none";
+      } else {
+        item.style.display = "";
+      }
+    });
+  };
+
+  updateOfflineNav();
+  window.addEventListener("online", updateOfflineNav);
+  window.addEventListener("offline", updateOfflineNav);
+</script>
 {% endblock %}

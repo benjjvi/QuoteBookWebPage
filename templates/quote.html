@@ -10,7 +10,12 @@
 {% endblock %}
 
 {% block content %}
-<section class="quote-page">
+<section
+  class="quote-page"
+  data-quote-id="{{ quote_id }}"
+  data-reroll="{{ 'true' if reroll_button else 'false' }}"
+  data-permalink-base="{{ permalink_base }}"
+>
   <article class="quote-card">
     {% if not reroll_button %}
       <header class="quote-header">
@@ -63,6 +68,8 @@
     </div>
 
     <script>
+      let currentQuoteId = Number("{{ quote_id }}") || null;
+
       function writeToClipboard(value, successMessage) {
         if (!navigator.clipboard) {
           window.prompt("Copy to clipboard:", value);
@@ -77,14 +84,139 @@
       }
 
       function copyQuote() {
-        const text = `“{{ quote }}” — {{ author }}`;
+        const quoteEl = document.querySelector(".quote-text");
+        const authorEl = document.querySelector(".quote-author");
+        const quoteText = quoteEl ? quoteEl.textContent.replace(/^\u201c|\u201d$/g, "") : "";
+        const authorText = authorEl ? authorEl.textContent.replace(/^—\s*/, "") : "";
+        const text = `“${quoteText}” — ${authorText}`.trim();
         writeToClipboard(text, "Quote copied!");
       }
 
       function permalinkQuote() {
-        const url = "{{ permalink }}";
+        const base = document.querySelector(".quote-page")?.dataset?.permalinkBase || window.location.origin + "/quote/";
+        const url = currentQuoteId ? `${base}${currentQuoteId}` : "{{ permalink }}";
         writeToClipboard(url, "Permalink copied!");
       }
+
+      const escapeHtml = (value) => {
+        const div = document.createElement("div");
+        div.textContent = value ?? "";
+        return div.innerHTML;
+      };
+
+      const formatDate = (epochSeconds) => {
+        const date = new Date((Number(epochSeconds) || 0) * 1000);
+        return new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/London",
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }).format(date);
+      };
+
+      const formatTime = (epochSeconds) => {
+        const date = new Date((Number(epochSeconds) || 0) * 1000);
+        return new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/London",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(date);
+      };
+
+      const updateQuoteCard = (quote) => {
+        if (!quote) return;
+        currentQuoteId = Number(quote.id) || currentQuoteId;
+
+        const textEl = document.querySelector(".quote-text");
+        if (textEl) textEl.textContent = `“${quote.quote}”`;
+
+        const authorEl = document.querySelector(".quote-author");
+        if (authorEl) authorEl.textContent = `— ${(quote.authors || []).join(", ")}`;
+
+        const contextEl = document.querySelector(".quote-context");
+        if (quote.context) {
+          if (contextEl) {
+            contextEl.innerHTML = `<strong>Context:</strong> ${escapeHtml(quote.context)}`;
+          } else {
+            const metaEl = document.querySelector(".quote-meta");
+            const newContext = document.createElement("div");
+            newContext.className = "quote-context";
+            newContext.innerHTML = `<strong>Context:</strong> ${escapeHtml(quote.context)}`;
+            metaEl?.before(newContext);
+          }
+        } else if (contextEl) {
+          contextEl.remove();
+        }
+
+        const metaEl = document.querySelector(".quote-meta");
+        if (metaEl) {
+          metaEl.innerHTML = `<span>${formatDate(quote.timestamp)}</span><span>•</span><span>${formatTime(quote.timestamp)}</span>`;
+        }
+
+        const headerIdEl = document.querySelector(".quote-id");
+        if (headerIdEl && currentQuoteId) {
+          headerIdEl.textContent = `Quote #${currentQuoteId}`;
+        }
+      };
+
+      const loadOfflineQuote = async () => {
+        if (!window.qbPwa) return false;
+        const page = document.querySelector(".quote-page");
+        const reroll = page?.dataset?.reroll === "true";
+        const quoteId = Number(page?.dataset?.quoteId);
+
+        let quote = null;
+        if (reroll) {
+          quote = await window.qbPwa.getRandomOfflineQuote?.();
+        } else if (Number.isFinite(quoteId)) {
+          quote = await window.qbPwa.getOfflineQuoteById?.(quoteId);
+        }
+
+        if (!quote) return false;
+        updateQuoteCard(quote);
+        return true;
+      };
+
+      const scheduleOfflineQuote = (attempt = 0) => {
+        if (navigator.onLine) return;
+        if (window.qbPwa?.getOfflineQuoteById || window.qbPwa?.getRandomOfflineQuote) {
+          loadOfflineQuote().then((ok) => {
+            if (!ok && attempt < 10) {
+              setTimeout(() => scheduleOfflineQuote(attempt + 1), 300);
+            }
+          });
+          return;
+        }
+        if (attempt < 10) {
+          setTimeout(() => scheduleOfflineQuote(attempt + 1), 300);
+        }
+      };
+
+      const interceptOfflineReroll = () => {
+        const rerollLink = document.querySelector('a[href$="/random"]');
+        if (!rerollLink) return;
+        rerollLink.addEventListener("click", (event) => {
+          if (navigator.onLine) return;
+          event.preventDefault();
+          loadOfflineQuote();
+        });
+      };
+
+      const toggleOfflineEdit = () => {
+        if (navigator.onLine) return;
+        const editLink = document.querySelector('a[href*="/quote/"][href$="/edit"]');
+        if (editLink) {
+          editLink.style.display = "none";
+        }
+      };
+
+      window.addEventListener("offline", () => scheduleOfflineQuote());
+      window.addEventListener("load", () => {
+        scheduleOfflineQuote();
+        interceptOfflineReroll();
+        toggleOfflineEdit();
+      });
     </script>
   </article>
 </section>

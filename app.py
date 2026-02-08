@@ -5,6 +5,7 @@ import os
 import random as randlib
 import re
 import secrets
+import sqlite3
 import time as timelib
 from collections import Counter
 from datetime import datetime, time, timedelta
@@ -21,10 +22,11 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
-from werkzeug.exceptions import HTTPException
+from pywebpush import WebPushException, webpush
 
 import ai_helpers
 import datetime_handler
@@ -51,6 +53,9 @@ HOST = os.getenv("HOST", "127.0.0.1")
 PORT = os.getenv("PORT", "8040")
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").strip()
 EDIT_PIN = os.getenv("EDIT_PIN", "").strip()
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "").strip()
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "").strip()
+VAPID_EMAIL = os.getenv("VAPID_EMAIL", "mailto:admin@example.com").strip()
 PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
 
 
@@ -108,10 +113,170 @@ def build_public_url(path: str) -> str:
     return urljoin(base, path.lstrip("/"))
 
 
+def quote_to_dict(quote) -> dict:
+    return {
+        "id": quote.id,
+        "quote": quote.quote,
+        "authors": quote.authors,
+        "timestamp": quote.timestamp,
+        "context": quote.context,
+        "stats": getattr(quote, "stats", {}),
+    }
+
+
+def get_push_subscribe_token() -> str:
+    token = session.get("push_subscribe_token")
+    if not token:
+        token = secrets.token_urlsafe(24)
+        session["push_subscribe_token"] = token
+    return token
+
+
+def get_ai_request_token() -> str:
+    token = session.get("ai_request_token")
+    if not token:
+        token = secrets.token_urlsafe(24)
+        session["ai_request_token"] = token
+    return token
+
+
+def get_push_db_path() -> str:
+    if getattr(quote_store, "_local", None):
+        return quote_store._local.filepath
+    return os.getenv("QUOTEBOOK_DB", "qb.db")
+
+
+def ensure_push_table() -> None:
+    db_path = get_push_db_path()
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                endpoint TEXT PRIMARY KEY,
+                subscription TEXT NOT NULL,
+                user_agent TEXT,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )
+            """
+        )
+
+
+def save_push_subscription(subscription: dict, user_agent: str | None = None) -> bool:
+    endpoint = (subscription or {}).get("endpoint")
+    if not endpoint:
+        return False
+    ensure_push_table()
+    payload = json.dumps(subscription, ensure_ascii=False)
+    now = int(timelib.time())
+    with sqlite3.connect(get_push_db_path()) as conn:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO push_subscriptions
+            (endpoint, subscription, user_agent, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (endpoint, payload, user_agent or "", now, now),
+        )
+    return True
+
+
+def delete_push_subscription(endpoint: str) -> None:
+    if not endpoint:
+        return
+    ensure_push_table()
+    with sqlite3.connect(get_push_db_path()) as conn:
+        conn.execute(
+            "DELETE FROM push_subscriptions WHERE endpoint = ?",
+            (endpoint,),
+        )
+
+
+def load_push_subscriptions() -> list[dict]:
+    ensure_push_table()
+    with sqlite3.connect(get_push_db_path()) as conn:
+        rows = conn.execute(
+            "SELECT subscription FROM push_subscriptions"
+        ).fetchall()
+    subscriptions = []
+    for row in rows:
+        try:
+            subscriptions.append(json.loads(row[0]))
+        except json.JSONDecodeError:
+            continue
+    return subscriptions
+
+
+def send_push_notification(title: str, body: str, url: str) -> int:
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        app.logger.warning("Push notification skipped: missing VAPID keys.")
+        return 0
+
+    payload = json.dumps(
+        {
+            "title": title,
+            "body": body,
+            "url": url,
+        }
+    )
+
+    subscriptions = load_push_subscriptions()
+    if not subscriptions:
+        return 0
+
+    sent = 0
+    for subscription in subscriptions:
+        endpoint = subscription.get("endpoint")
+        try:
+            webpush(
+                subscription_info=subscription,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_EMAIL},
+            )
+            sent += 1
+        except WebPushException as exc:
+            status = getattr(exc.response, "status_code", None)
+            if status in (404, 410) and endpoint:
+                delete_push_subscription(endpoint)
+            else:
+                app.logger.warning("Push failed for %s: %s", endpoint, exc)
+        except Exception as exc:
+            app.logger.warning("Push error for %s: %s", endpoint, exc)
+    return sent
+
+
 app.jinja_env.filters["month_name"] = month_name
 app.jinja_env.filters["to_uk_datetime"] = to_uk_datetime
 app.jinja_env.filters["uk_time"] = uk_time
 app.jinja_env.filters["uk_date"] = uk_date
+
+# ─────────────────────────────────────────────
+# PWA assets
+# ─────────────────────────────────────────────
+
+
+@app.route("/sw.js")
+def sw_js():
+    return send_from_directory("static", "sw.js", mimetype="application/javascript")
+
+
+@app.route("/manifest.webmanifest")
+def manifest_webmanifest():
+    return send_from_directory(
+        "static", "manifest.webmanifest", mimetype="application/manifest+json"
+    )
+
+
+@app.route("/offline")
+def offline_page():
+    return send_from_directory("static", "offline.html", mimetype="text/html")
+
+
+@app.route("/pwa")
+def pwa_diag():
+    return render_template("pwa.html")
+
 
 # ─────────────────────────────────────────────
 # Hard-capped file handler (no deletion)
@@ -226,6 +391,8 @@ def index():
         speaker_counts=quote_store.get_speaker_counts(),
         now=datetime.now(UK_TZ),
         edit_enabled=bool(EDIT_PIN),
+        vapid_public_key=VAPID_PUBLIC_KEY,
+        push_subscribe_token=get_push_subscribe_token(),
     )
 
 
@@ -257,6 +424,15 @@ def add_quote():
                 new_quote.id,
                 ", ".join(new_quote.authors),
             )
+            try:
+                author_name = ", ".join(new_quote.authors) or "Unknown"
+                send_push_notification(
+                    "People are chatting...",
+                    f"New quote by {author_name}",
+                    build_public_url(url_for("quote_by_id", quote_id=new_quote.id)),
+                )
+            except Exception as exc:
+                app.logger.warning("Push notification failed: %s", exc)
 
             return redirect(url_for("index"))
 
@@ -266,10 +442,14 @@ def add_quote():
 
 @app.route("/ai")
 def ai():
-    return render_template("ai.html", ai_available=ai_worker.can_generate)
+    return render_template(
+        "ai.html",
+        ai_available=ai_worker.can_generate,
+        ai_request_token=get_ai_request_token() if ai_worker.can_generate else "",
+    )
 
 
-@app.route("/ai_screenplay")
+@app.route("/ai_screenplay", methods=["POST"])
 def ai_screenplay():
     if not ai_worker.can_generate:
         return (
@@ -278,6 +458,10 @@ def ai_screenplay():
             ),
             503,
         )
+    data = request.get_json(silent=True) or {}
+    token = data.get("token")
+    if not token or token != session.get("ai_request_token"):
+        return jsonify(error="Invalid AI request token."), 403
     app.logger.info("AI screenplay requested.")
     quotes = quote_store.get_all_quotes()
     scored_quotes = [
@@ -353,6 +537,7 @@ def random():
         reroll_button=True,
         quote_id=q.id,
         permalink=build_public_url(url_for("quote_by_id", quote_id=q.id)),
+        permalink_base=build_public_url("/quote/"),
         edit_enabled=bool(EDIT_PIN),
         edit_authed=bool(session.get("edit_authed")),
     )
@@ -379,6 +564,7 @@ def quote_by_id(quote_id):
         reroll_button=False,
         quote_id=quote_id,
         permalink=build_public_url(url_for("quote_by_id", quote_id=quote_id)),
+        permalink_base=build_public_url("/quote/"),
         edit_enabled=bool(EDIT_PIN),
         edit_authed=bool(session.get("edit_authed")),
     )
@@ -490,10 +676,16 @@ def edit_index():
 @app.route("/all_quotes")
 def all_quotes():
     speaker_filter = request.args.get("speaker", None)
+    sort_order = (request.args.get("order") or "oldest").strip().lower()
+    if sort_order not in ("oldest", "newest"):
+        sort_order = "oldest"
     page = request.args.get("page", 1, type=int)
 
     paginated_quotes, page, total_pages = quote_store.get_quote_page(
-        speaker_filter, page, PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE
+        speaker_filter,
+        page,
+        PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE,
+        sort_order,
     )
     sorted_speakers = quote_store.get_speaker_counts()
 
@@ -501,9 +693,11 @@ def all_quotes():
         "all_quotes.html",
         quotes=paginated_quotes,
         selected_speaker=speaker_filter,
+        sort_order=sort_order,
         speakers=sorted_speakers,
         page=page,
         total_pages=total_pages,
+        per_page=PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE,
     )
 
 
@@ -737,6 +931,77 @@ def api_latest_quote():
     )
 
 
+@app.route("/api/quotes")
+def api_quotes():
+    speaker = request.args.get("speaker")
+    page = request.args.get("page", type=int)
+    per_page = request.args.get("per_page", type=int)
+    order = (request.args.get("order") or "oldest").strip().lower()
+    if order not in ("oldest", "newest", "desc", "reverse"):
+        order = "oldest"
+    reverse_sort = order in ("newest", "desc", "reverse")
+
+    quotes = quote_store.get_all_quotes()
+    if speaker:
+        speaker_lower = speaker.lower()
+        quotes = [
+            q
+            for q in quotes
+            if any(speaker_lower == author.lower() for author in q.authors)
+        ]
+
+    quotes = sorted(quotes, key=lambda q: (q.timestamp, q.id), reverse=reverse_sort)
+    total = len(quotes)
+
+    if page and per_page and per_page > 0:
+        page = max(1, page)
+        total_pages = max(1, (total + per_page - 1) // per_page)
+        page = min(page, total_pages)
+        start = (page - 1) * per_page
+        end = start + per_page
+        quotes = quotes[start:end]
+    else:
+        total_pages = 1
+
+    return jsonify(
+        quotes=[quote_to_dict(q) for q in quotes],
+        total=total,
+        page=page or 1,
+        per_page=per_page or total,
+        total_pages=total_pages,
+    )
+
+
+@app.route("/api/push/subscribe", methods=["POST"])
+def api_push_subscribe():
+    if not VAPID_PUBLIC_KEY or not VAPID_PRIVATE_KEY:
+        return jsonify(error="Push notifications are not configured."), 503
+
+    data = request.get_json(silent=True) or {}
+    token = data.get("token")
+    if not token or token != session.get("push_subscribe_token"):
+        return jsonify(error="Invalid subscription token."), 403
+    subscription = data.get("subscription") or data
+    user_agent = data.get("userAgent") or request.headers.get("User-Agent", "")
+
+    if not isinstance(subscription, dict) or not subscription.get("endpoint"):
+        return jsonify(error="Invalid subscription payload."), 400
+
+    saved = save_push_subscription(subscription, user_agent)
+    return jsonify(ok=bool(saved))
+
+
+@app.route("/api/push/unsubscribe", methods=["POST"])
+def api_push_unsubscribe():
+    data = request.get_json(silent=True) or {}
+    endpoint = data.get("endpoint")
+    if not endpoint:
+        return jsonify(error="Missing endpoint."), 400
+    delete_push_subscription(endpoint)
+    return jsonify(ok=True)
+
+
+
 @app.route("/credits")
 def credits():
     return render_template("credits.html")
@@ -755,24 +1020,6 @@ def health():
 @app.route("/cuppa")
 def cuppa():
     abort(418)
-
-
-@app.route("/err")
-def err():
-    abort(500)
-
-
-@app.errorhandler(HTTPException)
-def handle_http_error(e):
-    if wants_json_response():
-        return jsonify(error=e.name, description=e.description), e.code
-
-    return (
-        render_template(
-            "error.html", code=e.code, name=e.name, description=e.description
-        ),
-        e.code,
-    )
 
 
 @app.errorhandler(Exception)

@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}PWA Diagnostics{% endblock %}
+
+{% block content %}
+<section class="pwa-diag">
+  <header>
+    <span class="eyebrow">Tools</span>
+    <h1>PWA Diagnostics</h1>
+    <p class="lead">
+      Quick status for service worker, manifest, cache, and install state.
+    </p>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+  </header>
+
+  <div class="diag-grid">
+    <article class="diag-card">
+      <h2>App Status</h2>
+      <ul>
+        <li><strong>Online:</strong> <span id="net-status">Checking…</span></li>
+        <li><strong>Display mode:</strong> <span id="display-mode">Checking…</span></li>
+      </ul>
+    </article>
+
+    <article class="diag-card">
+      <h2>Service Worker</h2>
+      <ul>
+        <li><strong>Supported:</strong> <span id="sw-support">Checking…</span></li>
+        <li><strong>Status:</strong> <span id="sw-status">Checking…</span></li>
+        <li><strong>Scope:</strong> <span id="sw-scope">—</span></li>
+        <li><strong>State:</strong> <span id="sw-state">—</span></li>
+      </ul>
+    </article>
+
+    <article class="diag-card">
+      <h2>Manifest</h2>
+      <ul>
+        <li><strong>Link:</strong> <span id="manifest-link">Checking…</span></li>
+        <li><strong>Name:</strong> <span id="manifest-name">—</span></li>
+        <li><strong>Start URL:</strong> <span id="manifest-start">—</span></li>
+      </ul>
+    </article>
+
+    <article class="diag-card">
+      <h2>Cache</h2>
+      <ul>
+        <li><strong>Supported:</strong> <span id="cache-support">Checking…</span></li>
+        <li><strong>Stores:</strong> <span id="cache-keys">—</span></li>
+        <li><strong>Total entries:</strong> <span id="cache-total">—</span></li>
+      </ul>
+      <div id="cache-details" class="cache-details"></div>
+    </article>
+
+    <article class="diag-card">
+      <h2>Offline Quotes</h2>
+      <ul>
+        <li><strong>Stored quotes:</strong> <span id="quote-count">Checking…</span></li>
+        <li><strong>Sync status:</strong> <span id="quote-sync">Checking…</span></li>
+        <li><strong>Last sync:</strong> <span id="quote-sync-time">—</span></li>
+      </ul>
+    </article>
+
+  </div>
+</section>
+
+<style>
+  .pwa-diag {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 2rem;
+    color: #f7f4ef;
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  }
+
+  .pwa-diag header {
+    background: rgba(15, 15, 18, 0.9);
+    border-radius: 26px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .pwa-diag h1 {
+    font-family: "Fraunces", "Georgia", serif;
+    font-size: clamp(2rem, 3vw, 2.6rem);
+    margin: 0 0 0.4rem 0;
+  }
+
+  .diag-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .diag-card {
+    background: rgba(15, 15, 18, 0.88);
+    border-radius: 22px;
+    padding: 1.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  }
+
+  .diag-card h2 {
+    font-family: "Fraunces", "Georgia", serif;
+    margin: 0 0 1rem 0;
+    font-size: 1.2rem;
+  }
+
+  .diag-card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .diag-card strong {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .cache-details {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .btn {
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    border-radius: 999px;
+    padding: 0.65rem 1.4rem;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #ffd37a, #ff9a62);
+    color: #1b1308;
+  }
+
+  .notify-status {
+    margin: 0.9rem 0 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+</style>
+
+<script>
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+
+  const updateNetworkStatus = () => {
+    setText("net-status", navigator.onLine ? "Online" : "Offline");
+  };
+
+  const getDisplayMode = () => {
+    if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) {
+      return "Standalone";
+    }
+    if (window.matchMedia && window.matchMedia("(display-mode: minimal-ui)").matches) {
+      return "Minimal UI";
+    }
+    if (window.navigator.standalone) {
+      return "Standalone (iOS)";
+    }
+    return "Browser";
+  };
+
+  const loadManifest = async () => {
+    const link = document.querySelector('link[rel="manifest"]');
+    if (!link) {
+      setText("manifest-link", "Not found");
+      return;
+    }
+
+    setText("manifest-link", link.href);
+    try {
+      const res = await fetch(link.href, { cache: "no-store" });
+      if (!res.ok) throw new Error("bad response");
+      const data = await res.json();
+      setText("manifest-name", data.name || data.short_name || "—");
+      setText("manifest-start", data.start_url || "—");
+    } catch (err) {
+      setText("manifest-name", "Failed to load");
+      setText("manifest-start", "—");
+    }
+  };
+
+  const loadServiceWorker = async () => {
+    if (!("serviceWorker" in navigator)) {
+      setText("sw-support", "No");
+      setText("sw-status", "Not supported");
+      return;
+    }
+
+    setText("sw-support", "Yes");
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        setText("sw-status", "Not registered");
+        return;
+      }
+
+      setText("sw-status", "Registered");
+      setText("sw-scope", reg.scope || "—");
+      const state = reg.active?.state || reg.installing?.state || reg.waiting?.state;
+      setText("sw-state", state || "Unknown");
+    } catch (err) {
+      setText("sw-status", "Error");
+    }
+  };
+
+  const loadCache = async () => {
+    if (!("caches" in window)) {
+      setText("cache-support", "No");
+      return;
+    }
+
+    setText("cache-support", "Yes");
+    try {
+      const keys = await caches.keys();
+      setText("cache-keys", keys.length ? keys.join(", ") : "None");
+      let total = 0;
+      const details = [];
+
+      await Promise.all(
+        keys.map(async (key) => {
+          const cache = await caches.open(key);
+          const entries = await cache.keys();
+          total += entries.length;
+          details.push(`${key}: ${entries.length} items`);
+        })
+      );
+
+      setText("cache-total", String(total));
+      const detailsEl = document.getElementById("cache-details");
+      if (detailsEl) {
+        detailsEl.textContent = details.length ? details.join(" · ") : "";
+      }
+    } catch (err) {
+      setText("cache-keys", "Error");
+    }
+  };
+
+  const loadQuoteStats = async () => {
+    if (!window.qbPwa?.getLocalStats) {
+      return null;
+    }
+
+    const stats = await window.qbPwa.getLocalStats();
+    if (!stats) {
+      return null;
+    }
+
+    const totalLabel = stats.total ? ` / ${stats.total}` : "";
+    setText("quote-count", `${stats.count}${totalLabel}`);
+    setText("quote-sync", stats.complete ? "Complete" : "In progress");
+
+    if (stats.lastRun) {
+      const dt = new Date(stats.lastRun);
+      setText("quote-sync-time", dt.toLocaleString());
+    } else {
+      setText("quote-sync-time", "—");
+    }
+
+    return stats;
+  };
+
+  const scheduleQuoteStats = (attempt = 0) => {
+    if (attempt === 0) {
+      setText("quote-count", "Waiting…");
+      setText("quote-sync", "Waiting…");
+    }
+    loadQuoteStats().then((stats) => {
+      if (stats) return;
+      if (attempt >= 10) {
+        setText("quote-count", "Unavailable");
+        setText("quote-sync", "Unavailable");
+        return;
+      }
+      setTimeout(() => scheduleQuoteStats(attempt + 1), 300);
+    });
+  };
+
+
+  updateNetworkStatus();
+  setText("display-mode", getDisplayMode());
+  window.addEventListener("online", updateNetworkStatus);
+  window.addEventListener("offline", updateNetworkStatus);
+
+  loadManifest();
+  loadServiceWorker();
+  loadCache();
+  scheduleQuoteStats();
+</script>
+{% endblock %}

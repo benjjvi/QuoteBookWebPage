@@ -76,6 +76,10 @@ def api_quotes():
     speaker = request.args.get("speaker")
     page = request.args.get("page", type=int)
     per_page = request.args.get("per_page", type=int)
+    order = (request.args.get("order") or "oldest").strip().lower()
+    if order not in ("oldest", "newest", "desc", "reverse"):
+        order = "oldest"
+    reverse_sort = order in ("newest", "desc", "reverse")
 
     quotes = qb.quotes
     if speaker:
@@ -85,6 +89,7 @@ def api_quotes():
             for q in quotes
             if any(speaker_lower == author.lower() for author in q.authors)
         ]
+    quotes = sorted(quotes, key=lambda q: (q.timestamp, q.id), reverse=reverse_sort)
 
     total = len(quotes)
 

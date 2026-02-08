@@ -11,7 +11,16 @@
 
 {% block content %}
 <section class="battle-page">
-  <header class="battle-header">
+  <div class="offline-card offline-only">
+    <span class="eyebrow">Offline</span>
+    <h1>Quote battles are unavailable offline</h1>
+    <p class="lead">
+      Reconnect to the internet to keep battles in sync with everyone else.
+    </p>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+  </div>
+
+  <header class="battle-header offline-hide">
     <div>
       <span class="eyebrow">Battle</span>
       <h1>Which quote wins?</h1>
@@ -20,7 +29,7 @@
     <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
   </header>
 
-  <div class="battle-grid">
+  <div class="battle-grid offline-hide">
     <form method="post" class="battle-form">
       <input type="hidden" name="winner" value="{{ quote_a.id }}" />
       <input type="hidden" name="loser" value="{{ quote_b.id }}" />
