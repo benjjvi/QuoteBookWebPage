@@ -426,11 +426,12 @@ def add_quote():
             )
             try:
                 author_name = ", ".join(new_quote.authors) or "Unknown"
-                send_push_notification(
+                sent_count = send_push_notification(
                     "People are chatting...",
                     f"New quote by {author_name}",
                     build_public_url(url_for("quote_by_id", quote_id=new_quote.id)),
                 )
+                app.logger.info("Push notifications sent: %s", sent_count)
             except Exception as exc:
                 app.logger.warning("Push notification failed: %s", exc)
 
@@ -989,6 +990,13 @@ def api_push_subscribe():
 
     saved = save_push_subscription(subscription, user_agent)
     return jsonify(ok=bool(saved))
+
+
+@app.route("/api/push/token", methods=["GET"])
+def api_push_token():
+    if not VAPID_PUBLIC_KEY or not VAPID_PRIVATE_KEY:
+        return jsonify(error="Push notifications are not configured."), 503
+    return jsonify(token=get_push_subscribe_token())
 
 
 @app.route("/api/push/unsubscribe", methods=["POST"])

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v7";
+const CACHE_VERSION = "v8";
 const PRECACHE = `qb-precache-${CACHE_VERSION}`;
 const RUNTIME = `qb-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -53,12 +53,12 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(staleWhileRevalidate(request, RUNTIME, OFFLINE_URL));
+    event.respondWith(networkFirst(request, RUNTIME, OFFLINE_URL));
     return;
   }
 
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(staleWhileRevalidate(request, RUNTIME));
+    event.respondWith(networkFirst(request, RUNTIME));
     return;
   }
 
@@ -128,6 +128,42 @@ async function cacheFirst(request, cacheName) {
   return response;
 }
 
+async function getFallbackResponse(fallbackUrl) {
+  if (!fallbackUrl) return null;
+
+  const runtimeCache = await caches.open(RUNTIME);
+  let fallback = await runtimeCache.match(fallbackUrl);
+  if (fallback) return fallback;
+
+  const precache = await caches.open(PRECACHE);
+  fallback = await precache.match(fallbackUrl);
+  if (fallback) return fallback;
+
+  return null;
+}
+
+async function networkFirst(request, cacheName, fallbackUrl) {
+  const cache = await caches.open(cacheName);
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (err) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+
+    const fallback = await getFallbackResponse(fallbackUrl);
+    if (fallback) return fallback;
+
+    return new Response("Offline", {
+      status: 503,
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
+}
+
 async function staleWhileRevalidate(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
@@ -149,10 +185,8 @@ async function staleWhileRevalidate(request, cacheName, fallbackUrl) {
   const networkResponse = await fetchPromise;
   if (networkResponse) return networkResponse;
 
-  if (fallbackUrl) {
-    const fallback = await cache.match(fallbackUrl);
-    if (fallback) return fallback;
-  }
+  const fallback = await getFallbackResponse(fallbackUrl);
+  if (fallback) return fallback;
 
   return new Response("Offline", {
     status: 503,

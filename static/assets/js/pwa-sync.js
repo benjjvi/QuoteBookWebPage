@@ -4,8 +4,8 @@
   const QUOTES_STORE = "quotes";
   const META_STORE = "meta";
   const SYNC_LOCK_KEY = "qb_sync_lock";
-  const SYNC_LOCK_TTL_MS = 2;
-  const PER_PAGE = 1;
+  const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
+  const PER_PAGE = 100;
   const SYNC_DELAY_MS = 300;
 
   let inMemorySync = false;
