@@ -5,6 +5,10 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css"
+/>
+<link
+  rel="stylesheet"
   href="{{ url_for('static', filename='assets/css/add-quote.css') }}"
 />
 {% endblock %}
@@ -69,6 +73,20 @@
           <p class="field-hint">Optional. Helps future-you remember.</p>
         </div>
 
+        <div class="field">
+          <label for="quote_datetime">Date and time</label>
+          <input
+            id="quote_datetime"
+            name="quote_datetime"
+            type="text"
+            placeholder="Leave blank for current date/time"
+            autocomplete="off"
+          />
+          <p class="field-hint">
+            Optional. Uses UK time. If empty, current date/time is used.
+          </p>
+        </div>
+
         <div class="form-actions">
           <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
           <button type="submit" class="btn btn-primary">Add quote</button>
@@ -98,4 +116,19 @@
     </div>
   </div>
 </section>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  (() => {
+    const dateInput = document.getElementById("quote_datetime");
+    if (!dateInput || typeof flatpickr !== "function") return;
+
+    flatpickr(dateInput, {
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d\\TH:i",
+      altInput: true,
+      altFormat: "j F Y, H:i",
+    });
+  })();
+</script>
 {% endblock %}

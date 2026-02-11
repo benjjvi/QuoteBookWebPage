@@ -403,14 +403,25 @@ def add_quote():
         quote_text = request.form.get("quote_text", "").strip()
         context = request.form.get("context", "").strip()
         author_raw = request.form.get("author_info", "Unknown").strip()
+        quote_datetime_raw = request.form.get("quote_datetime", "").strip()
 
         # Only proceed if there is quote text
         if quote_text:
             # Parse authors
             authors = quote_store.parse_authors(author_raw)
 
-            # Get current UK timestamp in UTC
+            # Use selected UK date/time when provided, otherwise fallback to now.
             timestamp = datetime_handler.get_current_uk_timestamp()
+            if quote_datetime_raw:
+                try:
+                    selected_dt = datetime.strptime(quote_datetime_raw, "%Y-%m-%dT%H:%M")
+                    selected_dt = selected_dt.replace(tzinfo=UK_TZ)
+                    timestamp = int(selected_dt.timestamp())
+                except ValueError:
+                    app.logger.warning(
+                        "Invalid quote_datetime value '%s'; using current time.",
+                        quote_datetime_raw,
+                    )
 
             # Add quote to quote store (local DB or remote API)
             new_quote = quote_store.add_quote(
