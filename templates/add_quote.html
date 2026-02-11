@@ -119,15 +119,58 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
   (() => {
+    const form = document.querySelector(".quote-form");
+    const quoteTextInput = document.getElementById("quote_text");
+    const authorInput = document.getElementById("author_info");
+    const contextInput = document.getElementById("context");
     const dateInput = document.getElementById("quote_datetime");
-    if (!dateInput || typeof flatpickr !== "function") return;
+    const draftKey = "qb_add_quote_draft_v1";
 
-    flatpickr(dateInput, {
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d\\TH:i",
-      altInput: true,
-      altFormat: "j F Y, H:i",
+    if (!form || !quoteTextInput || !authorInput || !contextInput || !dateInput) return;
+
+    const saveDraft = () => {
+      const payload = {
+        quote_text: quoteTextInput.value || "",
+        author_info: authorInput.value || "",
+        context: contextInput.value || "",
+        quote_datetime: dateInput.value || "",
+      };
+      localStorage.setItem(draftKey, JSON.stringify(payload));
+    };
+
+    const restoreDraft = () => {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        if (!quoteTextInput.value && data.quote_text) quoteTextInput.value = data.quote_text;
+        if (!authorInput.value && data.author_info) authorInput.value = data.author_info;
+        if (!contextInput.value && data.context) contextInput.value = data.context;
+        if (!dateInput.value && data.quote_datetime) dateInput.value = data.quote_datetime;
+      } catch (_err) {
+        localStorage.removeItem(draftKey);
+      }
+    };
+
+    if (typeof flatpickr === "function") {
+      flatpickr(dateInput, {
+        enableTime: true,
+        time_24hr: true,
+        dateFormat: "Y-m-d\\TH:i",
+        altInput: true,
+        altFormat: "j F Y, H:i",
+      });
+    }
+
+    restoreDraft();
+
+    quoteTextInput.addEventListener("input", saveDraft);
+    authorInput.addEventListener("input", saveDraft);
+    contextInput.addEventListener("input", saveDraft);
+    dateInput.addEventListener("change", saveDraft);
+
+    form.addEventListener("submit", () => {
+      localStorage.removeItem(draftKey);
     });
   })();
 </script>

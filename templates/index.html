@@ -140,6 +140,37 @@
   </div>
 </div>
 
+<div class="notify-modal" id="emailModal" hidden aria-hidden="true">
+  <div class="notify-card" role="dialog" aria-modal="true" aria-labelledby="emailTitle">
+    <span class="eyebrow">Email updates</span>
+    <h2 id="emailTitle">Get the weekly quote digest?</h2>
+    <p class="lead">
+      Drop your email to get a Monday morning round-up of the latest quotes.
+    </p>
+    <form id="emailSubscribeForm" class="notify-form">
+      <label for="emailSubscribeInput" class="notify-label">Email address: </label>
+      <input
+        id="emailSubscribeInput"
+        class="notify-input"
+        name="email"
+        type="email"
+        placeholder="you@example.com"
+        autocomplete="email"
+        required
+      />
+      <div class="notify-actions">
+        <button type="submit" class="btn btn-primary" id="emailSubscribeAccept">
+          Subscribe
+        </button>
+        <button type="button" class="btn btn-ghost" id="emailSubscribeDecline">
+          Not now
+        </button>
+      </div>
+    </form>
+    <p class="notify-status" id="emailSubscribeStatus" aria-live="polite"></p>
+  </div>
+</div>
+
 <script>
   (() => {
     const installBtn = document.getElementById("installBtn");
@@ -423,6 +454,130 @@
       if (await shouldPrompt()) {
         showModal();
       }
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    let emailSubscribeToken = "{{ email_subscribe_token }}";
+    const modal = document.getElementById("emailModal");
+    const form = document.getElementById("emailSubscribeForm");
+    const input = document.getElementById("emailSubscribeInput");
+    const acceptBtn = document.getElementById("emailSubscribeAccept");
+    const declineBtn = document.getElementById("emailSubscribeDecline");
+    const statusEl = document.getElementById("emailSubscribeStatus");
+
+    if (!modal || !form || !input || !acceptBtn || !declineBtn || !statusEl) return;
+
+    const DECLINE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const setStatus = (message) => {
+      statusEl.textContent = message || "";
+    };
+
+    const showModal = () => {
+      modal.hidden = false;
+      modal.classList.add("is-visible");
+      modal.setAttribute("aria-hidden", "false");
+      input.focus();
+    };
+
+    const hideModal = () => {
+      modal.hidden = true;
+      modal.classList.remove("is-visible");
+      modal.setAttribute("aria-hidden", "true");
+      setStatus("");
+    };
+
+    const hasVisiblePrompt = () =>
+      Boolean(document.querySelector(".notify-modal.is-visible"));
+
+    const shouldPrompt = () => {
+      if (!navigator.onLine) return false;
+      if (localStorage.getItem("qb_email_subscribed") === "true") return false;
+      const declinedAt = Number(localStorage.getItem("qb_email_declined_at") || "0");
+      if (declinedAt && Date.now() - declinedAt < DECLINE_COOLDOWN_MS) return false;
+      return true;
+    };
+
+    const refreshSubscribeToken = async () => {
+      const response = await fetch("/api/email/token", {
+        method: "GET",
+        credentials: "same-origin",
+      });
+      if (!response.ok) throw new Error("Unable to refresh email token");
+      const data = await response.json();
+      if (!data.token) throw new Error("Missing email token");
+      emailSubscribeToken = data.token;
+    };
+
+    const sendSubscribe = async (email) =>
+      fetch("/api/email/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          email,
+          token: emailSubscribeToken,
+        }),
+      });
+
+    const subscribe = async () => {
+      const email = input.value.trim();
+      if (!email) {
+        setStatus("Enter an email address.");
+        return;
+      }
+
+      setStatus("Subscribing...");
+      acceptBtn.disabled = true;
+
+      try {
+        let response = await sendSubscribe(email);
+        if (response.status === 403) {
+          await refreshSubscribeToken();
+          response = await sendSubscribe(email);
+        }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setStatus(data.error || "Unable to subscribe right now.");
+          return;
+        }
+
+        localStorage.setItem("qb_email_subscribed", "true");
+        localStorage.removeItem("qb_email_declined_at");
+        setStatus(data.already_subscribed ? "You're already subscribed." : "Subscribed.");
+        setTimeout(() => hideModal(), 900);
+      } catch (_err) {
+        setStatus("Unable to subscribe right now.");
+      } finally {
+        acceptBtn.disabled = false;
+      }
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      subscribe();
+    });
+
+    declineBtn.addEventListener("click", () => {
+      localStorage.setItem("qb_email_declined_at", String(Date.now()));
+      hideModal();
+    });
+
+    const schedulePrompt = (attempt = 0) => {
+      if (!shouldPrompt()) return;
+      if (hasVisiblePrompt()) {
+        if (attempt < 6) setTimeout(() => schedulePrompt(attempt + 1), 1200);
+        return;
+      }
+      showModal();
+    };
+
+    window.addEventListener("load", () => {
+      setTimeout(() => schedulePrompt(), 1200);
     });
   })();
 </script>

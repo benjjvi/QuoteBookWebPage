@@ -230,4 +230,4 @@ app.log
 qb.db
 qb.qbf.bak
 cache/*.json
-quote_admin_gui.py
+ops_control_gui.py

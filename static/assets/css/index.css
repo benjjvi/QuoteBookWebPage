@@ -219,6 +219,33 @@ body {
   gap: 0.6rem;
 }
 
+.notify-form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.notify-label {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.notify-input {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f7f4ef;
+  padding: 0.72rem 0.85rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.notify-input:focus {
+  outline: none;
+  border-color: rgba(255, 211, 122, 0.85);
+  box-shadow: 0 0 0 3px rgba(255, 211, 122, 0.18);
+}
+
 .notify-status {
   margin: 0.9rem 0 0;
   font-size: 0.85rem;

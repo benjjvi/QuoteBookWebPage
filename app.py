@@ -6,9 +6,12 @@ import random as randlib
 import re
 import secrets
 import sqlite3
+import smtplib
+import threading
 import time as timelib
 from collections import Counter
 from datetime import datetime, time, timedelta
+from email.message import EmailMessage
 from urllib.parse import urljoin
 from zoneinfo import ZoneInfo  # Python 3.9+
 
@@ -56,6 +59,35 @@ EDIT_PIN = os.getenv("EDIT_PIN", "").strip()
 VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "").strip()
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "").strip()
 VAPID_EMAIL = os.getenv("VAPID_EMAIL", "mailto:admin@example.com").strip()
+WEEKLY_EMAIL_ENABLED = (
+    os.getenv("WEEKLY_EMAIL_ENABLED", "false").strip().lower()
+    in {"1", "true", "yes", "y", "on"}
+)
+WEEKLY_EMAIL_TO_SEED = [
+    email.strip()
+    for email in os.getenv("WEEKLY_EMAIL_TO_SEED", "").split(",")
+    if email.strip()
+]
+WEEKLY_EMAIL_FROM = os.getenv("WEEKLY_EMAIL_FROM", "").strip()
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+try:
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+except ValueError:
+    SMTP_PORT = 587
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASS = os.getenv("SMTP_PASS", "").strip()
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
+SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
 
 
@@ -132,6 +164,14 @@ def get_push_subscribe_token() -> str:
     return token
 
 
+def get_email_subscribe_token() -> str:
+    token = session.get("email_subscribe_token")
+    if not token:
+        token = secrets.token_urlsafe(24)
+        session["email_subscribe_token"] = token
+    return token
+
+
 def get_ai_request_token() -> str:
     token = session.get("ai_request_token")
     if not token:
@@ -144,6 +184,354 @@ def get_push_db_path() -> str:
     if getattr(quote_store, "_local", None):
         return quote_store._local.filepath
     return os.getenv("QUOTEBOOK_DB", "qb.db")
+
+
+def ensure_scheduler_table() -> bool:
+    db_path = get_push_db_path()
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scheduled_job_runs (
+                    job_name TEXT NOT NULL,
+                    run_key TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    PRIMARY KEY (job_name, run_key)
+                )
+                """
+            )
+            row = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table' AND name = 'scheduled_job_runs'
+                """
+            ).fetchone()
+        return bool(row)
+    except sqlite3.Error as exc:
+        app.logger.error("Unable to ensure scheduled_job_runs table: %s", exc)
+        return False
+
+
+def ensure_weekly_email_recipients_table() -> bool:
+    db_path = get_push_db_path()
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS weekly_email_recipients (
+                    email TEXT PRIMARY KEY,
+                    created_at INTEGER NOT NULL
+                )
+                """
+            )
+            row = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table' AND name = 'weekly_email_recipients'
+                """
+            ).fetchone()
+        return bool(row)
+    except sqlite3.Error as exc:
+        app.logger.error("Unable to ensure weekly_email_recipients table: %s", exc)
+        return False
+
+
+def seed_weekly_email_recipients_from_env() -> None:
+    if not WEEKLY_EMAIL_TO_SEED:
+        return
+    if not ensure_weekly_email_recipients_table():
+        app.logger.error("Skipping weekly email recipient seed: recipients table missing.")
+        return
+    with sqlite3.connect(get_push_db_path()) as conn:
+        existing_count = conn.execute(
+            "SELECT COUNT(*) FROM weekly_email_recipients"
+        ).fetchone()[0]
+        if existing_count > 0:
+            return
+        now = int(timelib.time())
+        conn.executemany(
+            """
+            INSERT OR IGNORE INTO weekly_email_recipients (email, created_at)
+            VALUES (?, ?)
+            """,
+            [(email, now) for email in WEEKLY_EMAIL_TO_SEED],
+        )
+    app.logger.info(
+        "Seeded %s weekly email recipient(s) from environment.",
+        len(WEEKLY_EMAIL_TO_SEED),
+    )
+
+
+def get_weekly_email_recipients() -> list[str]:
+    if not ensure_weekly_email_recipients_table():
+        return []
+    with sqlite3.connect(get_push_db_path()) as conn:
+        rows = conn.execute(
+            """
+            SELECT email
+            FROM weekly_email_recipients
+            ORDER BY created_at ASC, email ASC
+            """
+        ).fetchall()
+    return [row[0].strip() for row in rows if row and row[0] and row[0].strip()]
+
+
+def is_valid_email_address(email: str) -> bool:
+    if not email:
+        return False
+    pattern = re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$", re.IGNORECASE)
+    return bool(pattern.match(email))
+
+
+def add_weekly_email_recipient(email: str) -> bool:
+    normalized = (email or "").strip().lower()
+    if not is_valid_email_address(normalized):
+        return False
+    if not ensure_weekly_email_recipients_table():
+        app.logger.error("Cannot add weekly email recipient: recipients table missing.")
+        return False
+    now = int(timelib.time())
+    with sqlite3.connect(get_push_db_path()) as conn:
+        cur = conn.execute(
+            """
+            INSERT OR IGNORE INTO weekly_email_recipients (email, created_at)
+            VALUES (?, ?)
+            """,
+            (normalized, now),
+        )
+    return cur.rowcount > 0
+
+
+def claim_scheduled_run(job_name: str, run_key: str) -> bool:
+    if not ensure_scheduler_table():
+        app.logger.error("Cannot claim scheduled run: scheduled_job_runs table missing.")
+        return False
+    try:
+        with sqlite3.connect(get_push_db_path()) as conn:
+            conn.execute(
+                """
+                INSERT INTO scheduled_job_runs (job_name, run_key, created_at)
+                VALUES (?, ?, ?)
+                """,
+                (job_name, run_key, int(timelib.time())),
+            )
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+
+def release_scheduled_run(job_name: str, run_key: str) -> None:
+    if not ensure_scheduler_table():
+        app.logger.error("Cannot release scheduled run: scheduled_job_runs table missing.")
+        return
+    with sqlite3.connect(get_push_db_path()) as conn:
+        conn.execute(
+            "DELETE FROM scheduled_job_runs WHERE job_name = ? AND run_key = ?",
+            (job_name, run_key),
+        )
+
+
+def weekly_email_is_configured() -> bool:
+    return bool(WEEKLY_EMAIL_ENABLED and SMTP_HOST and get_weekly_email_recipients())
+
+
+def _digest_quote_payload(quote) -> dict:
+    quote_time = datetime.fromtimestamp(quote.timestamp, tz=UK_TZ).strftime(
+        "%Y-%m-%d %H:%M"
+    )
+    return {
+        "id": quote.id,
+        "timestamp_uk": quote_time,
+        "authors": quote.authors or [],
+        "quote": quote.quote,
+        "context": quote.context or "",
+        "stats": getattr(quote, "stats", {}),
+    }
+
+
+def build_weekly_digest_email(now_uk: datetime) -> tuple[str, str]:
+    start_uk = now_uk - timedelta(days=7)
+    weekly_quotes = quote_store.get_quotes_between(
+        int(start_uk.timestamp()),
+        int(now_uk.timestamp()),
+    )
+    weekly_quotes = sorted(weekly_quotes, key=lambda q: (q.timestamp, q.id), reverse=True)
+    all_quotes = sorted(
+        quote_store.get_all_quotes(),
+        key=lambda q: (q.timestamp, q.id),
+        reverse=True,
+    )
+
+    top_authors = Counter(
+        author.strip()
+        for q in weekly_quotes
+        for author in q.authors
+        if isinstance(author, str) and author.strip()
+    ).most_common(5)
+    top_authors_text = ", ".join(f"{name} ({count})" for name, count in top_authors)
+    if not top_authors_text:
+        top_authors_text = "No authors recorded this week."
+    all_time_top_authors = [
+        {"name": speaker, "count": count}
+        for speaker, count in quote_store.get_speaker_counts()[:8]
+    ]
+
+    digest_data = {
+        "mode": "weekly_email",
+        "api_context": "This text is generated for an API response that will be sent by email.",
+        "window_uk": {
+            "start": start_uk.strftime("%Y-%m-%d %H:%M"),
+            "end": now_uk.strftime("%Y-%m-%d %H:%M"),
+        },
+        "counts": {
+            "new_quotes": len(weekly_quotes),
+            "total_quotes": len(all_quotes),
+        },
+        "weekly_top_authors": [
+            {"name": name, "count": count} for name, count in top_authors
+        ],
+        "all_time_top_authors": all_time_top_authors,
+        "weekly_quotes": [_digest_quote_payload(q) for q in weekly_quotes[:40]],
+        "recent_existing_quotes": [_digest_quote_payload(q) for q in all_quotes[:40]],
+    }
+
+    if ai_worker.can_generate:
+        try:
+            return ai_worker.generate_weekly_digest(digest_data)
+        except Exception as exc:
+            app.logger.warning("AI weekly digest failed; using fallback digest: %s", exc)
+
+    subject = f"Quote Book Weekly Digest ({len(weekly_quotes)} new)"
+
+    lines = [
+        "Quote Book weekly update",
+        "",
+        f"Window (UK): {start_uk.strftime('%d %b %Y %H:%M')} to {now_uk.strftime('%d %b %Y %H:%M')}",
+        f"New quotes: {len(weekly_quotes)}",
+        f"Total quotes: {len(all_quotes)}",
+        f"Top speakers: {top_authors_text}",
+        "",
+    ]
+
+    if weekly_quotes:
+        lines.append("Latest quotes:")
+        for quote in weekly_quotes[:10]:
+            quote_time = datetime.fromtimestamp(quote.timestamp, tz=UK_TZ).strftime(
+                "%d %b %H:%M"
+            )
+            authors = ", ".join(quote.authors) if quote.authors else "Unknown"
+            lines.append(f"- #{quote.id} [{quote_time}] {authors}: {quote.quote}")
+    else:
+        lines.append("No new quotes were added this week.")
+
+    return subject, "\n".join(lines)
+
+
+def send_email(subject: str, body: str) -> None:
+    sender = WEEKLY_EMAIL_FROM or SMTP_USER
+    if not sender:
+        raise RuntimeError("WEEKLY_EMAIL_FROM or SMTP_USER must be configured.")
+    recipients = get_weekly_email_recipients()
+    if not recipients:
+        raise RuntimeError("No weekly email recipients configured in database.")
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = sender
+    message["To"] = ", ".join(recipients)
+    message.set_content(body)
+
+    if SMTP_USE_SSL:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+            if SMTP_USER and SMTP_PASS:
+                server.login(SMTP_USER, SMTP_PASS)
+            server.send_message(message)
+        return
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+        server.ehlo()
+        if SMTP_USE_TLS:
+            server.starttls()
+            server.ehlo()
+        if SMTP_USER and SMTP_PASS:
+            server.login(SMTP_USER, SMTP_PASS)
+        server.send_message(message)
+
+
+def maybe_send_weekly_email_digest(now_uk: datetime | None = None) -> bool:
+    if not weekly_email_is_configured():
+        return False
+
+    now_uk = now_uk or datetime.now(UK_TZ)
+    if now_uk.weekday() != 0:
+        return False
+
+    scheduled_time = datetime.combine(now_uk.date(), time(hour=7, minute=0), tzinfo=UK_TZ)
+    if now_uk < scheduled_time:
+        return False
+
+    run_key = now_uk.date().isoformat()
+    job_name = "weekly_email_digest"
+    if not claim_scheduled_run(job_name, run_key):
+        return False
+
+    try:
+        subject, body = build_weekly_digest_email(now_uk)
+        send_email(subject, body)
+        app.logger.info(
+            "Weekly digest email sent for %s to %s.",
+            run_key,
+            get_weekly_email_recipients(),
+        )
+        return True
+    except Exception:
+        release_scheduled_run(job_name, run_key)
+        raise
+
+
+_weekly_scheduler_thread: threading.Thread | None = None
+_weekly_scheduler_lock = threading.Lock()
+
+
+def weekly_email_scheduler_loop() -> None:
+    app.logger.info("Weekly email scheduler started (Monday 07:00 UK).")
+    while True:
+        try:
+            maybe_send_weekly_email_digest()
+        except Exception as exc:
+            app.logger.warning("Weekly email digest failed: %s", exc)
+        timelib.sleep(60)
+
+
+def start_weekly_email_scheduler() -> None:
+    global _weekly_scheduler_thread
+
+    if not ensure_scheduler_table() or not ensure_weekly_email_recipients_table():
+        app.logger.warning("Weekly email scheduler unavailable: required tables are missing.")
+        return
+
+    seed_weekly_email_recipients_from_env()
+
+    if not weekly_email_is_configured():
+        app.logger.info("Weekly email scheduler disabled or not configured.")
+        return
+
+    # In dev mode with Flask reloader, only start on the child process.
+    if not IS_PROD and os.getenv("WERKZEUG_RUN_MAIN") != "true":
+        return
+
+    with _weekly_scheduler_lock:
+        if _weekly_scheduler_thread and _weekly_scheduler_thread.is_alive():
+            return
+
+        _weekly_scheduler_thread = threading.Thread(
+            target=weekly_email_scheduler_loop,
+            name="weekly-email-scheduler",
+            daemon=True,
+        )
+        _weekly_scheduler_thread.start()
 
 
 def ensure_push_table() -> None:
@@ -393,6 +781,7 @@ def index():
         edit_enabled=bool(EDIT_PIN),
         vapid_public_key=VAPID_PUBLIC_KEY,
         push_subscribe_token=get_push_subscribe_token(),
+        email_subscribe_token=get_email_subscribe_token(),
     )
 
 
@@ -1010,6 +1399,33 @@ def api_push_token():
     return jsonify(token=get_push_subscribe_token())
 
 
+@app.route("/api/email/token", methods=["GET"])
+def api_email_token():
+    return jsonify(token=get_email_subscribe_token())
+
+
+@app.route("/api/email/subscribe", methods=["POST"])
+def api_email_subscribe():
+    if not ensure_weekly_email_recipients_table():
+        return jsonify(error="Email subscriptions are unavailable right now."), 503
+
+    data = request.get_json(silent=True) or {}
+    token = data.get("token")
+    if not token or token != session.get("email_subscribe_token"):
+        return jsonify(error="Invalid subscription token."), 403
+
+    email = (data.get("email") or "").strip().lower()
+    if not is_valid_email_address(email):
+        return jsonify(error="Please enter a valid email address."), 400
+
+    created = add_weekly_email_recipient(email)
+    session["email_subscribe_token"] = secrets.token_urlsafe(24)
+    return jsonify(
+        ok=True,
+        already_subscribed=not created,
+    )
+
+
 @app.route("/api/push/unsubscribe", methods=["POST"])
 def api_push_unsubscribe():
     data = request.get_json(silent=True) or {}
@@ -1018,8 +1434,6 @@ def api_push_unsubscribe():
         return jsonify(error="Missing endpoint."), 400
     delete_push_subscription(endpoint)
     return jsonify(ok=True)
-
-
 
 @app.route("/credits")
 def credits():
@@ -1064,6 +1478,9 @@ def handle_unexpected_error(e):
         ),
         500,
     )
+
+
+start_weekly_email_scheduler()
 
 
 if __name__ == "__main__":

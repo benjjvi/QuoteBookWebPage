@@ -14,6 +14,7 @@ This project takes your collection of quotes (like your **Spoons Quotes quote bo
 - Python backend in `app.py`
 - SQLite storage (`qb.db`) with automatic migration from `qb.qbf`
 - Animated background canvas with a dark theme
+- Optional weekly email digest (Monday 07:00 UK)
 - Easily deploy locally or on hosting like **Render / Heroku / GitHub Pages (via static export)**
 
 ---
@@ -63,6 +64,41 @@ Use the interactive launcher to pick client/server (and standalone mode):
 ```bash
 python run.py
 ```
+
+### Weekly email digest (optional)
+
+You can send a weekly digest email every **Monday at 07:00 UK time**.
+
+Set these environment variables:
+
+```bash
+WEEKLY_EMAIL_ENABLED=true
+WEEKLY_EMAIL_FROM="quotes@example.com"   # optional if SMTP_USER is set
+SMTP_HOST="smtp.example.com"
+SMTP_PORT=587
+SMTP_USER="smtp_username"
+SMTP_PASS="smtp_password"
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+```
+
+Recipients are now stored in SQLite (`qb.db`) table `weekly_email_recipients`.
+
+```bash
+sqlite3 qb.db "INSERT OR IGNORE INTO weekly_email_recipients (email, created_at) VALUES ('friend1@example.com', strftime('%s','now'));"
+sqlite3 qb.db "INSERT OR IGNORE INTO weekly_email_recipients (email, created_at) VALUES ('friend2@example.com', strftime('%s','now'));"
+```
+
+Optional one-time migration seed from env:
+
+```bash
+WEEKLY_EMAIL_TO_SEED="friend1@example.com,friend2@example.com"
+```
+
+Notes:
+- The scheduler runs inside the Flask process.
+- The app deduplicates the weekly run per Monday date in SQLite to avoid duplicate sends.
+- If `OPENROUTER_KEY` is set, the digest body/subject are generated via the AI helper (API-style JSON output).
 
 ---
 

@@ -175,6 +175,107 @@ class AI:
 
         return answer
 
+    def build_weekly_digest_prompt(self, digest_data):
+        payload_json = json.dumps(digest_data, ensure_ascii=False, indent=2)
+        return f"""
+You are generating a weekly digest email for a Quote Book application.
+
+You are working as part of an API.
+Return STRICT JSON only, with no markdown and no commentary:
+{{
+  "subject": "short email subject",
+  "body": "plain text email body"
+}}
+
+Rules:
+- Keep subject under 80 characters.
+- Body must be plain text (no markdown, no HTML).
+- Keep the body concise and readable for friends.
+- Mention notable themes, standout quotes, and speaker highlights.
+- Include a short "Top picks" section with quote IDs.
+- Keep a light, witty British tone.
+- Do not include disclaimers.
+- Do not include any text before or after the JSON object.
+
+Digest data:
+{payload_json}
+"""
+
+    def generate_weekly_digest(self, digest_data):
+        if not self.can_generate:
+            raise RuntimeError("OPENROUTER_KEY not set; AI generation disabled.")
+
+        prompt = self.build_weekly_digest_prompt(digest_data)
+        headers = {
+            "Authorization": f"Bearer {self.OPENROUTER_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://benjjvi.pythonanywhere.com",
+            "X-Title": "QuoteBook Weekly Digest Generator",
+        }
+        payload = {
+            "model": "mistralai/mistral-7b-instruct",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You produce strict JSON outputs for backend APIs.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 900,
+        }
+
+        logger.debug("Requesting weekly digest from OpenRouter (%s).", payload["model"])
+        last_error = None
+        payload_variants = [
+            {**payload, "response_format": {"type": "json_object"}},
+            payload,
+        ]
+        for candidate_payload in payload_variants:
+            try:
+                response = requests.post(
+                    self.OPENROUTER_URL, headers=headers, json=candidate_payload, timeout=60
+                )
+                response.raise_for_status()
+                answer = response.json()["choices"][0]["message"]["content"]
+                return self.parse_weekly_digest_response(answer)
+            except Exception as exc:
+                last_error = exc
+        raise RuntimeError(f"AI weekly digest parsing failed: {last_error}")
+
+    def parse_weekly_digest_response(self, text):
+        try:
+            parsed = self.extract_json_from_response(text)
+            subject = str(parsed.get("subject", "")).strip()
+            body = str(parsed.get("body", "")).strip()
+            if subject and body:
+                return subject, body
+        except Exception:
+            pass
+
+        # Fallback parser for near-JSON replies where body includes raw newlines.
+        stripped = text.strip()
+        if stripped.startswith("```"):
+            stripped = re.sub(r"^```(?:json)?\s*", "", stripped, flags=re.IGNORECASE)
+            stripped = re.sub(r"\s*```$", "", stripped)
+
+        subject_match = re.search(
+            r'"subject"\s*:\s*"(?P<subject>(?:\\.|[^"\\])*)"', stripped, flags=re.DOTALL
+        )
+        body_match = re.search(
+            r'"body"\s*:\s*"(?P<body>[\s\S]*)"\s*}\s*$',
+            stripped,
+            flags=re.DOTALL,
+        )
+        if not subject_match or not body_match:
+            raise ValueError("AI weekly digest response missing subject/body.")
+
+        subject = subject_match.group("subject").replace('\\"', '"').strip()
+        body = body_match.group("body").replace('\\"', '"').strip()
+        if not subject or not body:
+            raise ValueError("AI weekly digest response missing subject/body.")
+        return subject, body
+
     def extract_json_from_response(self, text):
         """
         Handles:
