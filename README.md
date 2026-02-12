@@ -124,11 +124,14 @@ export QUOTE_API_URL=http://127.0.0.1:8050
 python app.py
 ```
 
-If `APP_STANDALONE=true`, the web app uses the local SQLite database directly (even if `QUOTE_API_URL` is set).
+`run.py` behavior:
+- If `APP_MODE=client` and `APP_STANDALONE=true`, `run.py` starts both `api_server.py` and `app.py`.
+- In that split standalone mode, the web client is pointed at the local API (`http://127.0.0.1:$API_PORT`).
+- If you launch `app.py` directly, `APP_STANDALONE=true` still means local SQLite mode.
 
 Environment toggles:
 - `APP_MODE=CLIENT|SERVER` selects what `run.py` launches.
-- `APP_STANDALONE=true|false` forces local DB usage when running the client.
+- `APP_STANDALONE=true|false` controls split standalone behavior in `run.py` client mode.
 
 ---
 
