@@ -100,7 +100,7 @@ class AI:
                     return cache["data"]
 
             except (json.JSONDecodeError, KeyError):
-                pass  # corrupted cache → regenerate
+                logger.warning("AI screenplay cache is invalid; regenerating cache.")
 
         # --- Step 3: regenerate cache ---
         try:
@@ -261,8 +261,11 @@ Digest data:
             body = str(parsed.get("body", "")).strip()
             if subject and body:
                 return subject, body
-        except Exception:
-            pass
+        except (json.JSONDecodeError, TypeError, AttributeError, ValueError) as exc:
+            logger.debug(
+                "Weekly digest JSON parse failed (%s); trying fallback parser.",
+                exc,
+            )
 
         # Fallback parser for near-JSON replies where body includes raw newlines.
         stripped = text.strip()
@@ -433,7 +436,7 @@ Digest data:
                     return cache
 
             except (json.JSONDecodeError, KeyError):
-                pass  # corrupted cache → regenerate
+                logger.warning("Top-20 cache is invalid; regenerating cache.")
 
         # --- Step 4: save fresh cache ---
         logger.info("Regenerating top 20 cache.")

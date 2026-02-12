@@ -6,8 +6,8 @@ import os
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
+from http.client import HTTPConnection, HTTPSConnection
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 
@@ -35,14 +35,34 @@ def prompt_standalone() -> str:
 
 
 def wait_for_healthcheck(url: str, timeout_seconds: float = 15.0) -> bool:
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"}:
+        return False
+    if parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        return False
+
+    host = parsed.hostname
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    path = parsed.path or "/"
+    if parsed.query:
+        path = f"{path}?{parsed.query}"
+
+    conn_cls = HTTPSConnection if parsed.scheme == "https" else HTTPConnection
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
+        connection = None
         try:
-            with urllib.request.urlopen(url, timeout=1.0) as response:
-                if response.status == 200:
-                    return True
-        except (urllib.error.URLError, TimeoutError):
+            connection = conn_cls(host, port, timeout=1.0)
+            connection.request("GET", path)
+            response = connection.getresponse()
+            response.read()
+            if response.status == 200:
+                return True
+        except OSError:
             time.sleep(0.25)
+        finally:
+            if connection is not None:
+                connection.close()
     return False
 
 
