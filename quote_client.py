@@ -42,7 +42,7 @@ class QuoteClient:
 
         payload = self._get_json("/api/quotes", params={"page": 1, "per_page": 1})
         total = payload.get("total", 0)
-        return total + 1
+        return total
 
     def get_quote_page(
         self,

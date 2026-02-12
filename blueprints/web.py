@@ -483,6 +483,19 @@ def create_web_blueprint(
     def health():
         return jsonify(status="ok")
 
+    @bp.route("/health/details", endpoint="health_details")
+    def health_details():
+        return jsonify(
+            status="ok",
+            metrics=services.get_runtime_metrics(),
+            features={
+                "ai_enabled": bool(ai_worker.can_generate),
+                "edit_enabled": bool(edit_pin),
+                "push_enabled": bool(vapid_public_key),
+                "weekly_email_configured": bool(services.weekly_email_is_configured()),
+            },
+        )
+
     @bp.route("/cuppa", endpoint="cuppa")
     def cuppa():
         abort(418)

@@ -68,6 +68,77 @@ class AppServices:
 
         self._weekly_scheduler_thread: threading.Thread | None = None
         self._weekly_scheduler_lock = threading.Lock()
+        self.metrics_lock = threading.Lock()
+        self.runtime_metrics: dict[str, int] = {
+            "push_attempted": 0,
+            "push_sent": 0,
+            "push_failed": 0,
+            "push_pruned": 0,
+            "email_attempted": 0,
+            "email_sent": 0,
+            "email_failed": 0,
+            "weekly_digest_sent": 0,
+            "weekly_digest_failure": 0,
+            "weekly_digest_skipped_unconfigured": 0,
+            "weekly_digest_skipped_not_due": 0,
+            "weekly_digest_claim_conflict": 0,
+            "weekly_scheduler_loop_errors": 0,
+        }
+
+    # ------------------------
+    # Runtime validation + metrics
+    # ------------------------
+
+    def validate_runtime_config(self) -> list[str]:
+        warnings: list[str] = []
+        if self.config.public_base_url and not re.match(
+            r"^https?://", self.config.public_base_url, re.IGNORECASE
+        ):
+            warnings.append("PUBLIC_BASE_URL should start with http:// or https://.")
+
+        if bool(self.config.vapid_public_key) ^ bool(self.config.vapid_private_key):
+            warnings.append(
+                "VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must both be set to enable push."
+            )
+
+        if self.config.weekly_email_enabled and not self.config.smtp_host:
+            warnings.append("WEEKLY_EMAIL_ENABLED is true but SMTP_HOST is not configured.")
+
+        if self.config.weekly_email_enabled and not (
+            self.config.weekly_email_from or self.config.smtp_user
+        ):
+            warnings.append(
+                "Set WEEKLY_EMAIL_FROM or SMTP_USER when weekly email is enabled."
+            )
+
+        if self.config.smtp_use_ssl and self.config.smtp_use_tls:
+            warnings.append(
+                "SMTP_USE_SSL and SMTP_USE_TLS are both enabled; SSL takes precedence."
+            )
+
+        if warnings:
+            for warning in warnings:
+                self.app.logger.warning("Config warning: %s", warning)
+        else:
+            self.app.logger.info("Runtime configuration checks passed.")
+        return warnings
+
+    def _increment_metric(self, name: str, amount: int = 1) -> None:
+        if amount <= 0:
+            return
+        with self.metrics_lock:
+            self.runtime_metrics[name] = self.runtime_metrics.get(name, 0) + amount
+
+    def get_runtime_metrics(self) -> dict:
+        with self.metrics_lock:
+            snapshot = dict(self.runtime_metrics)
+        snapshot["weekly_scheduler_thread_alive"] = (
+            self._weekly_scheduler_thread.is_alive()
+            if self._weekly_scheduler_thread is not None
+            else False
+        )
+        snapshot["weekly_email_enabled"] = bool(self.config.weekly_email_enabled)
+        return snapshot
 
     # ------------------------
     # Formatting helpers
@@ -541,50 +612,62 @@ class AppServices:
         recipients = self.get_weekly_email_recipients()
         if not recipients:
             raise RuntimeError("No weekly email recipients configured in database.")
+        recipient_count = len(recipients)
+        self._increment_metric("email_attempted", recipient_count)
 
         message = EmailMessage()
         message["Subject"] = subject
         message["From"] = sender
         message["To"] = ", ".join(recipients)
         message.set_content(body)
-
-        if self.config.smtp_use_ssl:
-            with smtplib.SMTP_SSL(
-                self.config.smtp_host, self.config.smtp_port, timeout=30
-            ) as server:
-                if self.config.smtp_user and self.config.smtp_pass:
-                    server.login(self.config.smtp_user, self.config.smtp_pass)
-                server.send_message(message)
-            return
-
-        with smtplib.SMTP(self.config.smtp_host, self.config.smtp_port, timeout=30) as server:
-            server.ehlo()
-            if self.config.smtp_use_tls:
-                server.starttls()
-                server.ehlo()
-            if self.config.smtp_user and self.config.smtp_pass:
-                server.login(self.config.smtp_user, self.config.smtp_pass)
-            server.send_message(message)
+        try:
+            if self.config.smtp_use_ssl:
+                with smtplib.SMTP_SSL(
+                    self.config.smtp_host, self.config.smtp_port, timeout=30
+                ) as server:
+                    if self.config.smtp_user and self.config.smtp_pass:
+                        server.login(self.config.smtp_user, self.config.smtp_pass)
+                    server.send_message(message)
+            else:
+                with smtplib.SMTP(
+                    self.config.smtp_host, self.config.smtp_port, timeout=30
+                ) as server:
+                    server.ehlo()
+                    if self.config.smtp_use_tls:
+                        server.starttls()
+                        server.ehlo()
+                    if self.config.smtp_user and self.config.smtp_pass:
+                        server.login(self.config.smtp_user, self.config.smtp_pass)
+                    server.send_message(message)
+        except Exception:
+            self._increment_metric("email_failed", recipient_count)
+            raise
+        self._increment_metric("email_sent", recipient_count)
 
     def maybe_send_weekly_email_digest(self, now_uk: datetime | None = None) -> bool:
         if not self.weekly_email_is_configured():
+            self._increment_metric("weekly_digest_skipped_unconfigured")
             return False
         now_uk = now_uk or datetime.now(self.uk_tz)
         if now_uk.weekday() != 0:
+            self._increment_metric("weekly_digest_skipped_not_due")
             return False
 
         scheduled_time = datetime.combine(now_uk.date(), time(hour=7, minute=0), tzinfo=self.uk_tz)
         if now_uk < scheduled_time:
+            self._increment_metric("weekly_digest_skipped_not_due")
             return False
 
         run_key = now_uk.date().isoformat()
         job_name = "weekly_email_digest"
         if not self.claim_scheduled_run(job_name, run_key):
+            self._increment_metric("weekly_digest_claim_conflict")
             return False
 
         try:
             subject, body = self.build_weekly_digest_email(now_uk)
             self.send_email(subject, body)
+            self._increment_metric("weekly_digest_sent")
             self.app.logger.info(
                 "Weekly digest email sent for %s to %s.",
                 run_key,
@@ -592,6 +675,7 @@ class AppServices:
             )
             return True
         except Exception:
+            self._increment_metric("weekly_digest_failure")
             self.release_scheduled_run(job_name, run_key)
             raise
 
@@ -601,6 +685,7 @@ class AppServices:
             try:
                 self.maybe_send_weekly_email_digest()
             except Exception as exc:
+                self._increment_metric("weekly_scheduler_loop_errors")
                 self.app.logger.warning("Weekly email digest failed: %s", exc)
             timelib.sleep(60)
 
@@ -691,6 +776,7 @@ class AppServices:
         subscriptions = self.load_push_subscriptions()
         if not subscriptions:
             return 0
+        self._increment_metric("push_attempted", len(subscriptions))
 
         sent = 0
         for subscription in subscriptions:
@@ -703,13 +789,17 @@ class AppServices:
                     vapid_claims={"sub": self.config.vapid_email},
                 )
                 sent += 1
+                self._increment_metric("push_sent")
             except WebPushException as exc:
+                self._increment_metric("push_failed")
                 status = getattr(exc.response, "status_code", None)
                 if status in (404, 410) and endpoint:
                     self.delete_push_subscription(endpoint)
+                    self._increment_metric("push_pruned")
                 else:
                     self.app.logger.warning("Push failed for %s: %s", endpoint, exc)
             except Exception as exc:
+                self._increment_metric("push_failed")
                 self.app.logger.warning("Push error for %s: %s", endpoint, exc)
         return sent
 

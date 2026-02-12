@@ -185,7 +185,9 @@ class QuoteBook:
     # Quote access
     # ------------------------
 
-    def get_random_quote(self) -> Quote:
+    def get_random_quote(self) -> Quote | None:
+        if not self.quotes:
+            return None
         return random.choice(self.quotes)
 
     def get_quote_by_id(self, quote_id: int) -> Quote | None:
@@ -371,7 +373,7 @@ class QuoteBook:
         logger.debug("Saved %s quotes to %s", len(self.quotes), self.filepath)
 
     def _recalculate_stats(self):
-        self.total_quotes = len(self.quotes) + 1
+        self.total_quotes = len(self.quotes)
         self.speaker_counts = self.get_sorted_quote_counts()
 
     # ------------------------

@@ -5,6 +5,7 @@
   const META_STORE = "meta";
   const SYNC_LOCK_KEY = "qb_sync_lock";
   const SYNC_LOCK_TTL_MS = 2 * 60 * 1000;
+  const SYNC_STALE_MS = 24 * 60 * 60 * 1000;
   const PER_PAGE = 100;
   const SYNC_DELAY_MS = 300;
 
@@ -146,6 +147,7 @@
       setMeta("sync_total_pages", null),
       setMeta("sync_last_page", 0),
       setMeta("sync_complete", false),
+      setMeta("sync_last_error", null),
     ]);
   };
 
@@ -171,10 +173,20 @@
     try {
       await openDb();
 
-      const localCount = await countQuotes();
-      const lastPage = (await getMeta("sync_last_page")) || 0;
+      let localCount = await countQuotes();
+      let lastPage = (await getMeta("sync_last_page")) || 0;
+      const lastRun = Number((await getMeta("sync_last_run")) || 0);
+      const cacheIsStale = lastRun ? Date.now() - lastRun > SYNC_STALE_MS : false;
 
       await setMeta("sync_complete", false);
+      await setMeta("sync_last_error", null);
+
+      if (cacheIsStale && localCount > 0) {
+        await clearQuotesStore();
+        await resetSyncMeta();
+        localCount = 0;
+        lastPage = 0;
+      }
 
       const firstPayload = await fetchPage(1);
       const totalPages = Number(firstPayload.total_pages || 1);
@@ -242,7 +254,14 @@
 
       await setMeta("sync_complete", true);
     } catch (err) {
-      // Swallow errors; sync will retry on next load.
+      try {
+        await setMeta(
+          "sync_last_error",
+          err?.message ? String(err.message) : "Sync failed",
+        );
+      } catch (_writeErr) {
+        // Ignore IndexedDB write failures; sync can retry on next load.
+      }
     } finally {
       clearLock();
       inMemorySync = false;
@@ -260,17 +279,20 @@
 
   const getLocalStats = async () => {
     try {
-      const [count, complete, total, lastRun] = await Promise.all([
+      const [count, complete, total, lastRun, lastError] = await Promise.all([
         countQuotes(),
         getMeta("sync_complete"),
         getMeta("sync_total"),
         getMeta("sync_last_run"),
+        getMeta("sync_last_error"),
       ]);
       return {
         count,
         complete: Boolean(complete),
         total: total ? Number(total) : null,
         lastRun: lastRun ? Number(lastRun) : null,
+        stale: lastRun ? Date.now() - Number(lastRun) > SYNC_STALE_MS : false,
+        lastError: lastError ? String(lastError) : "",
       };
     } catch (err) {
       return null;

@@ -93,31 +93,36 @@ def api_quotes():
 
     total = len(quotes)
 
-    if page and per_page:
+    if page and per_page and per_page > 0:
         page = max(1, page)
         total_pages = max(1, (total + per_page - 1) // per_page)
         page = min(page, total_pages)
         start = (page - 1) * per_page
         end = start + per_page
         quotes = quotes[start:end]
+        effective_per_page = per_page
     else:
+        page = 1
         total_pages = 1
+        effective_per_page = total
 
     return jsonify(
         quotes=[quote_to_dict(q) for q in quotes],
         total=total,
-        page=page or 1,
-        per_page=per_page or total,
+        page=page,
+        per_page=effective_per_page,
         total_pages=total_pages,
+        order=order,
     )
 
 
 @app.route("/api/quotes/random")
 def api_random():
-    if not qb.quotes:
+    random_quote = qb.get_random_quote()
+    if not random_quote:
         return jsonify({"error": "No quotes found"}), 404
 
-    return jsonify(quote_to_dict(qb.get_random_quote()))
+    return jsonify(quote_to_dict(random_quote))
 
 
 @app.route("/api/quotes/<int:quote_id>")

@@ -57,6 +57,8 @@
         <li><strong>Stored quotes:</strong> <span id="quote-count">Checking…</span></li>
         <li><strong>Sync status:</strong> <span id="quote-sync">Checking…</span></li>
         <li><strong>Last sync:</strong> <span id="quote-sync-time">—</span></li>
+        <li><strong>Cache freshness:</strong> <span id="quote-freshness">—</span></li>
+        <li><strong>Last sync error:</strong> <span id="quote-sync-error">None</span></li>
       </ul>
     </article>
 
@@ -288,6 +290,8 @@
     } else {
       setText("quote-sync-time", "—");
     }
+    setText("quote-freshness", stats.stale ? "Stale" : "Fresh");
+    setText("quote-sync-error", stats.lastError || "None");
 
     return stats;
   };

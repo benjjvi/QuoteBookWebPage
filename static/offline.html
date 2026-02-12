@@ -49,6 +49,18 @@
         text-decoration: none;
         font-weight: 600;
       }
+      .status {
+        margin: 0 0 1.2rem 0;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        text-align: left;
+        font-size: 0.9rem;
+      }
+      .status strong {
+        color: #ffd37a;
+      }
     </style>
   </head>
   <body>
@@ -58,7 +70,66 @@
         Quote Book can open cached pages while you are offline. If this is your first
         visit, connect to the internet and reload to save the app for offline use.
       </p>
+      <div class="status" id="offlineStatus">
+        <strong>Offline cache:</strong> Checking local data...
+      </div>
       <a href="/">Try again</a>
     </main>
+    <script>
+      (() => {
+        const statusEl = document.getElementById("offlineStatus");
+        if (!statusEl) return;
+        if (!("indexedDB" in window)) {
+          statusEl.innerHTML = "<strong>Offline cache:</strong> IndexedDB is unavailable.";
+          return;
+        }
+
+        const req = indexedDB.open("quote_book", 1);
+        req.onerror = () => {
+          statusEl.innerHTML = "<strong>Offline cache:</strong> Unable to read local cache.";
+        };
+
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction(["quotes", "meta"], "readonly");
+          const quoteStore = tx.objectStore("quotes");
+          const metaStore = tx.objectStore("meta");
+
+          const countReq = quoteStore.count();
+          const completeReq = metaStore.get("sync_complete");
+          const totalReq = metaStore.get("sync_total");
+          const lastRunReq = metaStore.get("sync_last_run");
+          const errorReq = metaStore.get("sync_last_error");
+
+          tx.oncomplete = () => {
+            const count = Number(countReq.result || 0);
+            const complete = Boolean(completeReq.result && completeReq.result.value);
+            const total = totalReq.result ? Number(totalReq.result.value) : null;
+            const lastRun = lastRunReq.result ? Number(lastRunReq.result.value) : 0;
+            const lastError = errorReq.result ? String(errorReq.result.value || "") : "";
+            const lastSyncLabel = lastRun ? new Date(lastRun).toLocaleString() : "never";
+            const countLabel = total ? count + " / " + total : String(count);
+            const syncLabel = complete ? "complete" : "partial";
+
+            let message =
+              "<strong>Offline cache:</strong> " +
+              countLabel +
+              " quotes cached (" +
+              syncLabel +
+              "). Last sync: " +
+              lastSyncLabel +
+              ".";
+            if (lastError) {
+              message += " Latest error: " + lastError + ".";
+            }
+            if (!count) {
+              message =
+                "<strong>Offline cache:</strong> No quotes cached yet. Reconnect and open the app to sync content.";
+            }
+            statusEl.innerHTML = message;
+          };
+        };
+      })();
+    </script>
   </body>
 </html>

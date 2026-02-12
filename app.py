@@ -97,6 +97,7 @@ app.jinja_env.filters["uk_time"] = services.uk_time
 app.jinja_env.filters["uk_date"] = services.uk_date
 
 services.configure_logging()
+services.validate_runtime_config()
 
 app.register_blueprint(
     create_web_blueprint(

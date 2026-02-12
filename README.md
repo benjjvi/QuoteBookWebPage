@@ -57,6 +57,13 @@ Make sure you have the following installed:
 
 6. Open your browser and navigate to 127.0.0.1:8040
 
+### Run tests
+
+```bash
+python -m pip install -r requirements-dev.txt
+pytest
+```
+
 ### Optional launcher
 
 Use the interactive launcher to pick client/server (and standalone mode):
@@ -143,6 +150,7 @@ QuoteBookWebPage/
 ├── api_server.py            # Quote API service (optional)
 ├── run.py                   # Interactive launcher
 ├── quote_client.py          # API client + local fallback
+├── tests/                   # Pytest coverage for smoke/integration flows
 ├── templates/               # HTML templates
 ├── static/                  # CSS/JS/SVG assets
 ├── qb_formats.py            # Quote storage (SQLite) + parsing logic
@@ -196,6 +204,13 @@ You can deploy this app easily:
 - PythonAnywhere - drag and drop install.
 
 > ⚡ GitHub Pages only serves static content — if you choose this path, you’ll need to generate static HTML first.
+
+## Operational docs
+
+- Architecture and routes: `docs/architecture-route-inventory.md`
+- API contract draft: `docs/api-contract-draft.md`
+- Deployment runbook: `docs/deployment-runbook.md`
+- Release checklist and rollback/monitoring: `docs/release-checklist.md`
 
 ---
 
