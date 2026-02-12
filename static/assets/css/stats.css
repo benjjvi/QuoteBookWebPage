@@ -100,6 +100,12 @@
   margin: 0 0 1rem 0;
 }
 
+.panel-note {
+  margin: -0.35rem 0 0.9rem;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.68);
+}
+
 .panel-header {
   display: flex;
   flex-wrap: wrap;
@@ -168,7 +174,7 @@
 
 .bar-list li {
   display: grid;
-  grid-template-columns: 90px 1fr 48px;
+  grid-template-columns: 180px 1fr 56px;
   gap: 0.8rem;
   align-items: center;
   font-size: 0.9rem;
@@ -201,6 +207,23 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.2rem;
+}
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.term-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .mini-quote {

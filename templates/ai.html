@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/ai.css') }}"
+  href="/static/assets/css/ai.css"
 />
 {% endblock %}
 
@@ -25,7 +25,7 @@
           Set <code>OPENROUTER_KEY</code> in your environment to enable
           screenplay generation.
         </p>
-        <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+        <a href="/" class="btn btn-ghost">Back home</a>
       {% endif %}
     </div>
 

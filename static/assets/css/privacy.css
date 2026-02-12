@@ -78,6 +78,69 @@ li {
   margin-bottom: 0.4rem;
 }
 
+.storage-list {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0 0 1.25rem 0;
+}
+
+.storage-item {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(20, 22, 28, 0.45);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.9rem 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.storage-item[open] {
+  border-color: rgba(255, 211, 122, 0.35);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.38);
+}
+
+.storage-item summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.storage-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.storage-item summary::after {
+  content: "▾";
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+  transform: rotate(-90deg);
+  transition: transform 0.2s ease;
+}
+
+.storage-item[open] summary::after {
+  transform: rotate(0deg);
+}
+
+.storage-item p {
+  margin: 0.8rem 0 0 0;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.84em;
+  color: #ffe6a8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0.05rem 0.3rem;
+}
+
 p {
   color: rgba(255, 255, 255, 0.75);
 }

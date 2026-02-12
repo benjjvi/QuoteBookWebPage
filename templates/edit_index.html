@@ -5,11 +5,11 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/edit-quote.css') }}"
+  href="/static/assets/css/edit-quote.css"
 />
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/all-quotes.css') }}"
+  href="/static/assets/css/all-quotes.css"
 />
 {% endblock %}
 
@@ -21,7 +21,7 @@
     <p class="lead">
       Reconnect to the internet to edit quotes and keep everything in sync.
     </p>
-    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+    <a href="/" class="btn btn-ghost">Back home</a>
   </div>
 
   <div class="edit-card offline-hide">
@@ -31,7 +31,7 @@
       <p class="lead">
         Choose a quote below to edit.
       </p>
-      <a href="{{ url_for('index') }}" class="btn btn-ghost btn-exit">
+      <a href="/" class="btn btn-ghost btn-exit">
         Back home
       </a>
     </header>
@@ -88,7 +88,7 @@
             {% if q.context %}
               <p class="quote-context">{{ q.context }}</p>
             {% endif %}
-            <a href="{{ url_for('edit_quote', quote_id=q.id) }}" class="btn btn-primary">
+            <a href="/quote/{{ q.id }}/edit" class="btn btn-primary">
               Edit
             </a>
           </article>
@@ -102,7 +102,7 @@
       {% if total_pages > 1 %}
         <div class="pagination">
           {% if page > 1 %}
-            <a href="{{ url_for('edit_index', page=page-1) }}" class="btn btn-ghost">
+            <a href="/edit?page={{ page-1 }}" class="btn btn-ghost">
               ← Prev
             </a>
           {% endif %}
@@ -125,7 +125,7 @@
           </form>
 
           {% if page < total_pages %}
-            <a href="{{ url_for('edit_index', page=page+1) }}" class="btn btn-ghost">
+            <a href="/edit?page={{ page+1 }}" class="btn btn-ghost">
               Next →
             </a>
           {% endif %}

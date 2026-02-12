@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/ai-screenplay.css') }}"
+  href="/static/assets/css/ai-screenplay.css"
 />
 {% endblock %}
 
@@ -19,7 +19,7 @@
     </div>
     <div class="header-actions">
       <button type="button" class="btn btn-primary" id="downloadMarkdown">Download .md</button>
-      <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+      <a href="/" class="btn btn-ghost">Back home</a>
     </div>
   </header>
 

@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/quotes-by-day.css') }}"
+  href="/static/assets/css/quotes-by-day.css"
 />
 {% endblock %}
 
@@ -18,10 +18,10 @@
       <p class="lead">A snapshot of everything said on this day.</p>
     </div>
     <div class="header-actions">
-      <a href="{{ url_for('timeline', year=year, month=month) }}" class="btn btn-ghost">
+      <a href="/timeline/{{ year }}/{{ month }}" class="btn btn-ghost">
         Back to calendar
       </a>
-      <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+      <a href="/" class="btn btn-ghost">Back home</a>
     </div>
   </header>
 
@@ -41,7 +41,7 @@
           {% if q.context %}
             <p class="quote-context">{{ q.context }}</p>
           {% endif %}
-          <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn btn-primary">
+          <a href="/quote/{{ q.id }}" class="btn btn-primary">
             View
           </a>
         </article>

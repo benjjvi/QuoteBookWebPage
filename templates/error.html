@@ -120,13 +120,13 @@
       <p>{{ description }}</p>
 
       <div class="button-row">
-        <a class="btn btn-primary" href="{{ url_for('index') }}">
+        <a class="btn btn-primary" href="/">
           Back home
         </a>
 
         <a
           class="btn btn-secondary"
-          href="{{ request.referrer or url_for('index') }}"
+          href="{{ request.referrer or '/' }}"
         >
           Go back
         </a>

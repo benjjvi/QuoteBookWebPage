@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/stats.css') }}"
+  href="/static/assets/css/stats.css"
 />
 {% endblock %}
 
@@ -17,7 +17,7 @@
       <h1>Quote Book Stats</h1>
       <p class="lead">A snapshot of the chaos, the classics, and the battle champs.</p>
     </div>
-    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+    <a href="/" class="btn btn-ghost">Back home</a>
   </header>
 
   <div class="stats-grid">
@@ -30,7 +30,7 @@
     <article class="stat-card">
       <p class="stat-label">Avg words per quote</p>
       <p class="stat-value">{{ avg_words }}</p>
-      <p class="stat-meta">Avg characters: {{ avg_chars }}</p>
+      <p class="stat-meta">Median: {{ median_words }} · Avg chars: {{ avg_chars }}</p>
     </article>
 
     <article class="stat-card">
@@ -43,6 +43,30 @@
       <p class="stat-label">Total battles</p>
       <p class="stat-value">{{ total_battles }}</p>
       <p class="stat-meta">Head-to-head showdowns</p>
+    </article>
+
+    <article class="stat-card">
+      <p class="stat-label">New in 7 days</p>
+      <p class="stat-value">{{ recent_7_count }}</p>
+      <p class="stat-meta">Last 30 days: {{ recent_30_count }}</p>
+    </article>
+
+    <article class="stat-card">
+      <p class="stat-label">Added today</p>
+      <p class="stat-value">{{ today_count }}</p>
+      <p class="stat-meta">Peak hour: {{ peak_hour.label if peak_hour else "—" }}</p>
+    </article>
+
+    <article class="stat-card">
+      <p class="stat-label">With context</p>
+      <p class="stat-value">{{ quotes_with_context_percent }}%</p>
+      <p class="stat-meta">{{ context_count }} quotes include context</p>
+    </article>
+
+    <article class="stat-card">
+      <p class="stat-label">Multi-author quotes</p>
+      <p class="stat-value">{{ multi_author_percent }}%</p>
+      <p class="stat-meta">{{ multi_author_count }} quotes · {{ avg_authors_per_quote }} authors/quote avg</p>
     </article>
   </div>
 
@@ -68,6 +92,18 @@
             <span>{{ busiest_day.label }} ({{ busiest_day.count }})</span>
           </li>
         {% endif %}
+        {% if busiest_month %}
+          <li>
+            <span>Busiest month</span>
+            <span>{{ busiest_month.label }} ({{ busiest_month.count }})</span>
+          </li>
+        {% endif %}
+        {% if peak_hour %}
+          <li>
+            <span>Peak hour</span>
+            <span>{{ peak_hour.label }} ({{ peak_hour.count }} quotes)</span>
+          </li>
+        {% endif %}
         {% if most_battled %}
           <li>
             <span>Most battled quote</span>
@@ -90,17 +126,74 @@
     </section>
 
     <section class="panel">
-      <h2>Top speakers</h2>
+      <h2>Quote Activity</h2>
       <ul class="stat-list">
-        {% for speaker, count in top_authors %}
+        <li>
+          <span>Active days</span>
+          <span>{{ active_days }}</span>
+        </li>
+        <li>
+          <span>Avg per active day</span>
+          <span>{{ avg_quotes_per_active_day }}</span>
+        </li>
+        <li>
+          <span>Avg per calendar day</span>
+          <span>{{ avg_quotes_per_calendar_day }}</span>
+        </li>
+        <li>
+          <span>Longest streak</span>
+          <span>
+            {% if longest_streak_days > 0 %}
+              {{ longest_streak_days }} days ({{ streak_start_label }} to {{ streak_end_label }})
+            {% else %}
+              —
+            {% endif %}
+          </span>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Top speakers</h2>
+    <ul class="stat-list">
+      {% for speaker, count in top_authors %}
+        <li>
+          <span>{{ speaker }}</span>
+          <span>{{ count }}</span>
+        </li>
+      {% else %}
+        <li><span>No speakers yet</span><span>—</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <div class="stats-split">
+    <section class="panel">
+      <h2>Quote length mix</h2>
+      <p class="panel-note">Median chars: {{ median_chars }}</p>
+      <ul class="bar-list">
+        {% for bucket in length_distribution %}
           <li>
-            <span>{{ speaker }}</span>
-            <span>{{ count }}</span>
+            <span class="bar-label">{{ bucket.label }}</span>
+            <span class="bar-track">
+              <span class="bar-fill" style="--value: {{ bucket.percent }}%"></span>
+            </span>
+            <span class="bar-value">{{ bucket.count }}</span>
           </li>
-        {% else %}
-          <li><span>No speakers yet</span><span>—</span></li>
         {% endfor %}
       </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Most common terms</h2>
+      <div class="tag-cloud">
+        {% for term, count in top_terms %}
+          <span class="term-chip">{{ term }} · {{ count }}</span>
+        {% else %}
+          <span class="term-chip">No terms yet</span>
+        {% endfor %}
+      </div>
     </section>
   </div>
 
@@ -128,6 +221,7 @@
 
   <section class="panel">
     <h2>Battle leaderboards</h2>
+    <p class="panel-note">Battle participation: {{ battle_participation }}% of quotes</p>
     <div class="panel-grid">
       <div>
         <h3>Most wins</h3>
@@ -156,6 +250,34 @@
           {% endfor %}
         </ul>
       </div>
+
+      <div>
+        <h3>Most losses</h3>
+        <ul class="stat-list">
+          {% for quote in top_losers %}
+            <li>
+              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span>{{ quote.stats.losses }} losses</span>
+            </li>
+          {% else %}
+            <li><span>No losses yet</span><span>—</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div>
+        <h3>Undefeated (3+ battles)</h3>
+        <ul class="stat-list">
+          {% for quote in undefeated_quotes %}
+            <li>
+              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span>{{ quote.stats.wins }}W / {{ quote.stats.battles }}B</span>
+            </li>
+          {% else %}
+            <li><span>No undefeated streaks</span><span>—</span></li>
+          {% endfor %}
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -176,11 +298,10 @@
       {% endfor %}
     </div>
   </section>
-  </section>
 
   <script>
     const timeToggle = document.getElementById("timeToggle");
-    const timeLabels = document.querySelectorAll(".bar-label");
+    const timeLabels = document.querySelectorAll(".bar-label[data-range]");
 
     if (timeToggle) {
       timeToggle.addEventListener("click", () => {

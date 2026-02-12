@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/quote.css') }}"
+  href="/static/assets/css/quote.css"
 />
 {% endblock %}
 
@@ -44,12 +44,12 @@
     </div>
 
     <div class="quote-actions">
-      <a href="{{ url_for('index') }}" class="btn btn-secondary">
+      <a href="/" class="btn btn-secondary">
         Back home
       </a>
 
       {% if reroll_button %}
-        <a href="{{ url_for('random') }}" class="btn btn-primary">
+        <a href="/random" class="btn btn-primary">
           Another quote
         </a>
       {% endif %}
@@ -61,7 +61,7 @@
         Permalink
       </button>
       {% if edit_enabled and edit_authed %}
-        <a href="{{ url_for('edit_quote', quote_id=quote_id) }}" class="btn btn-secondary">
+        <a href="/quote/{{ quote_id }}/edit" class="btn btn-secondary">
           Edit
         </a>
       {% endif %}

@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/all-quotes.css') }}"
+  href="/static/assets/css/all-quotes.css"
 />
 {% endblock %}
 
@@ -17,7 +17,7 @@
       <h1>All Quotes</h1>
       <p class="lead">Every line, every legend, all in one place.</p>
     </div>
-    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+    <a href="/" class="btn btn-ghost">Back home</a>
   </header>
 
   <div class="controls-bar">
@@ -67,7 +67,7 @@
       <div class="filter-pill">
         <span>Showing:</span>
         <strong>{{ selected_speaker }}</strong>
-        <a href="{{ url_for('all_quotes', order=sort_order) }}" class="pill-clear">Clear</a>
+        <a href="/all_quotes?order={{ sort_order }}" class="pill-clear">Clear</a>
       </div>
     {% endif %}
   </div>
@@ -86,7 +86,7 @@
         {% if q.context %}
           <p class="quote-context">{{ q.context }}</p>
         {% endif %}
-        <a href="{{ url_for('quote_by_id', quote_id=q.id) }}" class="btn btn-primary">
+        <a href="/quote/{{ q.id }}" class="btn btn-primary">
           View
         </a>
       </article>
@@ -102,7 +102,7 @@
     <div class="pagination">
       {% if page > 1 %}
         <a
-          href="{{ url_for('all_quotes', speaker=selected_speaker, order=sort_order, page=page-1) }}"
+          href="/all_quotes?order={{ sort_order }}&page={{ page-1 }}{% if selected_speaker %}&speaker={{ selected_speaker | urlencode }}{% endif %}"
           class="btn btn-ghost"
         >
           ← Prev
@@ -134,7 +134,7 @@
 
       {% if page < total_pages %}
         <a
-          href="{{ url_for('all_quotes', speaker=selected_speaker, order=sort_order, page=page+1) }}"
+          href="/all_quotes?order={{ sort_order }}&page={{ page+1 }}{% if selected_speaker %}&speaker={{ selected_speaker | urlencode }}{% endif %}"
           class="btn btn-ghost"
         >
           Next →

@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/privacy.css') }}"
+  href="/static/assets/css/privacy.css"
 />
 {% endblock %}
 
@@ -19,19 +19,58 @@
     </p>
 
     <h2>What we store</h2>
-    <ul>
-      <li>
-        Session cookies to keep you logged in for edit access (PIN unlock).
-      </li>
-      <li>
-        A local preference indicating whether you accepted or declined the cookie prompt.
-      </li>
-    </ul>
+    <div class="storage-list" role="list">
+      <details class="storage-item" open>
+        <summary><code>session</code> cookie (Flask session)</summary>
+        <p>
+          Used for temporary authenticated state (for example, edit PIN unlock and anti-CSRF request tokens).
+          Expires automatically based on session settings.
+        </p>
+      </details>
+
+      <details class="storage-item">
+        <summary><code>qb_cookie_consent</code></summary>
+        <p>
+          Stores whether you accepted or declined the cookie prompt, so we do not ask repeatedly.
+        </p>
+      </details>
+
+      <details class="storage-item">
+        <summary><code>qb_add_quote_draft_v1</code></summary>
+        <p>
+          Stores your in-progress quote form locally to avoid losing text if you reload or close the tab.
+        </p>
+      </details>
+
+      <details class="storage-item">
+        <summary><code>qb_push_prompted</code> and <code>qb_push_declined_at</code></summary>
+        <p>
+          Tracks whether push notifications were accepted/declined and when declined, so prompts are rate-limited.
+        </p>
+      </details>
+
+      <details class="storage-item">
+        <summary><code>qb_email_subscribed</code> and <code>qb_email_declined_at</code></summary>
+        <p>
+          Tracks whether weekly digest signup was accepted/declined and when declined, so prompts are rate-limited.
+        </p>
+      </details>
+
+      <details class="storage-item">
+        <summary><code>qb_sync_lock</code></summary>
+        <p>
+          A short-lived local lock to prevent multiple tabs from running the offline quote sync at the same time.
+        </p>
+      </details>
+    </div>
 
     <h2>Why we store it</h2>
     <ul>
-      <li>To remember your edit access during a session.</li>
-      <li>To avoid showing the cookie prompt repeatedly.</li>
+      <li>To keep authenticated actions secure and scoped to your current browser session.</li>
+      <li>To reduce repeated prompts for cookies, push notifications, and email signup.</li>
+      <li>To protect in-progress quote submissions from accidental data loss.</li>
+      <li>To support reliable offline behaviour and avoid duplicate background sync tasks.</li>
+      <li>To improve UX only; none of these keys are used for advertising or third-party tracking.</li>
     </ul>
 
     <h2>How to clear</h2>
@@ -39,7 +78,7 @@
       You can clear cookies and site data from your browser settings at any time.
     </p>
 
-    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+    <a href="/" class="btn btn-ghost">Back home</a>
   </div>
 </section>
 {% endblock %}

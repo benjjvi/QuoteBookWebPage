@@ -62,6 +62,24 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+.info-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: rgba(255, 255, 255, 0.75);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.info-list code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.84em;
+  color: #ffe6a8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0.05rem 0.3rem;
+}
+
 .plainlink {
   color: #ffd37a;
   text-decoration: none;

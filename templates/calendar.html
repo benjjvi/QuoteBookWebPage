@@ -5,7 +5,7 @@
 {% block extra_css %}
 <link
   rel="stylesheet"
-  href="{{ url_for('static', filename='assets/css/calendar.css') }}"
+  href="/static/assets/css/calendar.css"
 />
 {% endblock %}
 
@@ -17,7 +17,7 @@
       <h1>Quote Calendar</h1>
       <p class="lead">Tap a day to see everything that landed there.</p>
     </div>
-    <a href="{{ url_for('index') }}" class="btn btn-ghost">Back home</a>
+    <a href="/" class="btn btn-ghost">Back home</a>
   </header>
 
   <form
@@ -57,7 +57,7 @@
         {% if day.in_month and day.count > 0 %}
           <a
             class="day-card clickable"
-            href="{{ url_for('quotes_by_day', timestamp=day.timestamp) }}"
+            href="/timeline/day/{{ day.timestamp }}"
           >
             <div class="day-badge" style="--size: {{ 26 + (day.count * 3) }}px;">
               <span>{{ day.date.day }}</span>

@@ -191,8 +191,11 @@ Rules:
 - Keep subject under 80 characters.
 - Body must be plain text (no markdown, no HTML).
 - Keep the body concise and readable for friends.
+- Body must be at least 2 paragraphs (separated by a blank line).
 - Mention notable themes, standout quotes, and speaker highlights.
 - Include a short "Top picks" section with quote IDs.
+- Include a "Leagues" section using at least 3 items from `weekly_leagues`
+  (for example: Funniest Quote League, Most Prolific Speaker League, Chaos Hour League).
 - Keep a light, witty British tone.
 - Do not include disclaimers.
 - Do not include any text before or after the JSON object.
@@ -238,10 +241,18 @@ Digest data:
                 )
                 response.raise_for_status()
                 answer = response.json()["choices"][0]["message"]["content"]
-                return self.parse_weekly_digest_response(answer)
+                subject, body = self.parse_weekly_digest_response(answer)
+                if self.count_paragraphs(body) < 2:
+                    raise ValueError("AI weekly digest body must contain at least 2 paragraphs.")
+                return subject, body
             except Exception as exc:
                 last_error = exc
         raise RuntimeError(f"AI weekly digest parsing failed: {last_error}")
+
+    @staticmethod
+    def count_paragraphs(text: str) -> int:
+        chunks = re.split(r"\n\s*\n", (text or "").strip())
+        return len([chunk for chunk in chunks if chunk.strip()])
 
     def parse_weekly_digest_response(self, text):
         try:
