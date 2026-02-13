@@ -46,7 +46,7 @@
       content="A living record of terrible, brilliant things people have said."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://benjjvi.pythonanywhere.com/" />
+    <meta property="og:url" content="{{ canonical_url }}" />
     <meta
       property="og:image"
       content="/static/favicon.png"
@@ -65,7 +65,35 @@
     />
 
     <!-- Canonical -->
-    <link rel="canonical" href="https://benjjvi.pythonanywhere.com/" />
+    <link rel="canonical" href="{{ canonical_url }}" />
+    <meta name="robots" content="{{ 'noindex,nofollow' if robots_disallow_all else 'index,follow' }}" />
+    {% if google_adsense_account %}
+      <meta name="google-adsense-account" content="{{ google_adsense_account }}" />
+    {% endif %}
+
+    <script type="application/ld+json">
+      {{
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Quote Book",
+          "url": site_base_url + "/",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": site_base_url + "/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        } | tojson
+      }}
+    </script>
+
+    {% if adsense_client_id %}
+      <script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client_id }}"
+        crossorigin="anonymous"
+      ></script>
+    {% endif %}
 
     <title>{% block title %}Quote Book{% endblock %}</title>
 

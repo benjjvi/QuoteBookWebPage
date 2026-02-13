@@ -6,6 +6,7 @@ def test_smoke_routes(client):
     home = client.get("/")
     assert home.status_code == 200
     assert b"Quote Book" in home.data
+    assert b"card-support offline-hide" in home.data
 
     all_quotes = client.get("/all_quotes")
     assert all_quotes.status_code == 200
@@ -27,3 +28,28 @@ def test_health_details_exposes_runtime_metrics(client):
     assert payload["status"] == "ok"
     assert "metrics" in payload
     assert "features" in payload
+
+
+def test_robots_and_sitemap_are_indexable(client):
+    robots = client.get("/robots.txt")
+    assert robots.status_code == 200
+    body = robots.data.decode("utf-8")
+    assert "Allow: /" in body
+    assert "Sitemap:" in body
+
+    sitemap = client.get("/sitemap.xml")
+    assert sitemap.status_code == 200
+    text = sitemap.data.decode("utf-8")
+    assert "<urlset" in text
+    assert "/quote/" in text
+
+
+def test_monetization_pages_render(client):
+    assert client.get("/support").status_code == 200
+    assert client.get("/advertise").status_code == 200
+
+
+def test_search_supports_get_query(client):
+    response = client.get("/search", query_string={"q": "first"})
+    assert response.status_code == 200
+    assert b"results for" in response.data

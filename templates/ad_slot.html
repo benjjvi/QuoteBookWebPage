@@ -1,0 +1,27 @@
+{% set ad_slot_id = ad_slot or '' %}
+<section class="monetize-slot" aria-label="sponsor-slot">
+  {% if adsense_client_id and ad_slot_id %}
+    <p class="monetize-label">Advertisement</p>
+    <ins
+      class="adsbygoogle"
+      style="display:block"
+      data-ad-client="{{ adsense_client_id }}"
+      data-ad-slot="{{ ad_slot_id }}"
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    ></ins>
+    <script>
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  {% elif sponsor_contact_url or sponsor_contact_email %}
+    <p class="monetize-label">Sponsor spot</p>
+    <p class="monetize-copy">
+      Want your brand in front of Quote Book readers?
+      {% if sponsor_contact_url %}
+        <a href="{{ sponsor_contact_url }}" rel="nofollow sponsored">Enquire about sponsorship</a>.
+      {% elif sponsor_contact_email %}
+        <a href="mailto:{{ sponsor_contact_email }}">Email {{ sponsor_contact_email }}</a>.
+      {% endif %}
+    </p>
+  {% endif %}
+</section>

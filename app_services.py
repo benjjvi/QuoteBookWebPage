@@ -53,6 +53,7 @@ class AppServiceConfig:
     smtp_use_tls: bool
     smtp_use_ssl: bool
     is_prod: bool
+    weekly_digest_sponsor_line: str = ""
 
 
 class AppServices:
@@ -378,6 +379,14 @@ class AppServices:
             "stats": getattr(quote, "stats", {}),
         }
 
+    def _append_digest_sponsor(self, body: str) -> str:
+        sponsor_line = (self.config.weekly_digest_sponsor_line or "").strip()
+        if not sponsor_line:
+            return body
+        if not body.strip():
+            return sponsor_line
+        return f"{body}\n\n{sponsor_line}"
+
     def build_weekly_digest_email(self, now_uk: datetime) -> tuple[str, str]:
         start_uk = now_uk - timedelta(days=7)
         weekly_quotes = self.quote_store.get_quotes_between(
@@ -537,7 +546,8 @@ class AppServices:
 
         if self.ai_worker.can_generate:
             try:
-                return self.ai_worker.generate_weekly_digest(digest_data)
+                subject, body = self.ai_worker.generate_weekly_digest(digest_data)
+                return subject, self._append_digest_sponsor(body)
             except Exception as exc:
                 self.app.logger.warning("AI weekly digest failed; using fallback digest: %s", exc)
 
@@ -550,7 +560,7 @@ class AppServices:
                 "plenty of historical chaos to revisit. Normal service resumes as soon as the "
                 "next unhinged one-liner appears."
             )
-            return subject, body
+            return subject, self._append_digest_sponsor(body)
 
         top_author_sentence = "Everyone contributed evenly this week."
         if top_authors:
@@ -603,7 +613,7 @@ class AppServices:
         paragraph_two = (
             f"This week's leagues: {leagues_text}. Top picks this week: {top_picks_text}. Cheers, you lot!"
         )
-        return subject, f"{paragraph_one}\n\n{paragraph_two}"
+        return subject, self._append_digest_sponsor(f"{paragraph_one}\n\n{paragraph_two}")
 
     def send_email(self, subject: str, body: str) -> None:
         sender = self.config.weekly_email_from or self.config.smtp_user

@@ -15,6 +15,8 @@ This project takes your collection of quotes (like your **Spoons Quotes quote bo
 - SQLite storage (`qb.db`) with automatic migration from `qb.qbf`
 - Animated background canvas with a dark theme
 - Optional weekly email digest (Monday 07:00 UK)
+- Optional support/sponsorship monetisation blocks
+- Optional AdSense placements (env-driven)
 - Easily deploy locally or on hosting like **Render / Heroku / GitHub Pages (via static export)**
 
 ---
@@ -106,6 +108,28 @@ Notes:
 - The scheduler runs inside the Flask process.
 - The app deduplicates the weekly run per Monday date in SQLite to avoid duplicate sends.
 - If `OPENROUTER_KEY` is set, the digest body/subject are generated via the AI helper (API-style JSON output).
+
+### Monetisation setup (optional)
+
+Set these environment variables to enable support/sponsorship blocks and optional ads:
+
+```bash
+ROBOTS_DISALLOW_ALL=false            # set true only for private deployments
+SUPPORT_URL="https://buymeacoffee.com/yourname"
+SUPPORT_LABEL="Support Quote Book"
+SPONSOR_CONTACT_URL="https://example.com/sponsor"
+SPONSOR_CONTACT_EMAIL="sponsor@example.com"
+AFFILIATE_DISCLOSURE="Disclosure: Some links may be affiliate links."
+WEEKLY_DIGEST_SPONSOR_LINE="Sponsored by Acme Co. - https://example.com"
+ADSENSE_CLIENT_ID="ca-pub-xxxxxxxxxxxxxxxx"
+ADSENSE_SLOT_INLINE="0000000000"
+ADSENSE_SLOT_FOOTER="0000000000"
+GOOGLE_ADSENSE_ACCOUNT="ca-pub-xxxxxxxxxxxxxxxx"
+```
+
+Operational notes:
+- `robots.txt` now references `/sitemap.xml` and is index-friendly unless `ROBOTS_DISALLOW_ALL=true`.
+- Sponsorship fallback cards are shown when ad slots are not configured.
 
 ---
 

@@ -37,6 +37,9 @@
 - `/timeline/day/<timestamp>`
 - `/pwa`
 - `/offline`
+- `/support`
+- `/advertise`
+- `/sitemap.xml`
 - `/health`
 - `/health/details`
 - `/credits`

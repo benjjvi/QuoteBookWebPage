@@ -266,10 +266,6 @@ body {
    NAVIGATION
    ========================= */
 
-.nav-item-wide {
-  grid-column: span 2;
-}
-
 .card-nav .nav-grid {
   margin-top: 1rem;
   display: grid;
@@ -336,4 +332,15 @@ body {
 .speaker-count {
   opacity: 0.6;
   font-size: 0.85rem;
+}
+
+.card-support .muted {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.support-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
 }

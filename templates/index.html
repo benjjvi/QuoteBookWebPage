@@ -48,7 +48,7 @@
     <div class="nav-grid" id="navGrid">
       <a
         href="/all_quotes"
-        class="nav-item nav-item-wide"
+        class="nav-item"
         data-offline-allowed="true"
       >
         <img src="/static/assets/img/book.svg" alt="" />
@@ -97,6 +97,12 @@
         <img src="/static/assets/img/stats.svg" alt="" />
         <span>Stats</span>
       </a>
+      {% if support_url or sponsor_contact_url or sponsor_contact_email %}
+        <a href="/support" class="nav-item" data-offline-allowed="false">
+          <img src="/static/assets/img/book.svg" alt="" />
+          <span>Support</span>
+        </a>
+      {% endif %}
       {% if edit_enabled %}
         <a href="/edit" class="nav-item" data-offline-allowed="false">
           <img src="/static/assets/img/add.svg" alt="" />
@@ -119,6 +125,23 @@
       {% endfor %}
     </ul>
   </div>
+
+  {% if support_url or sponsor_contact_url or sponsor_contact_email %}
+    <div class="card card-support offline-hide">
+      <h2>Keep This Running</h2>
+      <p class="muted">
+        If you enjoy the chaos, you can support hosting costs or sponsor the site.
+      </p>
+      <div class="support-actions">
+        {% if support_url %}
+          <a href="{{ support_url }}" class="btn btn-primary" rel="nofollow sponsored">
+            {{ support_label or "Support Quote Book" }}
+          </a>
+        {% endif %}
+        <a href="/advertise" class="btn btn-ghost">Sponsor / Partner</a>
+      </div>
+    </div>
+  {% endif %}
 </section>
 
 <div class="notify-modal" id="notifyModal" hidden aria-hidden="true">

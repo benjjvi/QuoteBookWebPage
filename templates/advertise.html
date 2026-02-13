@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Advertise on Quote Book{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/monetize.css" />
+<link rel="stylesheet" href="/static/assets/css/advertise.css" />
+{% endblock %}
+
+{% block content %}
+<section class="advertise-page monetize-page">
+  <article class="monetize-card advertise-card">
+    <header class="ads-hero">
+      <span class="eyebrow">Advertise</span>
+      <h1>Sponsor Quote Book</h1>
+      <p class="lead">
+        Put your brand in front of readers who regularly browse quotes, stats, and weekly recaps.
+      </p>
+      <div class="ads-hero-actions">
+        {% if sponsor_contact_url %}
+          <a href="{{ sponsor_contact_url }}" class="btn btn-primary" rel="nofollow">
+            Contact for sponsorship
+          </a>
+        {% elif sponsor_contact_email %}
+          <a href="mailto:{{ sponsor_contact_email }}" class="btn btn-primary">
+            Email {{ sponsor_contact_email }}
+          </a>
+        {% else %}
+          <a href="/" class="btn btn-primary">
+            Contact coming soon
+          </a>
+        {% endif %}
+        <a href="/" class="btn btn-ghost">Back home</a>
+      </div>
+    </header>
+
+    <section class="ads-grid">
+      <article class="ads-panel">
+        <h2>Placement Options</h2>
+        <ul>
+          <li><strong>Global footer slot:</strong> visible across core pages.</li>
+          <li><strong>Quote-page inline slot:</strong> contextually placed below quotes.</li>
+          <li><strong>Weekly digest mention:</strong> optional sponsor line in Monday email.</li>
+        </ul>
+      </article>
+
+      <article class="ads-panel">
+        <h2>Ideal Partners</h2>
+        <ul>
+          <li>Entertainment and media brands.</li>
+          <li>Consumer apps and productivity tools.</li>
+          <li>Lifestyle products with broad appeal.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="ads-kpis">
+      <h2>Audience Snapshot</h2>
+      <div class="kpi-grid">
+        <div class="kpi-item">
+          <span class="kpi-label">Primary intent</span>
+          <span class="kpi-value">Browse and share quotes</span>
+        </div>
+        <div class="kpi-item">
+          <span class="kpi-label">Top pages</span>
+          <span class="kpi-value">All Quotes, Random, Stats</span>
+        </div>
+        <div class="kpi-item">
+          <span class="kpi-label">Formats available</span>
+          <span class="kpi-value">Site slots + email mention</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="ads-disclosure">
+      <h2>Disclosure</h2>
+      <p>
+        Sponsored placements and affiliate relationships are clearly disclosed for transparency.
+      </p>
+      {% if not sponsor_contact_url and not sponsor_contact_email %}
+        <p class="ads-config-note">
+          Add <code>SPONSOR_CONTACT_URL</code> or <code>SPONSOR_CONTACT_EMAIL</code> in your env to activate sponsor enquiries.
+        </p>
+      {% endif %}
+    </section>
+  </article>
+</section>
+{% endblock %}

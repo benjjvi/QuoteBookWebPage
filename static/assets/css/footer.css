@@ -21,6 +21,39 @@
   margin: 0;
 }
 
+.footer-disclosure {
+  margin: 0.6rem 0 0;
+  color: rgba(224, 224, 224, 0.85);
+  font-size: 0.82rem;
+}
+
+.monetize-slot {
+  margin: 1rem auto;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  max-width: 640px;
+}
+
+.monetize-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.monetize-copy {
+  margin: 0;
+  font-size: 0.86rem;
+  color: rgba(224, 224, 224, 0.9);
+}
+
+.monetize-slot .adsbygoogle {
+  min-height: 90px;
+}
+
 .footer-meta a {
   text-decoration: underline;
 }

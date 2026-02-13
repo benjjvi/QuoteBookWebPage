@@ -4,8 +4,23 @@
     <p class="footer-meta">
       © 2026 benjjvi ·
       <a href="/credits">License & Privacy</a> ·
-      <a href="/pwa">Debug PWA</a>
+      <a href="/pwa">Debug PWA</a> ·
+      <a href="/advertise">Advertise</a>
+      {% if support_url %}
+        · <a href="{{ support_url }}" rel="nofollow sponsored">{{ support_label or "Support Quote Book" }}</a>
+      {% endif %}
     </p>
+
+    {% if affiliate_disclosure %}
+      <p class="footer-disclosure">
+        {{ affiliate_disclosure }}
+      </p>
+    {% endif %}
+
+    {% if adsense_client_id and adsense_slot_footer or sponsor_contact_url or sponsor_contact_email %}
+      {% set ad_slot = adsense_slot_footer %}
+      {% include "ad_slot.html" %}
+    {% endif %}
 
     <p id="latest-quote" class="footer-meta" aria-live="polite">
       Well this is awkward. We couldn't load the funnies.

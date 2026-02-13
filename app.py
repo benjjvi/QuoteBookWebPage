@@ -40,6 +40,21 @@ WEEKLY_EMAIL_TO_SEED = [
     if email.strip()
 ]
 WEEKLY_EMAIL_FROM = os.getenv("WEEKLY_EMAIL_FROM", "").strip()
+WEEKLY_DIGEST_SPONSOR_LINE = os.getenv("WEEKLY_DIGEST_SPONSOR_LINE", "").strip()
+SUPPORT_URL = os.getenv("SUPPORT_URL", "").strip()
+SUPPORT_LABEL = os.getenv("SUPPORT_LABEL", "Support Quote Book").strip()
+SPONSOR_CONTACT_URL = os.getenv("SPONSOR_CONTACT_URL", "").strip()
+SPONSOR_CONTACT_EMAIL = os.getenv("SPONSOR_CONTACT_EMAIL", "").strip()
+AFFILIATE_DISCLOSURE = os.getenv("AFFILIATE_DISCLOSURE", "").strip()
+ADSENSE_CLIENT_ID = os.getenv("ADSENSE_CLIENT_ID", "").strip()
+ADSENSE_SLOT_INLINE = os.getenv("ADSENSE_SLOT_INLINE", "").strip()
+ADSENSE_SLOT_FOOTER = os.getenv("ADSENSE_SLOT_FOOTER", "").strip()
+GOOGLE_ADSENSE_ACCOUNT = (
+    os.getenv("GOOGLE_ADSENSE_ACCOUNT", "").strip() or ADSENSE_CLIENT_ID
+)
+ROBOTS_DISALLOW_ALL = (
+    os.getenv("ROBOTS_DISALLOW_ALL", "false").strip().lower() in {"1", "true", "yes", "on"}
+)
 SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
 try:
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -88,6 +103,7 @@ services = AppServices(
         smtp_use_tls=SMTP_USE_TLS,
         smtp_use_ssl=SMTP_USE_SSL,
         is_prod=IS_PROD,
+        weekly_digest_sponsor_line=WEEKLY_DIGEST_SPONSOR_LINE,
     ),
 )
 
@@ -108,6 +124,16 @@ app.register_blueprint(
         edit_pin=EDIT_PIN,
         vapid_public_key=VAPID_PUBLIC_KEY,
         per_page_quote_limit=PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE,
+        support_url=SUPPORT_URL,
+        support_label=SUPPORT_LABEL,
+        sponsor_contact_url=SPONSOR_CONTACT_URL,
+        sponsor_contact_email=SPONSOR_CONTACT_EMAIL,
+        affiliate_disclosure=AFFILIATE_DISCLOSURE,
+        adsense_client_id=ADSENSE_CLIENT_ID,
+        adsense_slot_inline=ADSENSE_SLOT_INLINE,
+        adsense_slot_footer=ADSENSE_SLOT_FOOTER,
+        google_adsense_account=GOOGLE_ADSENSE_ACCOUNT,
+        robots_disallow_all=ROBOTS_DISALLOW_ALL,
     )
 )
 app.register_blueprint(

@@ -20,13 +20,13 @@
     <a href="/" class="btn btn-ghost">Back home</a>
   </header>
 
-  <form class="search-form" method="post">
-    <label for="query">Search query</label>
+  <form class="search-form" method="get">
+    <label for="q">Search query</label>
     <div class="search-input">
       <input
-        id="query"
+        id="q"
         type="text"
-        name="query"
+        name="q"
         placeholder="e.g. hallway, James, or a specific line"
         value="{{ query }}"
         autofocus

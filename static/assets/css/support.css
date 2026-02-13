@@ -1,0 +1,99 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+.support-page {
+  grid-column: 1 / -1;
+}
+
+.support-card {
+  display: grid;
+  gap: 1.25rem;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 211, 122, 0.08), transparent 36%),
+    radial-gradient(circle at 84% 85%, rgba(120, 218, 255, 0.08), transparent 44%),
+    rgba(15, 15, 18, 0.94);
+}
+
+.support-hero {
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.support-hero h1 {
+  margin-bottom: 0.5rem;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+
+.support-hero .lead {
+  margin: 0;
+  max-width: 62ch;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.support-actions-bar {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.95rem;
+}
+
+.support-panel {
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.support-panel h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.support-panel ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.support-panel li {
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.support-disclosure {
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.support-disclosure h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.02rem;
+}
+
+.support-disclosure p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.support-note {
+  margin-top: 0.65rem !important;
+  color: rgba(255, 255, 255, 0.66) !important;
+}
+
+@media (max-width: 640px) {
+  .support-card {
+    gap: 1rem;
+  }
+
+  .support-hero {
+    padding: 0.9rem;
+  }
+}

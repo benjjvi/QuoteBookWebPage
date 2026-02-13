@@ -7,6 +7,10 @@
 - Startup runtime config validation warnings.
 - Automated pytest suite and CI workflow for regression checks.
 - Architecture inventory, API contract draft, deployment runbook, and release checklist docs.
+- Monetisation scaffolding:
+- `robots.txt` + `sitemap.xml` for indexability.
+- `/support` and `/advertise` pages.
+- Env-driven support links, sponsor fallback slots, optional AdSense slots, and disclosure text.
 
 ## Changed
 - Fixed quote count consistency in local and remote client paths.

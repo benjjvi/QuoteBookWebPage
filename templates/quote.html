@@ -67,6 +67,11 @@
       {% endif %}
     </div>
 
+    {% if adsense_client_id and adsense_slot_inline or sponsor_contact_url or sponsor_contact_email %}
+      {% set ad_slot = adsense_slot_inline %}
+      {% include "ad_slot.html" %}
+    {% endif %}
+
     <script>
       let currentQuoteId = Number("{{ quote_id }}") || null;
 

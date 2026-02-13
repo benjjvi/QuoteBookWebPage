@@ -110,6 +110,16 @@ def app_ctx(tmp_path):
             edit_pin="1234",
             vapid_public_key="test-public",
             per_page_quote_limit=9,
+            support_url="https://example.com/support",
+            support_label="Support Quote Book",
+            sponsor_contact_url="https://example.com/sponsor",
+            sponsor_contact_email="sponsor@example.com",
+            affiliate_disclosure="Some outbound links may be affiliate links.",
+            adsense_client_id="ca-pub-1234567890",
+            adsense_slot_inline="1234567890",
+            adsense_slot_footer="0987654321",
+            google_adsense_account="ca-pub-1234567890",
+            robots_disallow_all=False,
         )
     )
     app.register_blueprint(
