@@ -2,6 +2,7 @@
 
 STOPWORDS = {
     "the",
+    "don",
     "and",
     "that",
     "this",
