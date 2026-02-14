@@ -11,6 +11,7 @@ from flask import (
     abort,
     current_app,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -42,6 +43,9 @@ def create_web_blueprint(
     robots_disallow_all: bool,
 ):
     bp = Blueprint("web", __name__)
+
+    def _normalise_email(raw_email: str) -> str:
+        return (raw_email or "").strip().lower()
 
     @bp.app_context_processor
     def inject_marketing_context():
@@ -113,6 +117,8 @@ def create_web_blueprint(
             ("/search", "daily", "0.7"),
             ("/battle", "weekly", "0.6"),
             ("/quote-anarchy", "weekly", "0.7"),
+            ("/mailbox", "weekly", "0.6"),
+            ("/unsubscribe", "monthly", "0.3"),
             ("/timeline/{}/{}".format(datetime.now(uk_tz).year, datetime.now(uk_tz).month), "weekly", "0.6"),
             ("/credits", "monthly", "0.3"),
             ("/privacy", "monthly", "0.3"),
@@ -310,6 +316,128 @@ def create_web_blueprint(
             "quote_anarchy.html",
             quote_anarchy_bootstrap=quote_anarchy_service.bootstrap(),
         )
+
+    @bp.route("/mailbox", methods=["GET", "POST"], endpoint="mailbox")
+    def mailbox():
+        email_value = _normalise_email((request.values.get("email") or ""))
+        form_message = ""
+        form_kind = "info"
+        cookie_email_to_set = ""
+        clear_subscription_cookie = False
+
+        if request.method == "POST":
+            action = (request.form.get("action") or "").strip().lower()
+            if action not in {"subscribe", "unsubscribe"}:
+                form_message = "Unknown mailbox action."
+                form_kind = "error"
+            elif not services.is_valid_email_address(email_value):
+                form_message = "Please enter a valid email address."
+                form_kind = "error"
+            elif action == "subscribe":
+                created = services.add_weekly_email_recipient(email_value)
+                if created:
+                    form_message = f"Subscribed {email_value} to weekly digest emails."
+                    form_kind = "success"
+                    cookie_email_to_set = email_value
+                elif services.is_weekly_email_recipient(email_value):
+                    form_message = f"{email_value} is already subscribed."
+                    cookie_email_to_set = email_value
+                else:
+                    form_message = "Unable to subscribe right now."
+                    form_kind = "error"
+            elif action == "unsubscribe":
+                removed = services.remove_weekly_email_recipient(email_value)
+                if removed:
+                    form_message = f"Unsubscribed {email_value}."
+                    form_kind = "success"
+                    clear_subscription_cookie = True
+                elif services.is_weekly_email_recipient(email_value):
+                    form_message = "Unable to unsubscribe right now."
+                    form_kind = "error"
+                else:
+                    form_message = f"{email_value} was not subscribed."
+
+        cookie_flag = (request.cookies.get("qb_email_subscribed") or "").strip().lower()
+        cookie_email = _normalise_email(request.cookies.get("qb_email_address") or "")
+        has_subscribed_cookie = cookie_flag in {"1", "true", "yes", "y"} and bool(cookie_email)
+        cookie_has_valid_subscription = has_subscribed_cookie and services.is_weekly_email_recipient(
+            cookie_email
+        )
+
+        digests = services.get_weekly_digest_archive(limit=25)
+        previous_digests = digests[1:] if len(digests) > 1 else []
+        mailbox_show_all = bool(cookie_has_valid_subscription)
+        visible_digests = previous_digests if mailbox_show_all else previous_digests[:1]
+
+        response = make_response(
+            render_template(
+                "mailbox.html",
+                mailbox_digests=visible_digests,
+                mailbox_show_all=mailbox_show_all,
+                mailbox_cookie_email=cookie_email,
+                mailbox_email=email_value,
+                mailbox_message=form_message,
+                mailbox_message_kind=form_kind,
+                weekly_email_enabled=bool(services.config.weekly_email_enabled),
+            )
+        )
+
+        if cookie_email_to_set:
+            response.set_cookie(
+                "qb_email_subscribed",
+                "true",
+                max_age=365 * 24 * 60 * 60,
+                samesite="Lax",
+                secure=bool(services.config.is_prod),
+            )
+            response.set_cookie(
+                "qb_email_address",
+                cookie_email_to_set,
+                max_age=365 * 24 * 60 * 60,
+                samesite="Lax",
+                secure=bool(services.config.is_prod),
+            )
+
+        if clear_subscription_cookie or (
+            has_subscribed_cookie and not cookie_has_valid_subscription
+        ):
+            response.delete_cookie("qb_email_subscribed")
+            response.delete_cookie("qb_email_address")
+
+        return response
+
+    @bp.route("/unsubscribe", methods=["GET", "POST"], endpoint="unsubscribe_page")
+    def unsubscribe_page():
+        email_value = _normalise_email((request.values.get("email") or ""))
+        message = ""
+        message_kind = "info"
+        clear_subscription_cookie = False
+
+        if request.method == "POST":
+            if not services.is_valid_email_address(email_value):
+                message = "Please enter a valid email address."
+                message_kind = "error"
+            else:
+                removed = services.remove_weekly_email_recipient(email_value)
+                if removed:
+                    message = f"{email_value} has been unsubscribed."
+                    message_kind = "success"
+                    clear_subscription_cookie = True
+                else:
+                    message = "That email is not currently subscribed."
+
+        response = make_response(
+            render_template(
+                "unsubscribe.html",
+                unsubscribe_email=email_value,
+                unsubscribe_message=message,
+                unsubscribe_message_kind=message_kind,
+            )
+        )
+        if clear_subscription_cookie:
+            response.delete_cookie("qb_email_subscribed")
+            response.delete_cookie("qb_email_address")
+        return response
 
     @bp.route("/random", endpoint="random")
     def random():

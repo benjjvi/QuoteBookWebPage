@@ -166,8 +166,16 @@ class AppServices:
         except (TypeError, ValueError):
             return ""
 
+    def _configured_public_base_url(self) -> str:
+        return (self.config.public_base_url or "").strip()
+
     def build_public_url(self, path: str) -> str:
-        base = self.config.public_base_url or request.url_root
+        base = self._configured_public_base_url()
+        if not base:
+            try:
+                base = request.url_root
+            except RuntimeError:
+                base = ""
         if not base:
             return path
         if not base.endswith("/"):
@@ -265,6 +273,39 @@ class AppServices:
             self.app.logger.error("Unable to ensure weekly_email_recipients table: %s", exc)
             return False
 
+    def ensure_weekly_digest_archive_table(self) -> bool:
+        db_path = self.get_push_db_path()
+        try:
+            with sqlite3.connect(db_path) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS weekly_email_digest_archive (
+                        run_key TEXT PRIMARY KEY,
+                        subject TEXT NOT NULL,
+                        body TEXT NOT NULL,
+                        sent_at INTEGER NOT NULL,
+                        recipient_count INTEGER NOT NULL DEFAULT 0
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_weekly_email_digest_archive_sent_at
+                    ON weekly_email_digest_archive (sent_at DESC)
+                    """
+                )
+                row = conn.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type = 'table' AND name = 'weekly_email_digest_archive'
+                    """
+                ).fetchone()
+            return bool(row)
+        except sqlite3.Error as exc:
+            self.app.logger.error("Unable to ensure weekly_email_digest_archive table: %s", exc)
+            return False
+
     def seed_weekly_email_recipients_from_env(self) -> None:
         if not self.config.weekly_email_to_seed:
             return
@@ -328,6 +369,88 @@ class AppServices:
             )
         return cur.rowcount > 0
 
+    def remove_weekly_email_recipient(self, email: str) -> bool:
+        normalized = (email or "").strip().lower()
+        if not self.is_valid_email_address(normalized):
+            return False
+        if not self.ensure_weekly_email_recipients_table():
+            self.app.logger.error("Cannot remove weekly email recipient: recipients table missing.")
+            return False
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            cur = conn.execute(
+                "DELETE FROM weekly_email_recipients WHERE email = ?",
+                (normalized,),
+            )
+        return cur.rowcount > 0
+
+    def is_weekly_email_recipient(self, email: str) -> bool:
+        normalized = (email or "").strip().lower()
+        if not self.is_valid_email_address(normalized):
+            return False
+        if not self.ensure_weekly_email_recipients_table():
+            return False
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            row = conn.execute(
+                "SELECT 1 FROM weekly_email_recipients WHERE email = ?",
+                (normalized,),
+            ).fetchone()
+        return bool(row)
+
+    def archive_weekly_digest(
+        self,
+        *,
+        run_key: str,
+        subject: str,
+        body: str,
+        sent_at: int,
+        recipient_count: int,
+    ) -> bool:
+        if not self.ensure_weekly_digest_archive_table():
+            return False
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO weekly_email_digest_archive
+                (run_key, subject, body, sent_at, recipient_count)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (run_key, subject, body, int(sent_at), max(int(recipient_count), 0)),
+            )
+        return True
+
+    def get_weekly_digest_archive(self, limit: int = 10) -> list[dict]:
+        if not self.ensure_weekly_digest_archive_table():
+            return []
+        cap = max(1, min(int(limit), 50))
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT run_key, subject, body, sent_at, recipient_count
+                FROM weekly_email_digest_archive
+                ORDER BY sent_at DESC, run_key DESC
+                LIMIT ?
+                """,
+                (cap,),
+            ).fetchall()
+        return [
+            {
+                "run_key": str(row["run_key"]),
+                "subject": str(row["subject"]),
+                "body": str(row["body"]),
+                "sent_at": int(row["sent_at"]),
+                "recipient_count": int(row["recipient_count"]),
+            }
+            for row in rows
+        ]
+
+    def get_mailbox_public_digest(self) -> dict | None:
+        # Delay public mailbox by one send cycle.
+        archive = self.get_weekly_digest_archive(limit=2)
+        if len(archive) < 2:
+            return None
+        return archive[1]
+
     def claim_scheduled_run(self, job_name: str, run_key: str) -> bool:
         if not self.ensure_scheduler_table():
             self.app.logger.error("Cannot claim scheduled run: scheduled_job_runs table missing.")
@@ -386,6 +509,13 @@ class AppServices:
         if not body.strip():
             return sponsor_line
         return f"{body}\n\n{sponsor_line}"
+
+    def _append_digest_unsubscribe_footer(self, body: str) -> str:
+        unsubscribe_url = self.build_public_url("/unsubscribe")
+        footer = f"Unsubscribe from weekly digest emails: {unsubscribe_url}"
+        if not body.strip():
+            return footer
+        return f"{body}\n\n---\n{footer}"
 
     def build_weekly_digest_email(self, now_uk: datetime) -> tuple[str, str]:
         start_uk = now_uk - timedelta(days=7)
@@ -676,7 +806,15 @@ class AppServices:
 
         try:
             subject, body = self.build_weekly_digest_email(now_uk)
-            self.send_email(subject, body)
+            body_with_footer = self._append_digest_unsubscribe_footer(body)
+            self.send_email(subject, body_with_footer)
+            self.archive_weekly_digest(
+                run_key=run_key,
+                subject=subject,
+                body=body_with_footer,
+                sent_at=int(now_uk.timestamp()),
+                recipient_count=len(self.get_weekly_email_recipients()),
+            )
             self._increment_metric("weekly_digest_sent")
             self.app.logger.info(
                 "Weekly digest email sent for %s to %s.",
@@ -700,7 +838,11 @@ class AppServices:
             timelib.sleep(60)
 
     def start_weekly_email_scheduler(self) -> None:
-        if not self.ensure_scheduler_table() or not self.ensure_weekly_email_recipients_table():
+        if (
+            not self.ensure_scheduler_table()
+            or not self.ensure_weekly_email_recipients_table()
+            or not self.ensure_weekly_digest_archive_table()
+        ):
             self.app.logger.warning("Weekly email scheduler unavailable: required tables are missing.")
             return
 

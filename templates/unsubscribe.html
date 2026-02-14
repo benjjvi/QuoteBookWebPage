@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Unsubscribe{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/mailbox.css" />
+{% endblock %}
+
+{% block content %}
+<section class="mailbox-page">
+  <header class="mailbox-header">
+    <div>
+      <span class="eyebrow">Email</span>
+      <h1>Unsubscribe from Weekly Digest</h1>
+      <p class="lead">Enter your email address to stop receiving Monday digest emails.</p>
+    </div>
+    <div class="header-actions">
+      <a href="/mailbox" class="btn btn-ghost">Open mailbox</a>
+      <a href="/" class="btn btn-ghost">Back home</a>
+    </div>
+  </header>
+
+  <section class="mailbox-card">
+    {% if unsubscribe_message %}
+      <p class="mailbox-message mailbox-message-{{ unsubscribe_message_kind }}">{{ unsubscribe_message }}</p>
+    {% endif %}
+
+    <form method="post" class="mailbox-form">
+      <label for="unsubscribeEmail">Email address</label>
+      <input
+        id="unsubscribeEmail"
+        type="email"
+        name="email"
+        required
+        autocomplete="email"
+        value="{{ unsubscribe_email }}"
+        placeholder="you@example.com"
+      />
+      <button type="submit" class="btn btn-primary">Unsubscribe</button>
+    </form>
+  </section>
+</section>
+{% endblock %}

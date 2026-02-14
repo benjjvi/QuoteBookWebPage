@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Mailbox{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/mailbox.css" />
+{% endblock %}
+
+{% block content %}
+<section class="mailbox-page">
+  <header class="mailbox-header">
+    <div>
+      <span class="eyebrow">Mailbox</span>
+      <h1>Weekly Digest Mailbox</h1>
+      <p class="lead">
+        Read delayed digest issues without signing up. The current sent issue is never shown here.
+      </p>
+    </div>
+    <div class="header-actions">
+      <a href="/unsubscribe" class="btn btn-ghost">Unsubscribe page</a>
+      <a href="/" class="btn btn-ghost">Back home</a>
+    </div>
+  </header>
+
+  {% if not weekly_email_enabled %}
+    <section class="mailbox-card mailbox-empty">
+      <h2>Weekly email is currently disabled</h2>
+      <p>The archive can still show older issues if they were sent previously.</p>
+    </section>
+  {% endif %}
+
+  <section class="mailbox-card">
+    <h2>{% if mailbox_show_all %}Archive Access{% else %}Public Issue{% endif %}</h2>
+    {% if mailbox_show_all %}
+      <p class="mailbox-meta">
+        Signed in as {{ mailbox_cookie_email }} via subscription cookie. Showing all previous issues (excluding latest).
+      </p>
+    {% else %}
+      <p class="mailbox-meta">
+        Public mode shows one delayed issue. Subscribe to unlock older mailbox history.
+      </p>
+    {% endif %}
+
+    {% if mailbox_digests %}
+      <ul class="mailbox-digest-list">
+        {% for digest in mailbox_digests %}
+          <li class="mailbox-digest-item">
+            <h3>{{ digest.subject }}</h3>
+            <p class="mailbox-meta">
+              Sent {{ digest.sent_at | uk_date }} · {{ digest.recipient_count }} recipients
+            </p>
+            <article class="mailbox-body">{{ digest.body }}</article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="mailbox-empty">
+        <h3>No public issue yet</h3>
+        <p>The mailbox unlocks after at least two weekly digests have been sent.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="mailbox-card" id="email-controls">
+    <h2>Email Controls</h2>
+    <p class="mailbox-meta">
+      Subscribe or unsubscribe an address from the weekly digest list.
+    </p>
+
+    {% if mailbox_message %}
+      <p class="mailbox-message mailbox-message-{{ mailbox_message_kind }}">{{ mailbox_message }}</p>
+    {% endif %}
+
+    <div class="mailbox-forms">
+      <form method="post" class="mailbox-form">
+        <input type="hidden" name="action" value="subscribe" />
+        <label for="mailboxSubscribeEmail">Subscribe email</label>
+        <input
+          id="mailboxSubscribeEmail"
+          type="email"
+          name="email"
+          required
+          autocomplete="email"
+          value="{{ mailbox_email }}"
+          placeholder="you@example.com"
+        />
+        <button type="submit" class="btn btn-primary">Subscribe</button>
+      </form>
+
+      <form method="post" class="mailbox-form">
+        <input type="hidden" name="action" value="unsubscribe" />
+        <label for="mailboxUnsubscribeEmail">Unsubscribe email</label>
+        <input
+          id="mailboxUnsubscribeEmail"
+          type="email"
+          name="email"
+          required
+          autocomplete="email"
+          value="{{ mailbox_email }}"
+          placeholder="you@example.com"
+        />
+        <button type="submit" class="btn btn-ghost">Unsubscribe</button>
+      </form>
+    </div>
+  </section>
+</section>
+{% endblock %}

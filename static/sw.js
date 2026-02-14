@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v11";
+const CACHE_VERSION = "v13";
 const PRECACHE = `qb-precache-${CACHE_VERSION}`;
 const RUNTIME = `qb-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -8,6 +8,8 @@ const PRECACHE_URLS = [
   "/all_quotes",
   "/random",
   "/quote-anarchy",
+  "/mailbox",
+  "/unsubscribe",
   OFFLINE_URL,
   "/manifest.webmanifest",
   "/static/favicon.ico",
@@ -19,6 +21,7 @@ const PRECACHE_URLS = [
   "/static/assets/css/footer.css",
   "/static/assets/css/index.css",
   "/static/assets/css/quote-anarchy.css",
+  "/static/assets/css/mailbox.css",
   "/static/assets/js/background.js",
   "/static/assets/js/pwa-sync.js",
   "/static/assets/js/quote-anarchy.js",

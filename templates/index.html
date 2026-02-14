@@ -102,15 +102,20 @@
         <img src="/static/assets/img/stats.svg" alt="" />
         <span>Stats</span>
       </a>
+
+      <a href="/mailbox" class="nav-item" data-offline-allowed="false">
+        <img src="/static/assets/img/mailbox.svg" alt="" />
+        <span>Mailbox</span>
+      </a>
       {% if support_url or sponsor_contact_url or sponsor_contact_email %}
         <a href="/support" class="nav-item" data-offline-allowed="false">
-          <img src="/static/assets/img/book.svg" alt="" />
+          <img src="/static/assets/img/support.svg" alt="" />
           <span>Support</span>
         </a>
       {% endif %}
       {% if edit_enabled %}
         <a href="/edit" class="nav-item" data-offline-allowed="false">
-          <img src="/static/assets/img/add.svg" alt="" />
+          <img src="/static/assets/img/edit.svg" alt="" />
           <span>Edit</span>
         </a>
       {% endif %}

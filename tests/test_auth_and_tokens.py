@@ -42,6 +42,15 @@ def test_email_subscription_token_flow(client):
     assert good_email.status_code == 200
     assert good_email.get_json()["ok"] is True
 
+    refreshed_token_resp = client.get("/api/email/token")
+    refreshed_token = refreshed_token_resp.get_json()["token"]
+    unsubscribe = client.post(
+        "/api/email/unsubscribe",
+        json={"token": refreshed_token, "email": "person@example.com"},
+    )
+    assert unsubscribe.status_code == 200
+    assert unsubscribe.get_json()["ok"] is True
+
 
 def test_edit_pin_auth_flow(client, quote_store):
     wrong_pin = client.post(

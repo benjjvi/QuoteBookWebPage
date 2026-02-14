@@ -19,6 +19,14 @@ def test_smoke_routes(client):
     assert quote_anarchy.status_code == 200
     assert b"Quote Anarchy" in quote_anarchy.data
 
+    mailbox = client.get("/mailbox")
+    assert mailbox.status_code == 200
+    assert b"Weekly Digest Mailbox" in mailbox.data
+
+    unsubscribe = client.get("/unsubscribe")
+    assert unsubscribe.status_code == 200
+    assert b"Unsubscribe from Weekly Digest" in unsubscribe.data
+
     api_quotes = client.get("/api/quotes")
     assert api_quotes.status_code == 200
     payload = api_quotes.get_json()

@@ -30,6 +30,11 @@ def test_weekly_digest_idempotency(services, monkeypatch):
 
     metrics = services.get_runtime_metrics()
     assert len(sent_calls) == 1
+    assert "/unsubscribe" in sent_calls[0][1]
+    archived = services.get_weekly_digest_archive(limit=3)
+    assert len(archived) == 1
+    assert archived[0]["run_key"] == "2026-02-09"
+    assert "/unsubscribe" in archived[0]["body"]
     assert metrics["weekly_digest_sent"] >= 1
     assert metrics["weekly_digest_claim_conflict"] >= 1
 
@@ -55,6 +60,10 @@ def test_weekly_digest_failure_releases_claim(services, monkeypatch):
 
     monkeypatch.setattr(services, "send_email", lambda _subject, _body: None)
     assert services.maybe_send_weekly_email_digest(monday) is True
+
+    archived = services.get_weekly_digest_archive(limit=3)
+    assert len(archived) == 1
+    assert archived[0]["run_key"] == "2026-02-16"
 
     metrics = services.get_runtime_metrics()
     assert metrics["weekly_digest_failure"] >= 1

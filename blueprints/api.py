@@ -1,7 +1,7 @@
 import secrets
 
 import datetime_handler
-from flask import Blueprint, current_app, jsonify, request, session, url_for
+from flask import Blueprint, current_app, jsonify, make_response, request, session, url_for
 
 
 def _normalize_order(raw_order):
@@ -472,10 +472,48 @@ def create_api_blueprint(
 
         created = services.add_weekly_email_recipient(email)
         session["email_subscribe_token"] = secrets.token_urlsafe(24)
-        return jsonify(
-            ok=True,
-            already_subscribed=not created,
+        response = make_response(
+            jsonify(
+                ok=True,
+                already_subscribed=not created,
+            )
         )
+        response.set_cookie(
+            "qb_email_subscribed",
+            "true",
+            max_age=365 * 24 * 60 * 60,
+            samesite="Lax",
+            secure=bool(services.config.is_prod),
+        )
+        response.set_cookie(
+            "qb_email_address",
+            email,
+            max_age=365 * 24 * 60 * 60,
+            samesite="Lax",
+            secure=bool(services.config.is_prod),
+        )
+        return response
+
+    @bp.route("/api/email/unsubscribe", methods=["POST"], endpoint="api_email_unsubscribe")
+    def api_email_unsubscribe():
+        if not services.ensure_weekly_email_recipients_table():
+            return jsonify(error="Email subscriptions are unavailable right now."), 503
+
+        data = request.get_json(silent=True) or {}
+        token = data.get("token")
+        if not token or token != session.get("email_subscribe_token"):
+            return jsonify(error="Invalid subscription token."), 403
+
+        email = (data.get("email") or "").strip().lower()
+        if not services.is_valid_email_address(email):
+            return jsonify(error="Please enter a valid email address."), 400
+
+        removed = services.remove_weekly_email_recipient(email)
+        session["email_subscribe_token"] = secrets.token_urlsafe(24)
+        response = make_response(jsonify(ok=True, removed=bool(removed)))
+        response.delete_cookie("qb_email_subscribed")
+        response.delete_cookie("qb_email_address")
+        return response
 
     @bp.route("/api/push/unsubscribe", methods=["POST"], endpoint="api_push_unsubscribe")
     def api_push_unsubscribe():
