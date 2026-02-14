@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v9";
+const CACHE_VERSION = "v11";
 const PRECACHE = `qb-precache-${CACHE_VERSION}`;
 const RUNTIME = `qb-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -7,6 +7,7 @@ const PRECACHE_URLS = [
   "/",
   "/all_quotes",
   "/random",
+  "/quote-anarchy",
   OFFLINE_URL,
   "/manifest.webmanifest",
   "/static/favicon.ico",
@@ -17,8 +18,18 @@ const PRECACHE_URLS = [
   "/static/assets/css/main.css",
   "/static/assets/css/footer.css",
   "/static/assets/css/index.css",
+  "/static/assets/css/quote-anarchy.css",
   "/static/assets/js/background.js",
   "/static/assets/js/pwa-sync.js",
+  "/static/assets/js/quote-anarchy.js",
+  "/static/assets/quote-anarchy/icon.svg",
+  "/static/assets/quote-anarchy/card-back.svg",
+  "/static/assets/quote-anarchy/table-bg.svg",
+  "/static/assets/quote-anarchy/player-chip-1.svg",
+  "/static/assets/quote-anarchy/player-chip-2.svg",
+  "/static/assets/quote-anarchy/player-chip-3.svg",
+  "/static/assets/quote-anarchy/player-chip-4.svg",
+  "/static/assets/quote-anarchy/black-cards.json",
 ];
 
 self.addEventListener("install", (event) => {

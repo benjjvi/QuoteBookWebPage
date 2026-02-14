@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 from app_services import AppServiceConfig, AppServices
 from blueprints.api import create_api_blueprint
 from blueprints.web import create_web_blueprint
+from quote_anarchy import QuoteAnarchyService
 from quote_client import QuoteClient
 
 UK_TZ = ZoneInfo("Europe/London")
@@ -101,11 +102,18 @@ def app_ctx(tmp_path):
     app.jinja_env.filters["uk_time"] = services.uk_time
     app.jinja_env.filters["uk_date"] = services.uk_date
 
+    quote_anarchy_service = QuoteAnarchyService(
+        db_path=str(db_path),
+        quote_store=quote_store,
+        black_cards_path=str(ROOT / "static" / "assets" / "quote-anarchy" / "black-cards.json"),
+    )
+
     app.register_blueprint(
         create_web_blueprint(
             quote_store=quote_store,
             ai_worker=DummyAI(),
             services=services,
+            quote_anarchy_service=quote_anarchy_service,
             uk_tz=UK_TZ,
             edit_pin="1234",
             vapid_public_key="test-public",
@@ -126,6 +134,7 @@ def app_ctx(tmp_path):
         create_api_blueprint(
             quote_store=quote_store,
             services=services,
+            quote_anarchy_service=quote_anarchy_service,
             vapid_public_key="test-public",
             vapid_private_key="test-private",
         )

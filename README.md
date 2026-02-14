@@ -1,5 +1,7 @@
 # QuoteBookWebPage
 
+**Codebase size:** 16,771 lines across all `.py`, `.html`, `.css`, and `.js` files (as of 14th Feb 2026).
+
 A simple **Flask‑powered web application** that lets you browse and share your Quote Book as a neat, user‑friendly web page.
 
 This project takes your collection of quotes (like your **Spoons Quotes quote book**) and renders them in an interactive, searchable, and beautifully formatted website — perfect for sharing with friends or publishing online. Quotes are stored in a local SQLite database (`qb.db`).

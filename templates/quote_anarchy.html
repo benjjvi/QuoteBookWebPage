@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Quote Anarchy{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/quote-anarchy.css" />
+{% endblock %}
+
+{% block content %}
+<section class="qa-page">
+  <div class="offline-card offline-only">
+    <span class="eyebrow">Offline</span>
+    <h1>Quote Anarchy needs a live connection</h1>
+    <p class="lead">
+      Solo and multiplayer rounds both rely on live quote data and session sync.
+    </p>
+    <a href="/" class="btn btn-ghost">Back home</a>
+  </div>
+
+  <header class="qa-hero offline-hide">
+    <div>
+      <span class="eyebrow">Party Game</span>
+      <h1>Quote Anarchy</h1>
+      <p class="lead">
+        CAH-style chaos using your own quote book. Play solo or open a 4-player room.
+      </p>
+      <div class="qa-hero-meta">
+        <span class="pill">Solo + Multiplayer</span>
+        <span class="pill">4 Players Max</span>
+        <span class="pill">1 Judge Per Round</span>
+      </div>
+    </div>
+    <div class="qa-hero-side">
+      <img src="/static/assets/quote-anarchy/card-back.svg" alt="Quote Anarchy card back" />
+      <a href="/" class="btn btn-ghost">Back home</a>
+    </div>
+  </header>
+
+  <div class="qa-shell offline-hide" id="qaShell">
+    <section class="qa-panel qa-locked" id="qaLocked" hidden>
+      <h2>Game Locked</h2>
+      <p>
+        Quote Anarchy unlocks at
+        <strong id="qaLockMin">50</strong>
+        quotes.
+        Current total:
+        <strong id="qaLockCurrent">0</strong>.
+      </p>
+      <a class="btn btn-primary" href="/add_quote">Add more quotes</a>
+    </section>
+
+    <section class="qa-panel qa-main" id="qaMain" hidden>
+      <div class="qa-mode-switch" role="tablist" aria-label="Game mode">
+        <button id="qaModeSoloBtn" class="mode-btn is-active" type="button" role="tab" aria-selected="true">
+          Solo
+        </button>
+        <button id="qaModeMultiBtn" class="mode-btn" type="button" role="tab" aria-selected="false">
+          Multiplayer
+        </button>
+      </div>
+
+      <div class="qa-mode" id="qaSoloMode">
+        <div class="qa-grid">
+          <div class="qa-stack-card" aria-hidden="true">
+            <img src="/static/assets/quote-anarchy/card-back.svg" alt="" />
+            <p>Quote pile</p>
+          </div>
+
+          <div class="qa-black-wrap">
+            <span class="eyebrow">Black Card</span>
+            <article class="qa-black-card" id="qaSoloBlackCard">
+              Press <strong>Deal Solo Round</strong> to draw your prompt.
+            </article>
+            <div class="qa-actions">
+              <button id="qaSoloDealBtn" class="btn btn-primary" type="button">Deal Solo Round</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-hand-section">
+          <h3>Your Quote Hand</h3>
+          <p class="muted" id="qaSoloHint">
+            Draw a round, then pick the funniest quote for the black card.
+          </p>
+          <div class="qa-hand" id="qaSoloHand"></div>
+        </div>
+
+        <div class="qa-result" id="qaSoloResult" hidden>
+          <h3>Funny Match</h3>
+          <p id="qaSoloMatchText"></p>
+          <div class="qa-actions">
+            <button id="qaSoloCopyBtn" class="btn btn-ghost" type="button">Copy match text</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="qa-mode" id="qaMultiMode" hidden>
+        <section class="qa-lobby" id="qaLobbyView">
+          <div class="qa-lobby-grid">
+            <form id="qaCreateForm" class="qa-form" autocomplete="off">
+              <h3>Create Session</h3>
+              <label for="qaCreateName">Name</label>
+              <input id="qaCreateName" name="player_name" maxlength="28" placeholder="Your name" required />
+              <label for="qaCreateMode">Judging mode</label>
+              <select id="qaCreateMode" name="judging_mode">
+                <option value="judge">Classic Judge (one judge picks winner)</option>
+                <option value="all_vote">Everyone Votes (all submit + all vote)</option>
+              </select>
+              <label for="qaCreateMaxRounds">Game length (rounds)</label>
+              <input
+                id="qaCreateMaxRounds"
+                name="max_rounds"
+                type="number"
+                min="1"
+                max="30"
+                step="1"
+                value="8"
+                required
+              />
+              <button class="btn btn-primary" type="submit">Create</button>
+            </form>
+
+            <form id="qaJoinForm" class="qa-form" autocomplete="off">
+              <h3>Join Session</h3>
+              <label for="qaJoinName">Name</label>
+              <input id="qaJoinName" name="player_name" maxlength="28" placeholder="Your name" required />
+              <label for="qaJoinCode">Session Code</label>
+              <input id="qaJoinCode" name="session_code" maxlength="6" placeholder="ABC123" required />
+              <button class="btn btn-primary" type="submit">Join</button>
+            </form>
+          </div>
+          <p id="qaLobbyMessage" class="muted" aria-live="polite"></p>
+        </section>
+
+        <section class="qa-session" id="qaSessionView" hidden>
+          <div class="qa-session-top">
+            <div>
+              <span class="eyebrow">Session</span>
+              <h3 id="qaSessionTitle">Room</h3>
+              <p class="muted" id="qaSessionMeta"></p>
+              <p class="session-note" id="qaSessionNotice"></p>
+            </div>
+            <div class="qa-actions">
+              <button id="qaEndBtn" class="btn btn-danger" type="button" hidden>End game</button>
+              <button id="qaCopyCodeBtn" class="btn btn-ghost" type="button">Copy code</button>
+              <button id="qaLeaveBtn" class="btn btn-ghost" type="button">Leave</button>
+            </div>
+          </div>
+
+          <div class="qa-room-grid">
+            <aside class="qa-players">
+              <h4>Players</h4>
+              <ul id="qaPlayersList"></ul>
+            </aside>
+
+            <section class="qa-round">
+              <div class="qa-round-head">
+                <h4 id="qaRoundHeading">Round</h4>
+                <p id="qaRoundStatus" class="muted"></p>
+              </div>
+
+              <article class="qa-black-card" id="qaRoundBlackCard">
+                Waiting for host to start.
+              </article>
+
+              <div class="qa-actions" id="qaRoundActions">
+                <button id="qaStartBtn" class="btn btn-primary" type="button" hidden>Start game</button>
+                <button id="qaSubmitBtn" class="btn btn-primary" type="button" hidden disabled>Submit selection</button>
+                <button id="qaNextRoundBtn" class="btn btn-primary" type="button" hidden>Next round</button>
+              </div>
+
+              <div id="qaHandWrap" hidden>
+                <h4>Your hand</h4>
+                <div class="qa-hand" id="qaRoundHand"></div>
+              </div>
+
+              <div id="qaJudgeWrap" hidden>
+                <h4 id="qaJudgeHeading">Pick winner</h4>
+                <div class="qa-hand" id="qaJudgeSubmissions"></div>
+              </div>
+
+              <div id="qaRevealWrap" class="qa-reveal" hidden>
+                <h4>Round winner</h4>
+                <p id="qaRevealText"></p>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+</section>
+
+<script id="qaBootstrapData" type="application/json">
+  {{ quote_anarchy_bootstrap | tojson }}
+</script>
+<script src="/static/assets/js/quote-anarchy.js"></script>
+{% endblock %}

@@ -11,8 +11,26 @@ def _normalize_order(raw_order):
     return order, order in ("newest", "desc", "reverse")
 
 
-def create_api_blueprint(*, quote_store, services, vapid_public_key: str, vapid_private_key: str):
+def create_api_blueprint(
+    *,
+    quote_store,
+    services,
+    quote_anarchy_service,
+    vapid_public_key: str,
+    vapid_private_key: str,
+):
     bp = Blueprint("api", __name__)
+
+    def _quote_anarchy_response(fn):
+        try:
+            payload = fn()
+            return jsonify(payload)
+        except Exception as exc:
+            status_code = getattr(exc, "status_code", 500)
+            if status_code >= 500:
+                current_app.logger.error("Quote Anarchy API failure: %s", exc)
+                return jsonify(error="Quote Anarchy is temporarily unavailable."), 500
+            return jsonify(error=str(exc)), status_code
 
     @bp.route("/api/latest", endpoint="api_latest_quote")
     def api_latest_quote():
@@ -185,6 +203,225 @@ def create_api_blueprint(*, quote_store, services, vapid_public_key: str, vapid_
         current_app.logger.info("Battle recorded via API: winner=%s loser=%s", winner_id, loser_id)
         return jsonify(
             {"winner": services.quote_to_dict(winner), "loser": services.quote_to_dict(loser)}
+        )
+
+    @bp.route("/api/quote-anarchy-wins", methods=["POST"], endpoint="api_quote_anarchy_wins")
+    def api_quote_anarchy_wins():
+        data = request.get_json(silent=True) or {}
+        quote_ids_raw = data.get("quote_ids")
+        if not isinstance(quote_ids_raw, list):
+            return jsonify({"error": "quote_ids must be a list"}), 400
+
+        quote_ids = []
+        seen_ids = set()
+        for raw_id in quote_ids_raw:
+            try:
+                quote_id = int(raw_id)
+            except (TypeError, ValueError):
+                continue
+            if quote_id <= 0 or quote_id in seen_ids:
+                continue
+            seen_ids.add(quote_id)
+            quote_ids.append(quote_id)
+
+        if not quote_ids:
+            return jsonify({"error": "No valid quote_ids provided"}), 400
+
+        updated_quotes = quote_store.record_quote_anarchy_wins(quote_ids)
+        if not updated_quotes:
+            return jsonify({"error": "No matching quotes found"}), 404
+
+        services.refresh_stats_cache("quote-anarchy-wins-api")
+        return jsonify(
+            {
+                "quotes": [services.quote_to_dict(quote) for quote in updated_quotes],
+                "updated_count": len(updated_quotes),
+            }
+        )
+
+    @bp.route("/api/quote-anarchy/bootstrap", methods=["GET"], endpoint="api_quote_anarchy_bootstrap")
+    def api_quote_anarchy_bootstrap():
+        return _quote_anarchy_response(quote_anarchy_service.bootstrap)
+
+    @bp.route("/api/quote-anarchy/solo/deal", methods=["POST"], endpoint="api_quote_anarchy_solo_deal")
+    def api_quote_anarchy_solo_deal():
+        return _quote_anarchy_response(quote_anarchy_service.deal_solo_hand)
+
+    @bp.route("/api/quote-anarchy/sessions", methods=["POST"], endpoint="api_quote_anarchy_create_session")
+    def api_quote_anarchy_create_session():
+        data = request.get_json(silent=True) or {}
+        player_name = (data.get("player_name") or "").strip()
+        judging_mode = (data.get("judging_mode") or "").strip()
+        max_rounds = data.get("max_rounds")
+        return _quote_anarchy_response(
+            lambda: quote_anarchy_service.create_session(
+                player_name=player_name,
+                judging_mode=judging_mode,
+                max_rounds=max_rounds,
+            )
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/join",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_join_session",
+    )
+    def api_quote_anarchy_join_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_name = (data.get("player_name") or "").strip()
+        player_id = (data.get("player_id") or "").strip()
+        return _quote_anarchy_response(
+            lambda: quote_anarchy_service.join_session(
+                session_code=session_code,
+                player_name=player_name,
+                player_id=player_id or None,
+            )
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>",
+        methods=["GET"],
+        endpoint="api_quote_anarchy_session_state",
+    )
+    def api_quote_anarchy_session_state(session_code: str):
+        player_id = (request.args.get("player_id") or "").strip()
+        return _quote_anarchy_response(
+            lambda: quote_anarchy_service.get_state(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/start",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_start_session",
+    )
+    def api_quote_anarchy_start_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _quote_anarchy_response(
+            lambda: quote_anarchy_service.start_session(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/submit",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_submit_card",
+    )
+    def api_quote_anarchy_submit_card(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        quote_id = data.get("quote_id")
+        return _quote_anarchy_response(
+            lambda: quote_anarchy_service.submit_card(
+                session_code=session_code,
+                player_id=player_id,
+                quote_id=quote_id,
+            )
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/pick-winner",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_pick_winner",
+    )
+    def api_quote_anarchy_pick_winner(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        winner_player_id = (data.get("winner_player_id") or "").strip()
+
+        def _pick_winner():
+            payload = quote_anarchy_service.pick_winner(
+                session_code=session_code,
+                player_id=player_id,
+                winner_player_id=winner_player_id,
+            )
+            if payload.get("winners_recorded") or payload.get("game_completed"):
+                services.refresh_stats_cache("quote-anarchy-winner-picked-api")
+            return payload
+
+        return _quote_anarchy_response(
+            _pick_winner
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/vote",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_vote_submission",
+    )
+    def api_quote_anarchy_vote_submission(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        voted_player_id = (data.get("voted_player_id") or "").strip()
+
+        def _vote_submission():
+            payload = quote_anarchy_service.vote_submission(
+                session_code=session_code,
+                player_id=player_id,
+                voted_player_id=voted_player_id,
+            )
+            if payload.get("winners_recorded") or payload.get("game_completed"):
+                services.refresh_stats_cache("quote-anarchy-vote-resolved-api")
+            return payload
+
+        return _quote_anarchy_response(
+            _vote_submission
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/next-round",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_next_round",
+    )
+    def api_quote_anarchy_next_round(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _quote_anarchy_response(
+            lambda: quote_anarchy_service.next_round(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/end",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_end_session",
+    )
+    def api_quote_anarchy_end_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+
+        def _end_session():
+            payload = quote_anarchy_service.end_session(
+                session_code=session_code,
+                player_id=player_id,
+            )
+            if payload.get("ended"):
+                services.refresh_stats_cache("quote-anarchy-session-ended-api")
+            return payload
+
+        return _quote_anarchy_response(
+            _end_session
+        )
+
+    @bp.route(
+        "/api/quote-anarchy/sessions/<string:session_code>/leave",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_leave_session",
+    )
+    def api_quote_anarchy_leave_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _quote_anarchy_response(
+            lambda: quote_anarchy_service.leave_session(
+                session_code=session_code,
+                player_id=player_id,
+            )
         )
 
     @bp.route("/api/ops/metrics", methods=["GET"], endpoint="api_ops_metrics")

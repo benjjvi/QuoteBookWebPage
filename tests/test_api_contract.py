@@ -31,7 +31,7 @@ def test_api_quotes_order_and_pagination(client):
     assert len(paged["quotes"]) == 1
 
 
-def test_api_add_update_and_battle(client):
+def test_api_add_update_and_battle(client, services):
     created = client.post(
         "/api/quotes",
         json={
@@ -61,3 +61,11 @@ def test_api_add_update_and_battle(client):
     payload = battle.get_json()
     assert payload["winner"]["id"] == 1
     assert payload["loser"]["id"] == 2
+    assert services.get_stats_cache_snapshot()["total_battles"] == 1
+
+    anarchy = client.post("/api/quote-anarchy-wins", json={"quote_ids": [new_id]})
+    assert anarchy.status_code == 200
+    anarchy_payload = anarchy.get_json()
+    assert anarchy_payload["updated_count"] == 1
+    assert anarchy_payload["quotes"][0]["id"] == new_id
+    assert anarchy_payload["quotes"][0]["stats"]["anarchy_points"] == 1

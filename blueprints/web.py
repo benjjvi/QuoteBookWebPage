@@ -25,6 +25,7 @@ def create_web_blueprint(
     quote_store,
     ai_worker,
     services,
+    quote_anarchy_service,
     uk_tz,
     edit_pin: str,
     vapid_public_key: str,
@@ -111,6 +112,7 @@ def create_web_blueprint(
             ("/stats", "daily", "0.7"),
             ("/search", "daily", "0.7"),
             ("/battle", "weekly", "0.6"),
+            ("/quote-anarchy", "weekly", "0.7"),
             ("/timeline/{}/{}".format(datetime.now(uk_tz).year, datetime.now(uk_tz).month), "weekly", "0.6"),
             ("/credits", "monthly", "0.3"),
             ("/privacy", "monthly", "0.3"),
@@ -300,6 +302,13 @@ def create_web_blueprint(
             "battle.html",
             quote_a=quote_a,
             quote_b=quote_b,
+        )
+
+    @bp.route("/quote-anarchy", endpoint="quote_anarchy")
+    def quote_anarchy():
+        return render_template(
+            "quote_anarchy.html",
+            quote_anarchy_bootstrap=quote_anarchy_service.bootstrap(),
         )
 
     @bp.route("/random", endpoint="random")

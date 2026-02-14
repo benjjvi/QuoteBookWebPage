@@ -11,6 +11,14 @@ def test_smoke_routes(client):
     all_quotes = client.get("/all_quotes")
     assert all_quotes.status_code == 200
 
+    stats = client.get("/stats")
+    assert stats.status_code == 200
+    assert b"Quote Anarchy points" in stats.data
+
+    quote_anarchy = client.get("/quote-anarchy")
+    assert quote_anarchy.status_code == 200
+    assert b"Quote Anarchy" in quote_anarchy.data
+
     api_quotes = client.get("/api/quotes")
     assert api_quotes.status_code == 200
     payload = api_quotes.get_json()

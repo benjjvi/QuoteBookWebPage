@@ -46,6 +46,12 @@
     </article>
 
     <article class="stat-card">
+      <p class="stat-label">Quote Anarchy points</p>
+      <p class="stat-value">{{ total_anarchy_points }}</p>
+      <p class="stat-meta">{{ anarchy_participation }}% of quotes have at least one win</p>
+    </article>
+
+    <article class="stat-card">
       <p class="stat-label">New in 7 days</p>
       <p class="stat-value">{{ recent_7_count }}</p>
       <p class="stat-meta">Last 30 days: {{ recent_30_count }}</p>
@@ -108,6 +114,12 @@
           <li>
             <span>Most battled quote</span>
             <span>#{{ most_battled.id }} ({{ most_battled.stats.battles }} battles)</span>
+          </li>
+        {% endif %}
+        {% if most_anarchy and most_anarchy.stats.get("anarchy_points", 0) > 0 %}
+          <li>
+            <span>Most Quote Anarchy wins</span>
+            <span>#{{ most_anarchy.id }} ({{ most_anarchy.stats.get("anarchy_points", 0) }} points)</span>
           </li>
         {% endif %}
         {% if longest_quote %}
@@ -233,6 +245,20 @@
             </li>
           {% else %}
             <li><span>No battles yet</span><span>—</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div>
+        <h3>Most Quote Anarchy wins</h3>
+        <ul class="stat-list">
+          {% for quote in top_anarchy_quotes %}
+            <li>
+              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span>{{ quote.stats.get("anarchy_points", 0) }} points</span>
+            </li>
+          {% else %}
+            <li><span>No Quote Anarchy wins yet</span><span>—</span></li>
           {% endfor %}
         </ul>
       </div>

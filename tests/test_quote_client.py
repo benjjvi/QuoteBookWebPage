@@ -32,6 +32,25 @@ def test_quote_client_local_mode_total_count(tmp_path):
     assert client.get_total_quotes() == 1
 
 
+def test_quote_client_local_mode_record_quote_anarchy_wins(tmp_path):
+    db_path = tmp_path / "local-anarchy.db"
+    qb = qb_formats.QuoteBook(str(db_path))
+    qb.add_quote(
+        qb_formats.Quote(
+            id=1,
+            quote="Anarchy line",
+            authors=["Alice"],
+            timestamp=1_700_000_000,
+            context="",
+        )
+    )
+
+    client = QuoteClient(base_url=None, db_path=str(db_path))
+    updated = client.record_quote_anarchy_wins([1, 1, "bad"])
+    assert len(updated) == 1
+    assert updated[0].stats["anarchy_points"] == 1
+
+
 def test_quote_client_remote_mode_total_count(monkeypatch):
     captured = {}
 
@@ -70,7 +89,13 @@ def test_quote_client_remote_mode_pagination(monkeypatch):
                         "authors": ["Bob"],
                         "timestamp": 1_700_000_060,
                         "context": "",
-                        "stats": {"wins": 0, "losses": 0, "battles": 0, "score": 0},
+                        "stats": {
+                            "wins": 0,
+                            "losses": 0,
+                            "battles": 0,
+                            "score": 0,
+                            "anarchy_points": 0,
+                        },
                     }
                 ],
                 "total": 2,
@@ -95,3 +120,41 @@ def test_quote_client_remote_mode_pagination(monkeypatch):
     assert len(quotes) == 1
     assert quotes[0].id == 2
     assert calls[0][1]["order"] == "newest"
+
+
+def test_quote_client_remote_mode_record_quote_anarchy_wins(monkeypatch):
+    captured = {}
+
+    def fake_post(url, json=None, timeout=10):
+        captured["url"] = url
+        captured["json"] = json
+        return FakeResponse(
+            {
+                "quotes": [
+                    {
+                        "id": 2,
+                        "quote": "Two",
+                        "authors": ["Bob"],
+                        "timestamp": 1_700_000_060,
+                        "context": "",
+                        "stats": {
+                            "wins": 0,
+                            "losses": 0,
+                            "battles": 0,
+                            "score": 0,
+                            "anarchy_points": 3,
+                        },
+                    }
+                ],
+                "updated_count": 1,
+            }
+        )
+
+    monkeypatch.setattr("quote_client.requests.post", fake_post)
+
+    client = QuoteClient(base_url="http://api.example.com", db_path="unused.db")
+    updated = client.record_quote_anarchy_wins([2, 2, "bad"])
+    assert captured["url"] == "http://api.example.com/api/quote-anarchy-wins"
+    assert captured["json"] == {"quote_ids": [2]}
+    assert len(updated) == 1
+    assert updated[0].stats["anarchy_points"] == 3

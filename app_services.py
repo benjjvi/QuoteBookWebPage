@@ -852,9 +852,13 @@ class AppServices:
             "top_terms": [],
             "hour_buckets": [],
             "total_battles": 0,
+            "total_anarchy_points": 0,
             "battle_participation": 0,
+            "anarchy_participation": 0,
             "most_battled": None,
+            "most_anarchy": None,
             "top_winners": [],
+            "top_anarchy_quotes": [],
             "best_win_rates": [],
             "top_losers": [],
             "undefeated_quotes": [],
@@ -1025,6 +1029,21 @@ class AppServices:
         snapshot["battle_participation"] = (
             round((len(battle_quotes) / quote_count) * 100, 1) if quote_count else 0
         )
+        snapshot["total_anarchy_points"] = sum(q.stats.get("anarchy_points", 0) for q in quotes)
+        snapshot["most_anarchy"] = max(
+            quotes,
+            key=lambda q: q.stats.get("anarchy_points", 0),
+            default=None,
+        )
+        anarchy_quotes = [q for q in quotes if q.stats.get("anarchy_points", 0) > 0]
+        snapshot["anarchy_participation"] = (
+            round((len(anarchy_quotes) / quote_count) * 100, 1) if quote_count else 0
+        )
+        snapshot["top_anarchy_quotes"] = sorted(
+            anarchy_quotes,
+            key=lambda q: (q.stats.get("anarchy_points", 0), q.id),
+            reverse=True,
+        )[:5]
         snapshot["top_winners"] = [
             q
             for q in sorted(quotes, key=lambda q: q.stats.get("wins", 0), reverse=True)

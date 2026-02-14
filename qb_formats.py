@@ -15,6 +15,7 @@ DEFAULT_STATS: Dict[str, int] = {
     "losses": 0,
     "battles": 0,
     "score": 0,
+    "anarchy_points": 0,
 }
 
 
@@ -127,7 +128,7 @@ class QuoteBook:
                         q.get("timestamp", 0),
                         q.get("context", ""),
                         json.dumps(
-                            q.get("stats", DEFAULT_STATS.copy()), ensure_ascii=False
+                            self.normalize_stats(q.get("stats")), ensure_ascii=False
                         ),
                     )
                     for q in raw_quotes
@@ -176,10 +177,24 @@ class QuoteBook:
         try:
             data = json.loads(raw)
             if isinstance(data, dict):
-                return {str(k): int(v) for k, v in data.items()}
+                return self.normalize_stats(data)
         except (json.JSONDecodeError, ValueError, TypeError):
             pass
         return DEFAULT_STATS.copy()
+
+    @staticmethod
+    def normalize_stats(stats: Dict[str, int] | None) -> Dict[str, int]:
+        normalized = DEFAULT_STATS.copy()
+        if not isinstance(stats, dict):
+            return normalized
+
+        for key, value in stats.items():
+            key_text = str(key)
+            try:
+                normalized[key_text] = int(value)
+            except (TypeError, ValueError):
+                continue
+        return normalized
 
     # ------------------------
     # Quote access
@@ -329,7 +344,34 @@ class QuoteBook:
 
         return authors
 
+    def record_quote_anarchy_wins(self, quote_ids: List[int]) -> List[Quote]:
+        updated_quotes: List[Quote] = []
+        seen_ids = set()
+
+        for raw_id in quote_ids or []:
+            try:
+                quote_id = int(raw_id)
+            except (TypeError, ValueError):
+                continue
+
+            if quote_id <= 0 or quote_id in seen_ids:
+                continue
+            seen_ids.add(quote_id)
+
+            quote = self.get_quote_by_id(quote_id)
+            if not quote:
+                continue
+
+            quote.stats = self.normalize_stats(quote.stats)
+            quote.stats["anarchy_points"] += 1
+            updated_quotes.append(quote)
+
+        if updated_quotes:
+            self._save()
+        return updated_quotes
+
     def _upsert_quote(self, quote: Quote) -> None:
+        quote.stats = self.normalize_stats(quote.stats)
         with self._connect() as conn:
             conn.execute(
                 """
@@ -343,11 +385,13 @@ class QuoteBook:
                     json.dumps(quote.authors, ensure_ascii=False),
                     quote.timestamp,
                     quote.context,
-                    json.dumps(quote.stats, ensure_ascii=False),
+                    json.dumps(self.normalize_stats(quote.stats), ensure_ascii=False),
                 ),
             )
 
     def _save(self):
+        for quote in self.quotes:
+            quote.stats = self.normalize_stats(quote.stats)
         with self._connect() as conn:
             conn.executemany(
                 """
@@ -362,7 +406,7 @@ class QuoteBook:
                         json.dumps(q.authors, ensure_ascii=False),
                         q.timestamp,
                         q.context,
-                        json.dumps(q.stats, ensure_ascii=False),
+                        json.dumps(self.normalize_stats(q.stats), ensure_ascii=False),
                     )
                     for q in self.quotes
                 ],

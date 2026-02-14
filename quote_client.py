@@ -192,6 +192,8 @@ class QuoteClient:
             if not winner or not loser:
                 return None, None
 
+            winner.stats = qb_formats.QuoteBook.normalize_stats(winner.stats)
+            loser.stats = qb_formats.QuoteBook.normalize_stats(loser.stats)
             winner.stats["wins"] += 1
             winner.stats["battles"] += 1
             winner.stats["score"] += 1
@@ -209,6 +211,28 @@ class QuoteClient:
         loser = self._quote_from_dict(payload.get("loser"))
         return winner, loser
 
+    def record_quote_anarchy_wins(self, quote_ids: List[int]) -> List[qb_formats.Quote]:
+        normalized_ids: List[int] = []
+        seen = set()
+        for raw_id in quote_ids or []:
+            try:
+                quote_id = int(raw_id)
+            except (TypeError, ValueError):
+                continue
+            if quote_id <= 0 or quote_id in seen:
+                continue
+            seen.add(quote_id)
+            normalized_ids.append(quote_id)
+
+        if not normalized_ids:
+            return []
+
+        if self._local:
+            return self._local.record_quote_anarchy_wins(normalized_ids)
+
+        payload = self._post_json("/api/quote-anarchy-wins", {"quote_ids": normalized_ids})
+        return [self._quote_from_dict(item) for item in payload.get("quotes", [])]
+
     def parse_authors(self, raw: str):
         cleaned = re.sub(r"(?:,\s*)?\band\b\s*", ", ", raw, flags=re.IGNORECASE)
         return [a.strip() for a in cleaned.split(",") if a.strip()]
@@ -221,7 +245,7 @@ class QuoteClient:
             authors=payload.get("authors", []),
             timestamp=payload.get("timestamp", 0),
             context=payload.get("context", ""),
-            stats=payload.get("stats", qb_formats.DEFAULT_STATS.copy()),
+            stats=qb_formats.QuoteBook.normalize_stats(payload.get("stats")),
         )
 
     def _get_json(self, path: str, params: Optional[dict] = None) -> dict:

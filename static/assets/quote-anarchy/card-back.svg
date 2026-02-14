@@ -1,0 +1,24 @@
+<svg width="540" height="760" viewBox="0 0 540 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="40" y1="30" x2="500" y2="730" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15171d" />
+      <stop offset="1" stop-color="#090a0d" />
+    </linearGradient>
+    <linearGradient id="ring" x1="98" y1="88" x2="442" y2="672" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD37A" />
+      <stop offset="1" stop-color="#FF8C62" />
+    </linearGradient>
+  </defs>
+
+  <rect x="14" y="14" width="512" height="732" rx="34" fill="url(#bg)" stroke="#2A2D36" stroke-width="6"/>
+  <rect x="44" y="44" width="452" height="672" rx="26" stroke="#3A3D47" stroke-width="2"/>
+  <rect x="94" y="94" width="352" height="572" rx="18" stroke="url(#ring)" stroke-width="2"/>
+
+  <circle cx="270" cy="380" r="122" fill="#111318" stroke="#454A58" stroke-width="2"/>
+  <rect x="186" y="318" width="168" height="124" rx="10" fill="#0C0E13" stroke="#5B6070" stroke-width="2"/>
+  <rect x="212" y="294" width="116" height="124" rx="10" fill="#0F1219" stroke="#6C7388" stroke-width="2"/>
+  <rect x="238" y="270" width="64" height="124" rx="10" fill="#151A24" stroke="#8B95B0" stroke-width="2"/>
+
+  <text x="270" y="515" text-anchor="middle" fill="#F7F4EF" font-family="'Space Grotesk', sans-serif" font-size="42" font-weight="600" letter-spacing="2">QUOTE</text>
+  <text x="270" y="558" text-anchor="middle" fill="#F7F4EF" font-family="'Space Grotesk', sans-serif" font-size="42" font-weight="600" letter-spacing="2">ANARCHY</text>
+</svg>

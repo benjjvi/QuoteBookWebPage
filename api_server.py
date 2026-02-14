@@ -228,6 +228,8 @@ def api_battle():
     if not winner or not loser:
         return jsonify({"error": "Quote not found"}), 404
 
+    winner.stats = qb_formats.QuoteBook.normalize_stats(winner.stats)
+    loser.stats = qb_formats.QuoteBook.normalize_stats(loser.stats)
     winner.stats["wins"] += 1
     winner.stats["battles"] += 1
     winner.stats["score"] += 1
@@ -239,6 +241,41 @@ def api_battle():
     logger.info("Battle recorded: winner=%s loser=%s", winner_id, loser_id)
 
     return jsonify({"winner": quote_to_dict(winner), "loser": quote_to_dict(loser)})
+
+
+@app.route("/api/quote-anarchy-wins", methods=["POST"])
+def api_quote_anarchy_wins():
+    data = request.get_json(silent=True) or {}
+    quote_ids_raw = data.get("quote_ids")
+    if not isinstance(quote_ids_raw, list):
+        return jsonify({"error": "quote_ids must be a list"}), 400
+
+    quote_ids = []
+    seen = set()
+    for raw_id in quote_ids_raw:
+        try:
+            quote_id = int(raw_id)
+        except (TypeError, ValueError):
+            continue
+        if quote_id <= 0 or quote_id in seen:
+            continue
+        seen.add(quote_id)
+        quote_ids.append(quote_id)
+
+    if not quote_ids:
+        return jsonify({"error": "No valid quote_ids provided"}), 400
+
+    updated_quotes = qb.record_quote_anarchy_wins(quote_ids)
+    if not updated_quotes:
+        return jsonify({"error": "No matching quotes found"}), 404
+
+    logger.info("Quote Anarchy wins recorded for quote_ids=%s", quote_ids)
+    return jsonify(
+        {
+            "quotes": [quote_to_dict(quote) for quote in updated_quotes],
+            "updated_count": len(updated_quotes),
+        }
+    )
 
 
 if __name__ == "__main__":

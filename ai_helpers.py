@@ -395,6 +395,14 @@ Digest data:
             logger.debug("Loss rate: %s", loss_rate)
             score -= min(loss_rate * 5 * 0.2, 2.0)  # cap at -2.0
 
+        try:
+            anarchy_points = max(int(stats.get("anarchy_points", 0) or 0), 0)
+        except (TypeError, ValueError):
+            anarchy_points = 0
+        if anarchy_points > 0:
+            # Quote Anarchy winner points are a small tie-breaker in funny scoring.
+            score += min(anarchy_points * 0.12, 1.8)
+
         return round(self.normalise(score), 2)
 
     def get_top_20_with_cache(self, scored_quotes):
