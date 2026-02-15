@@ -176,7 +176,9 @@
       let localCount = await countQuotes();
       let lastPage = (await getMeta("sync_last_page")) || 0;
       const lastRun = Number((await getMeta("sync_last_run")) || 0);
-      const cacheIsStale = lastRun ? Date.now() - lastRun > SYNC_STALE_MS : false;
+      const cacheIsStale = lastRun
+        ? Date.now() - lastRun > SYNC_STALE_MS
+        : false;
 
       await setMeta("sync_complete", false);
       await setMeta("sync_last_error", null);

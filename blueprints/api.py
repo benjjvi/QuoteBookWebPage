@@ -1,7 +1,16 @@
 import secrets
 
+from flask import (
+    Blueprint,
+    current_app,
+    jsonify,
+    make_response,
+    request,
+    session,
+    url_for,
+)
+
 import datetime_handler
-from flask import Blueprint, current_app, jsonify, make_response, request, session, url_for
 
 
 def _normalize_order(raw_order):
@@ -44,7 +53,9 @@ def create_api_blueprint(
     @bp.route("/api/speakers", endpoint="api_speakers")
     def api_speakers():
         return jsonify(
-            speakers=[{"speaker": s, "count": c} for s, c in quote_store.get_speaker_counts()]
+            speakers=[
+                {"speaker": s, "count": c} for s, c in quote_store.get_speaker_counts()
+            ]
         )
 
     @bp.route("/api/quotes", endpoint="api_quotes")
@@ -101,7 +112,9 @@ def create_api_blueprint(
             return jsonify({"error": "Quote not found"}), 404
         return jsonify(services.quote_to_dict(quote))
 
-    @bp.route("/api/quotes/<int:quote_id>", methods=["PUT"], endpoint="api_update_quote")
+    @bp.route(
+        "/api/quotes/<int:quote_id>", methods=["PUT"], endpoint="api_update_quote"
+    )
     def api_update_quote(quote_id: int):
         data = request.get_json(silent=True) or {}
         quote_text = (data.get("quote") or "").strip()
@@ -177,11 +190,17 @@ def create_api_blueprint(
             sent_count = services.send_push_notification(
                 "People are chatting...",
                 f"New quote by {', '.join(new_quote.authors) or 'Unknown'}",
-                services.build_public_url(url_for("quote_by_id", quote_id=new_quote.id)),
+                services.build_public_url(
+                    url_for("quote_by_id", quote_id=new_quote.id)
+                ),
             )
-            current_app.logger.info("Push notifications sent after API add: %s", sent_count)
+            current_app.logger.info(
+                "Push notifications sent after API add: %s", sent_count
+            )
         except Exception as exc:
-            current_app.logger.warning("Push notification failed after API add: %s", exc)
+            current_app.logger.warning(
+                "Push notification failed after API add: %s", exc
+            )
 
         current_app.logger.info("Added quote %s via API", new_quote.id)
         return jsonify(services.quote_to_dict(new_quote)), 201
@@ -200,12 +219,19 @@ def create_api_blueprint(
             return jsonify({"error": "Quote not found"}), 404
 
         services.refresh_stats_cache("battle-recorded-api")
-        current_app.logger.info("Battle recorded via API: winner=%s loser=%s", winner_id, loser_id)
+        current_app.logger.info(
+            "Battle recorded via API: winner=%s loser=%s", winner_id, loser_id
+        )
         return jsonify(
-            {"winner": services.quote_to_dict(winner), "loser": services.quote_to_dict(loser)}
+            {
+                "winner": services.quote_to_dict(winner),
+                "loser": services.quote_to_dict(loser),
+            }
         )
 
-    @bp.route("/api/quote-anarchy-wins", methods=["POST"], endpoint="api_quote_anarchy_wins")
+    @bp.route(
+        "/api/quote-anarchy-wins", methods=["POST"], endpoint="api_quote_anarchy_wins"
+    )
     def api_quote_anarchy_wins():
         data = request.get_json(silent=True) or {}
         quote_ids_raw = data.get("quote_ids")
@@ -239,15 +265,27 @@ def create_api_blueprint(
             }
         )
 
-    @bp.route("/api/quote-anarchy/bootstrap", methods=["GET"], endpoint="api_quote_anarchy_bootstrap")
+    @bp.route(
+        "/api/quote-anarchy/bootstrap",
+        methods=["GET"],
+        endpoint="api_quote_anarchy_bootstrap",
+    )
     def api_quote_anarchy_bootstrap():
         return _quote_anarchy_response(quote_anarchy_service.bootstrap)
 
-    @bp.route("/api/quote-anarchy/solo/deal", methods=["POST"], endpoint="api_quote_anarchy_solo_deal")
+    @bp.route(
+        "/api/quote-anarchy/solo/deal",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_solo_deal",
+    )
     def api_quote_anarchy_solo_deal():
         return _quote_anarchy_response(quote_anarchy_service.deal_solo_hand)
 
-    @bp.route("/api/quote-anarchy/sessions", methods=["POST"], endpoint="api_quote_anarchy_create_session")
+    @bp.route(
+        "/api/quote-anarchy/sessions",
+        methods=["POST"],
+        endpoint="api_quote_anarchy_create_session",
+    )
     def api_quote_anarchy_create_session():
         data = request.get_json(silent=True) or {}
         player_name = (data.get("player_name") or "").strip()
@@ -344,9 +382,7 @@ def create_api_blueprint(
                 services.refresh_stats_cache("quote-anarchy-winner-picked-api")
             return payload
 
-        return _quote_anarchy_response(
-            _pick_winner
-        )
+        return _quote_anarchy_response(_pick_winner)
 
     @bp.route(
         "/api/quote-anarchy/sessions/<string:session_code>/vote",
@@ -368,9 +404,7 @@ def create_api_blueprint(
                 services.refresh_stats_cache("quote-anarchy-vote-resolved-api")
             return payload
 
-        return _quote_anarchy_response(
-            _vote_submission
-        )
+        return _quote_anarchy_response(_vote_submission)
 
     @bp.route(
         "/api/quote-anarchy/sessions/<string:session_code>/next-round",
@@ -405,9 +439,7 @@ def create_api_blueprint(
                 services.refresh_stats_cache("quote-anarchy-session-ended-api")
             return payload
 
-        return _quote_anarchy_response(
-            _end_session
-        )
+        return _quote_anarchy_response(_end_session)
 
     @bp.route(
         "/api/quote-anarchy/sessions/<string:session_code>/leave",
@@ -494,7 +526,9 @@ def create_api_blueprint(
         )
         return response
 
-    @bp.route("/api/email/unsubscribe", methods=["POST"], endpoint="api_email_unsubscribe")
+    @bp.route(
+        "/api/email/unsubscribe", methods=["POST"], endpoint="api_email_unsubscribe"
+    )
     def api_email_unsubscribe():
         if not services.ensure_weekly_email_recipients_table():
             return jsonify(error="Email subscriptions are unavailable right now."), 503
@@ -515,7 +549,9 @@ def create_api_blueprint(
         response.delete_cookie("qb_email_address")
         return response
 
-    @bp.route("/api/push/unsubscribe", methods=["POST"], endpoint="api_push_unsubscribe")
+    @bp.route(
+        "/api/push/unsubscribe", methods=["POST"], endpoint="api_push_unsubscribe"
+    )
     def api_push_unsubscribe():
         data = request.get_json(silent=True) or {}
         endpoint = data.get("endpoint")

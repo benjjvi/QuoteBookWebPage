@@ -4,7 +4,6 @@ import random as randlib
 from datetime import datetime, time, timedelta
 from xml.sax.saxutils import escape
 
-import datetime_handler
 from flask import (
     Blueprint,
     Response,
@@ -19,6 +18,8 @@ from flask import (
     session,
     url_for,
 )
+
+import datetime_handler
 
 
 def create_web_blueprint(
@@ -119,7 +120,13 @@ def create_web_blueprint(
             ("/quote-anarchy", "weekly", "0.7"),
             ("/mailbox", "weekly", "0.6"),
             ("/unsubscribe", "monthly", "0.3"),
-            ("/timeline/{}/{}".format(datetime.now(uk_tz).year, datetime.now(uk_tz).month), "weekly", "0.6"),
+            (
+                "/timeline/{}/{}".format(
+                    datetime.now(uk_tz).year, datetime.now(uk_tz).month
+                ),
+                "weekly",
+                "0.6",
+            ),
             ("/credits", "monthly", "0.3"),
             ("/privacy", "monthly", "0.3"),
             ("/advertise", "monthly", "0.5"),
@@ -141,8 +148,12 @@ def create_web_blueprint(
             )
 
         for quote in quote_store.get_all_quotes():
-            loc = services.build_public_url(url_for("web.quote_by_id", quote_id=quote.id))
-            lastmod = datetime.fromtimestamp(quote.timestamp, tz=uk_tz).strftime("%Y-%m-%d")
+            loc = services.build_public_url(
+                url_for("web.quote_by_id", quote_id=quote.id)
+            )
+            lastmod = datetime.fromtimestamp(quote.timestamp, tz=uk_tz).strftime(
+                "%Y-%m-%d"
+            )
             url_entries.append(
                 (
                     "<url>"
@@ -197,7 +208,9 @@ def create_web_blueprint(
                 timestamp = datetime_handler.get_current_uk_timestamp()
                 if quote_datetime_raw:
                     try:
-                        selected_dt = datetime.strptime(quote_datetime_raw, "%Y-%m-%dT%H:%M")
+                        selected_dt = datetime.strptime(
+                            quote_datetime_raw, "%Y-%m-%dT%H:%M"
+                        )
                         selected_dt = selected_dt.replace(tzinfo=uk_tz)
                         timestamp = int(selected_dt.timestamp())
                     except ValueError:
@@ -240,7 +253,9 @@ def create_web_blueprint(
         return render_template(
             "ai.html",
             ai_available=ai_worker.can_generate,
-            ai_request_token=services.get_ai_request_token() if ai_worker.can_generate else "",
+            ai_request_token=(
+                services.get_ai_request_token() if ai_worker.can_generate else ""
+            ),
         )
 
     @bp.route("/ai_screenplay", methods=["POST"], endpoint="ai_screenplay")
@@ -259,14 +274,17 @@ def create_web_blueprint(
         current_app.logger.info("AI screenplay requested.")
         quotes = quote_store.get_all_quotes()
         scored_quotes = [
-            (q, ai_worker.classify_funny_score(q.quote, q.authors, q.stats)) for q in quotes
+            (q, ai_worker.classify_funny_score(q.quote, q.authors, q.stats))
+            for q in quotes
         ]
         top_20 = ai_worker.get_top_20_with_cache(scored_quotes)
         resp = ai_worker.get_ai(top_20)
 
         return jsonify(resp=resp)
 
-    @bp.route("/ai_screenplay_render", methods=["POST"], endpoint="ai_screenplay_render")
+    @bp.route(
+        "/ai_screenplay_render", methods=["POST"], endpoint="ai_screenplay_render"
+    )
     def ai_screenplay_render():
         data = json.loads(request.form["data"])
         rendered_at = datetime.now().strftime("%d %b %Y, %H:%M")
@@ -359,9 +377,11 @@ def create_web_blueprint(
 
         cookie_flag = (request.cookies.get("qb_email_subscribed") or "").strip().lower()
         cookie_email = _normalise_email(request.cookies.get("qb_email_address") or "")
-        has_subscribed_cookie = cookie_flag in {"1", "true", "yes", "y"} and bool(cookie_email)
-        cookie_has_valid_subscription = has_subscribed_cookie and services.is_weekly_email_recipient(
+        has_subscribed_cookie = cookie_flag in {"1", "true", "yes", "y"} and bool(
             cookie_email
+        )
+        cookie_has_valid_subscription = (
+            has_subscribed_cookie and services.is_weekly_email_recipient(cookie_email)
         )
 
         digests = services.get_weekly_digest_archive(limit=25)
@@ -446,7 +466,9 @@ def create_web_blueprint(
             abort(404)
         current_app.logger.info("Random quote served: %s", q.id)
 
-        date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
+        date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
+            q.timestamp
+        )
 
         return render_template(
             "quote.html",
@@ -471,7 +493,9 @@ def create_web_blueprint(
             current_app.logger.info("Quote not found: %s", quote_id)
             abort(404)
 
-        date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(q.timestamp)
+        date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
+            q.timestamp
+        )
 
         return render_template(
             "quote.html",
@@ -483,13 +507,17 @@ def create_web_blueprint(
             context=q.context,
             reroll_button=False,
             quote_id=quote_id,
-            permalink=services.build_public_url(url_for("quote_by_id", quote_id=quote_id)),
+            permalink=services.build_public_url(
+                url_for("quote_by_id", quote_id=quote_id)
+            ),
             permalink_base=services.build_public_url("/quote/"),
             edit_enabled=bool(edit_pin),
             edit_authed=bool(session.get("edit_authed")),
         )
 
-    @bp.route("/quote/<int:quote_id>/edit", methods=["GET", "POST"], endpoint="edit_quote")
+    @bp.route(
+        "/quote/<int:quote_id>/edit", methods=["GET", "POST"], endpoint="edit_quote"
+    )
     def edit_quote(quote_id):
         if not edit_pin:
             return (
@@ -629,7 +657,9 @@ def create_web_blueprint(
 
         if query:
             results = quote_store.search_quotes(query)
-            current_app.logger.info("Search query: '%s' (%s results)", query, len(results))
+            current_app.logger.info(
+                "Search query: '%s' (%s results)", query, len(results)
+            )
 
         return render_template(
             "search.html",
@@ -674,7 +704,9 @@ def create_web_blueprint(
 
             calendar_days.append(week_days)
 
-        years = sorted({datetime.fromtimestamp(q.timestamp, uk_tz).year for q in quotes})
+        years = sorted(
+            {datetime.fromtimestamp(q.timestamp, uk_tz).year for q in quotes}
+        )
 
         months = list(range(1, 13))
 

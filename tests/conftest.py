@@ -1,5 +1,5 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -24,7 +24,6 @@ class DummyAI:
     @staticmethod
     def classify_funny_score(_quote, _authors, _stats):
         return 5.0
-
 
 
 def _register_legacy_endpoint_aliases(app: Flask) -> None:
@@ -105,7 +104,9 @@ def app_ctx(tmp_path):
     quote_anarchy_service = QuoteAnarchyService(
         db_path=str(db_path),
         quote_store=quote_store,
-        black_cards_path=str(ROOT / "static" / "assets" / "quote-anarchy" / "black-cards.json"),
+        black_cards_path=str(
+            ROOT / "static" / "assets" / "quote-anarchy" / "black-cards.json"
+        ),
     )
 
     app.register_blueprint(

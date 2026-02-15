@@ -20,12 +20,15 @@
   };
 
   const isStandalone = () =>
-    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+    (window.matchMedia &&
+      window.matchMedia("(display-mode: standalone)").matches) ||
     window.navigator.standalone;
 
   const urlBase64ToUint8Array = (base64String) => {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
     const rawData = atob(base64);
     const outputArray = new Uint8Array(rawData.length);
     for (let i = 0; i < rawData.length; i += 1) {
@@ -79,7 +82,10 @@
       Array.from(navGrid.querySelectorAll(".nav-item")).forEach((item) => {
         let pathname = "";
         try {
-          pathname = new URL(item.getAttribute("href") || "", window.location.origin).pathname;
+          pathname = new URL(
+            item.getAttribute("href") || "",
+            window.location.origin,
+          ).pathname;
         } catch (_err) {
           pathname = "";
         }
@@ -148,7 +154,8 @@
       const ua = navigator.userAgent || "";
       const isIOS = /iPhone|iPad|iPod/i.test(ua);
       const isMac = /Macintosh/i.test(ua);
-      const isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|Edg|OPR|OPiOS/i.test(ua);
+      const isSafari =
+        /Safari/i.test(ua) && !/Chrome|CriOS|Edg|OPR|OPiOS/i.test(ua);
 
       if (isIOS && isSafari) {
         return `
@@ -179,7 +186,7 @@
       installBtn.disabled = true;
       setStatus("Install requires HTTPS.");
       showHelp(
-        "<strong>Install unavailable:</strong><br />This feature needs HTTPS (or localhost)."
+        "<strong>Install unavailable:</strong><br />This feature needs HTTPS (or localhost).",
       );
       return;
     }
@@ -200,7 +207,11 @@
         deferredPrompt.prompt();
         try {
           const choice = await deferredPrompt.userChoice;
-          setStatus(choice?.outcome === "accepted" ? "Install accepted." : "Install dismissed.");
+          setStatus(
+            choice?.outcome === "accepted"
+              ? "Install accepted."
+              : "Install dismissed.",
+          );
         } catch (_err) {
           setStatus("Install prompt failed.");
         } finally {
@@ -224,7 +235,9 @@
     if (!modal || !acceptBtn || !declineBtn || !statusEl) return;
 
     const supportsPush =
-      "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window;
 
     const setStatus = (message) => {
       statusEl.textContent = message || "";
@@ -251,8 +264,11 @@
       if (!isSecureOrigin()) return false;
       if (Notification.permission === "denied") return false;
 
-      const declinedAt = Number(localStorage.getItem("qb_push_declined_at") || "0");
-      if (declinedAt && Date.now() - declinedAt < 24 * 60 * 60 * 1000) return false;
+      const declinedAt = Number(
+        localStorage.getItem("qb_push_declined_at") || "0",
+      );
+      if (declinedAt && Date.now() - declinedAt < 24 * 60 * 60 * 1000)
+        return false;
 
       try {
         const reg = await navigator.serviceWorker.ready;
@@ -350,7 +366,8 @@
     const declineBtn = document.getElementById("emailSubscribeDecline");
     const statusEl = document.getElementById("emailSubscribeStatus");
 
-    if (!modal || !form || !input || !acceptBtn || !declineBtn || !statusEl) return;
+    if (!modal || !form || !input || !acceptBtn || !declineBtn || !statusEl)
+      return;
 
     const DECLINE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -378,8 +395,11 @@
     const shouldPrompt = () => {
       if (!navigator.onLine) return false;
       if (localStorage.getItem("qb_email_subscribed") === "true") return false;
-      const declinedAt = Number(localStorage.getItem("qb_email_declined_at") || "0");
-      if (declinedAt && Date.now() - declinedAt < DECLINE_COOLDOWN_MS) return false;
+      const declinedAt = Number(
+        localStorage.getItem("qb_email_declined_at") || "0",
+      );
+      if (declinedAt && Date.now() - declinedAt < DECLINE_COOLDOWN_MS)
+        return false;
       return true;
     };
 
@@ -429,7 +449,11 @@
 
         localStorage.setItem("qb_email_subscribed", "true");
         localStorage.removeItem("qb_email_declined_at");
-        setStatus(data.already_subscribed ? "You're already subscribed." : "Subscribed.");
+        setStatus(
+          data.already_subscribed
+            ? "You're already subscribed."
+            : "Subscribed.",
+        );
         setTimeout(() => hideModal(), 900);
       } catch (_err) {
         setStatus("Unable to subscribe right now.");
@@ -471,9 +495,9 @@
       });
 
       document.querySelectorAll(".nav-more").forEach((group) => {
-        const hasVisibleLinks = Array.from(group.querySelectorAll(".nav-item")).some(
-          (item) => item.style.display !== "none"
-        );
+        const hasVisibleLinks = Array.from(
+          group.querySelectorAll(".nav-item"),
+        ).some((item) => item.style.display !== "none");
         group.style.display = hasVisibleLinks ? "" : "none";
         if (!hasVisibleLinks) group.removeAttribute("open");
       });

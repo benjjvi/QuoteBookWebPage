@@ -24,9 +24,11 @@ def prompt_mode() -> str:
 
 def prompt_standalone() -> str:
     while True:
-        choice = input(
-            "Run client in split standalone mode (local API + web)? [y/n]: "
-        ).strip().lower()
+        choice = (
+            input("Run client in split standalone mode (local API + web)? [y/n]: ")
+            .strip()
+            .lower()
+        )
         if choice in {"y", "yes"}:
             return "true"
         if choice in {"n", "no"}:

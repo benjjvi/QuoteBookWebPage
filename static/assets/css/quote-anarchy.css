@@ -11,7 +11,11 @@
 
 .qa-hero {
   background:
-    linear-gradient(135deg, rgba(255, 211, 122, 0.09), rgba(255, 154, 98, 0.04)),
+    linear-gradient(
+      135deg,
+      rgba(255, 211, 122, 0.09),
+      rgba(255, 154, 98, 0.04)
+    ),
     rgba(14, 16, 22, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 28px;
@@ -211,7 +215,8 @@
   border-radius: 16px;
   border: 1px solid rgba(12, 14, 18, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0)) top / 100% 32px no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0))
+      top / 100% 32px no-repeat,
     linear-gradient(180deg, #faf8f3 0%, #f0ece3 100%);
   color: #121212;
   text-align: left;
@@ -255,7 +260,8 @@
     0 0 0 2px rgba(255, 154, 98, 0.45),
     0 14px 24px rgba(0, 0, 0, 0.25);
   background:
-    linear-gradient(180deg, rgba(255, 236, 202, 0.75), rgba(255, 255, 255, 0)) top / 100% 34px no-repeat,
+    linear-gradient(180deg, rgba(255, 236, 202, 0.75), rgba(255, 255, 255, 0))
+      top / 100% 34px no-repeat,
     linear-gradient(180deg, #fcfbf8 0%, #f4efe6 100%);
 }
 
@@ -432,7 +438,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .btn:hover {

@@ -5,8 +5,8 @@ import logging
 import os
 import re
 import secrets
-import sqlite3
 import smtplib
+import sqlite3
 import threading
 import time as timelib
 from collections import Counter
@@ -103,7 +103,9 @@ class AppServices:
             )
 
         if self.config.weekly_email_enabled and not self.config.smtp_host:
-            warnings.append("WEEKLY_EMAIL_ENABLED is true but SMTP_HOST is not configured.")
+            warnings.append(
+                "WEEKLY_EMAIL_ENABLED is true but SMTP_HOST is not configured."
+            )
 
         if self.config.weekly_email_enabled and not (
             self.config.weekly_email_from or self.config.smtp_user
@@ -151,7 +153,10 @@ class AppServices:
         suffix = (
             "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
         )
-        return {"date": f"{day}{suffix} {dt.strftime('%B')}", "time": dt.strftime("%H:%M")}
+        return {
+            "date": f"{day}{suffix} {dt.strftime('%B')}",
+            "time": dt.strftime("%H:%M"),
+        }
 
     def uk_date(self, epoch):
         return datetime.fromtimestamp(epoch, self.uk_tz).strftime("%d %B %Y")
@@ -270,7 +275,9 @@ class AppServices:
                 ).fetchone()
             return bool(row)
         except sqlite3.Error as exc:
-            self.app.logger.error("Unable to ensure weekly_email_recipients table: %s", exc)
+            self.app.logger.error(
+                "Unable to ensure weekly_email_recipients table: %s", exc
+            )
             return False
 
     def ensure_weekly_digest_archive_table(self) -> bool:
@@ -303,14 +310,18 @@ class AppServices:
                 ).fetchone()
             return bool(row)
         except sqlite3.Error as exc:
-            self.app.logger.error("Unable to ensure weekly_email_digest_archive table: %s", exc)
+            self.app.logger.error(
+                "Unable to ensure weekly_email_digest_archive table: %s", exc
+            )
             return False
 
     def seed_weekly_email_recipients_from_env(self) -> None:
         if not self.config.weekly_email_to_seed:
             return
         if not self.ensure_weekly_email_recipients_table():
-            self.app.logger.error("Skipping weekly email recipient seed: recipients table missing.")
+            self.app.logger.error(
+                "Skipping weekly email recipient seed: recipients table missing."
+            )
             return
         with sqlite3.connect(self.get_push_db_path()) as conn:
             existing_count = conn.execute(
@@ -348,7 +359,9 @@ class AppServices:
     def is_valid_email_address(email: str) -> bool:
         if not email:
             return False
-        pattern = re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$", re.IGNORECASE)
+        pattern = re.compile(
+            r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$", re.IGNORECASE
+        )
         return bool(pattern.match(email))
 
     def add_weekly_email_recipient(self, email: str) -> bool:
@@ -356,7 +369,9 @@ class AppServices:
         if not self.is_valid_email_address(normalized):
             return False
         if not self.ensure_weekly_email_recipients_table():
-            self.app.logger.error("Cannot add weekly email recipient: recipients table missing.")
+            self.app.logger.error(
+                "Cannot add weekly email recipient: recipients table missing."
+            )
             return False
         now = int(timelib.time())
         with sqlite3.connect(self.get_push_db_path()) as conn:
@@ -374,7 +389,9 @@ class AppServices:
         if not self.is_valid_email_address(normalized):
             return False
         if not self.ensure_weekly_email_recipients_table():
-            self.app.logger.error("Cannot remove weekly email recipient: recipients table missing.")
+            self.app.logger.error(
+                "Cannot remove weekly email recipient: recipients table missing."
+            )
             return False
         with sqlite3.connect(self.get_push_db_path()) as conn:
             cur = conn.execute(
@@ -453,7 +470,9 @@ class AppServices:
 
     def claim_scheduled_run(self, job_name: str, run_key: str) -> bool:
         if not self.ensure_scheduler_table():
-            self.app.logger.error("Cannot claim scheduled run: scheduled_job_runs table missing.")
+            self.app.logger.error(
+                "Cannot claim scheduled run: scheduled_job_runs table missing."
+            )
             return False
         try:
             with sqlite3.connect(self.get_push_db_path()) as conn:
@@ -470,7 +489,9 @@ class AppServices:
 
     def release_scheduled_run(self, job_name: str, run_key: str) -> None:
         if not self.ensure_scheduler_table():
-            self.app.logger.error("Cannot release scheduled run: scheduled_job_runs table missing.")
+            self.app.logger.error(
+                "Cannot release scheduled run: scheduled_job_runs table missing."
+            )
             return
         with sqlite3.connect(self.get_push_db_path()) as conn:
             conn.execute(
@@ -523,7 +544,9 @@ class AppServices:
             int(start_uk.timestamp()),
             int(now_uk.timestamp()),
         )
-        weekly_quotes = sorted(weekly_quotes, key=lambda q: (q.timestamp, q.id), reverse=True)
+        weekly_quotes = sorted(
+            weekly_quotes, key=lambda q: (q.timestamp, q.id), reverse=True
+        )
         all_quotes = sorted(
             self.quote_store.get_all_quotes(),
             key=lambda q: (q.timestamp, q.id),
@@ -546,7 +569,12 @@ class AppServices:
         if weekly_quotes:
             funny_rankings = sorted(
                 [
-                    (q, self.ai_worker.classify_funny_score(q.quote, q.authors, q.stats))
+                    (
+                        q,
+                        self.ai_worker.classify_funny_score(
+                            q.quote, q.authors, q.stats
+                        ),
+                    )
                     for q in weekly_quotes
                 ],
                 key=lambda item: item[1],
@@ -586,7 +614,8 @@ class AppServices:
                         "name": "Most Prolific Speaker League",
                         "winner": {"name": speaker, "count": count},
                         "contenders": [
-                            {"name": n, "count": c} for n, c in speaker_counter.most_common(3)
+                            {"name": n, "count": c}
+                            for n, c in speaker_counter.most_common(3)
                         ],
                     }
                 )
@@ -612,14 +641,18 @@ class AppServices:
                 )
 
             hourly_counter = Counter(
-                datetime.fromtimestamp(q.timestamp, tz=self.uk_tz).hour for q in weekly_quotes
+                datetime.fromtimestamp(q.timestamp, tz=self.uk_tz).hour
+                for q in weekly_quotes
             )
             if hourly_counter:
                 hour, count = hourly_counter.most_common(1)[0]
                 weekly_leagues.append(
                     {
                         "name": "Chaos Hour League",
-                        "winner": {"hour_uk": f"{hour:02d}:00-{hour:02d}:59", "count": count},
+                        "winner": {
+                            "hour_uk": f"{hour:02d}:00-{hour:02d}:59",
+                            "count": count,
+                        },
                         "contenders": [
                             {"hour_uk": f"{h:02d}:00-{h:02d}:59", "count": c}
                             for h, c in hourly_counter.most_common(3)
@@ -670,8 +703,12 @@ class AppServices:
             ],
             "all_time_top_authors": all_time_top_authors,
             "weekly_leagues": weekly_leagues,
-            "weekly_quotes": [self._digest_quote_payload(q) for q in weekly_quotes[:40]],
-            "recent_existing_quotes": [self._digest_quote_payload(q) for q in all_quotes[:40]],
+            "weekly_quotes": [
+                self._digest_quote_payload(q) for q in weekly_quotes[:40]
+            ],
+            "recent_existing_quotes": [
+                self._digest_quote_payload(q) for q in all_quotes[:40]
+            ],
         }
 
         if self.ai_worker.can_generate:
@@ -679,7 +716,9 @@ class AppServices:
                 subject, body = self.ai_worker.generate_weekly_digest(digest_data)
                 return subject, self._append_digest_sponsor(body)
             except Exception as exc:
-                self.app.logger.warning("AI weekly digest failed; using fallback digest: %s", exc)
+                self.app.logger.warning(
+                    "AI weekly digest failed; using fallback digest: %s", exc
+                )
 
         subject = f"Quote Book Weekly Digest ({len(weekly_quotes)} new)"
         if not weekly_quotes:
@@ -704,11 +743,11 @@ class AppServices:
                 )
             elif len(top_authors) == 2:
                 second_name, second_count = top_authors[1]
-                top_author_sentence = (
-                    f"{first_name} led with {first_count}, followed by {second_name} on {second_count}."
-                )
+                top_author_sentence = f"{first_name} led with {first_count}, followed by {second_name} on {second_count}."
             else:
-                top_author_sentence = f"{first_name} topped the week with {first_count} quote(s)."
+                top_author_sentence = (
+                    f"{first_name} topped the week with {first_count} quote(s)."
+                )
 
         league_blurbs: list[str] = []
         for league in weekly_leagues[:5]:
@@ -716,9 +755,13 @@ class AppServices:
             league_name = league.get("name", "League")
             if "quote_id" in winner:
                 authors = ", ".join(winner.get("authors") or ["Unknown"])
-                league_blurbs.append(f"{league_name}: quote #{winner['quote_id']} by {authors}")
+                league_blurbs.append(
+                    f"{league_name}: quote #{winner['quote_id']} by {authors}"
+                )
             elif "name" in winner:
-                league_blurbs.append(f"{league_name}: {winner['name']} ({winner.get('count', 0)})")
+                league_blurbs.append(
+                    f"{league_name}: {winner['name']} ({winner.get('count', 0)})"
+                )
             elif "names" in winner:
                 league_blurbs.append(
                     f"{league_name}: {', '.join(winner['names'])} ({winner.get('count', 0)})"
@@ -733,17 +776,23 @@ class AppServices:
             if funny_rankings
             else [q.id for q in weekly_quotes[:5]]
         )
-        top_picks_text = ", ".join(str(qid) for qid in top_pick_ids) if top_pick_ids else "none"
-        leagues_text = "; ".join(league_blurbs) if league_blurbs else "league table still warming up"
+        top_picks_text = (
+            ", ".join(str(qid) for qid in top_pick_ids) if top_pick_ids else "none"
+        )
+        leagues_text = (
+            "; ".join(league_blurbs)
+            if league_blurbs
+            else "league table still warming up"
+        )
         paragraph_one = (
             f"Ah, another week, another {len(weekly_quotes)} fresh quotes to keep the group chat lively. "
             f"{top_author_sentence} Across the whole archive you're now sitting on {len(all_quotes)} "
             "total quotes, which is both impressive and mildly concerning."
         )
-        paragraph_two = (
-            f"This week's leagues: {leagues_text}. Top picks this week: {top_picks_text}. Cheers, you lot!"
+        paragraph_two = f"This week's leagues: {leagues_text}. Top picks this week: {top_picks_text}. Cheers, you lot!"
+        return subject, self._append_digest_sponsor(
+            f"{paragraph_one}\n\n{paragraph_two}"
         )
-        return subject, self._append_digest_sponsor(f"{paragraph_one}\n\n{paragraph_two}")
 
     def send_email(self, subject: str, body: str) -> None:
         sender = self.config.weekly_email_from or self.config.smtp_user
@@ -793,7 +842,9 @@ class AppServices:
             self._increment_metric("weekly_digest_skipped_not_due")
             return False
 
-        scheduled_time = datetime.combine(now_uk.date(), time(hour=7, minute=0), tzinfo=self.uk_tz)
+        scheduled_time = datetime.combine(
+            now_uk.date(), time(hour=7, minute=0), tzinfo=self.uk_tz
+        )
         if now_uk < scheduled_time:
             self._increment_metric("weekly_digest_skipped_not_due")
             return False
@@ -843,7 +894,9 @@ class AppServices:
             or not self.ensure_weekly_email_recipients_table()
             or not self.ensure_weekly_digest_archive_table()
         ):
-            self.app.logger.warning("Weekly email scheduler unavailable: required tables are missing.")
+            self.app.logger.warning(
+                "Weekly email scheduler unavailable: required tables are missing."
+            )
             return
 
         self.seed_weekly_email_recipients_from_env()
@@ -854,7 +907,10 @@ class AppServices:
             return
 
         with self._weekly_scheduler_lock:
-            if self._weekly_scheduler_thread and self._weekly_scheduler_thread.is_alive():
+            if (
+                self._weekly_scheduler_thread
+                and self._weekly_scheduler_thread.is_alive()
+            ):
                 return
             self._weekly_scheduler_thread = threading.Thread(
                 target=self.weekly_email_scheduler_loop,
@@ -882,7 +938,9 @@ class AppServices:
                 """
             )
 
-    def save_push_subscription(self, subscription: dict, user_agent: str | None = None) -> bool:
+    def save_push_subscription(
+        self, subscription: dict, user_agent: str | None = None
+    ) -> bool:
         endpoint = (subscription or {}).get("endpoint")
         if not endpoint:
             return False
@@ -905,12 +963,16 @@ class AppServices:
             return
         self.ensure_push_table()
         with sqlite3.connect(self.get_push_db_path()) as conn:
-            conn.execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+            conn.execute(
+                "DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,)
+            )
 
     def load_push_subscriptions(self) -> list[dict]:
         self.ensure_push_table()
         with sqlite3.connect(self.get_push_db_path()) as conn:
-            rows = conn.execute("SELECT subscription FROM push_subscriptions").fetchall()
+            rows = conn.execute(
+                "SELECT subscription FROM push_subscriptions"
+            ).fetchall()
         subscriptions = []
         for row in rows:
             try:
@@ -1018,14 +1080,22 @@ class AppServices:
         snapshot["top_authors"] = speaker_counts[:5]
 
         word_counts = [len(re.findall(r"\b\w+\b", q.quote)) for q in quotes]
-        snapshot["avg_words"] = round(sum(word_counts) / len(word_counts), 1) if word_counts else 0
+        snapshot["avg_words"] = (
+            round(sum(word_counts) / len(word_counts), 1) if word_counts else 0
+        )
         snapshot["median_words"] = round(median(word_counts), 1) if word_counts else 0
         char_counts = [len(q.quote) for q in quotes]
-        snapshot["avg_chars"] = round(sum(char_counts) / len(char_counts), 1) if char_counts else 0
+        snapshot["avg_chars"] = (
+            round(sum(char_counts) / len(char_counts), 1) if char_counts else 0
+        )
         snapshot["median_chars"] = round(median(char_counts), 1) if char_counts else 0
 
-        snapshot["longest_quote"] = max(quotes, key=lambda q: len(q.quote), default=None)
-        snapshot["shortest_quote"] = min(quotes, key=lambda q: len(q.quote), default=None)
+        snapshot["longest_quote"] = max(
+            quotes, key=lambda q: len(q.quote), default=None
+        )
+        snapshot["shortest_quote"] = min(
+            quotes, key=lambda q: len(q.quote), default=None
+        )
         snapshot["newest_quote"] = max(quotes, key=lambda q: q.timestamp, default=None)
         snapshot["oldest_quote"] = min(quotes, key=lambda q: q.timestamp, default=None)
 
@@ -1042,14 +1112,19 @@ class AppServices:
             month_counts[(dt.year, dt.month)] += 1
             if (quote.context or "").strip():
                 context_count += 1
-            author_total = len([a for a in quote.authors if isinstance(a, str) and a.strip()])
+            author_total = len(
+                [a for a in quote.authors if isinstance(a, str) and a.strip()]
+            )
             author_slots += max(author_total, 1)
             if author_total > 1:
                 multi_author_count += 1
 
         if day_counts:
             day, count = day_counts.most_common(1)[0]
-            snapshot["busiest_day"] = {"label": day.strftime("%d %b %Y"), "count": count}
+            snapshot["busiest_day"] = {
+                "label": day.strftime("%d %b %Y"),
+                "count": count,
+            }
         if month_counts:
             (year, month), count = month_counts.most_common(1)[0]
             snapshot["busiest_month"] = {
@@ -1058,7 +1133,10 @@ class AppServices:
             }
         if hour_counts:
             hour, count = hour_counts.most_common(1)[0]
-            snapshot["peak_hour"] = {"label": f"{hour:02d}:00-{hour:02d}:59", "count": count}
+            snapshot["peak_hour"] = {
+                "label": f"{hour:02d}:00-{hour:02d}:59",
+                "count": count,
+            }
 
         hour_buckets = [
             ("Late night", "12am-3am", range(0, 3)),
@@ -1073,10 +1151,14 @@ class AppServices:
         bucket_data = []
         for label, range_label, hours in hour_buckets:
             count = sum(hour_counts[h] for h in hours)
-            bucket_data.append({"label": label, "range_label": range_label, "count": count})
+            bucket_data.append(
+                {"label": label, "range_label": range_label, "count": count}
+            )
         max_bucket = max((bucket["count"] for bucket in bucket_data), default=1)
         for bucket in bucket_data:
-            bucket["percent"] = int((bucket["count"] / max_bucket) * 100) if max_bucket else 0
+            bucket["percent"] = (
+                int((bucket["count"] / max_bucket) * 100) if max_bucket else 0
+            )
         snapshot["hour_buckets"] = bucket_data
 
         longest_streak_days = 0
@@ -1117,8 +1199,12 @@ class AppServices:
             span_days = max(
                 1,
                 (
-                    datetime.fromtimestamp(snapshot["newest_quote"].timestamp, tz=self.uk_tz).date()
-                    - datetime.fromtimestamp(snapshot["oldest_quote"].timestamp, tz=self.uk_tz).date()
+                    datetime.fromtimestamp(
+                        snapshot["newest_quote"].timestamp, tz=self.uk_tz
+                    ).date()
+                    - datetime.fromtimestamp(
+                        snapshot["oldest_quote"].timestamp, tz=self.uk_tz
+                    ).date()
                 ).days
                 + 1,
             )
@@ -1126,12 +1212,22 @@ class AppServices:
 
         now_uk = datetime.now(self.uk_tz)
         now_ts = int(now_uk.timestamp())
-        snapshot["recent_7_count"] = len([q for q in quotes if q.timestamp >= now_ts - 7 * 24 * 3600])
-        snapshot["recent_30_count"] = len([q for q in quotes if q.timestamp >= now_ts - 30 * 24 * 3600])
+        snapshot["recent_7_count"] = len(
+            [q for q in quotes if q.timestamp >= now_ts - 7 * 24 * 3600]
+        )
+        snapshot["recent_30_count"] = len(
+            [q for q in quotes if q.timestamp >= now_ts - 30 * 24 * 3600]
+        )
         today_start = datetime.combine(now_uk.date(), time.min, tzinfo=self.uk_tz)
         tomorrow_start = today_start + timedelta(days=1)
         snapshot["today_count"] = len(
-            [q for q in quotes if int(today_start.timestamp()) <= q.timestamp < int(tomorrow_start.timestamp())]
+            [
+                q
+                for q in quotes
+                if int(today_start.timestamp())
+                <= q.timestamp
+                < int(tomorrow_start.timestamp())
+            ]
         )
 
         snapshot["context_count"] = context_count
@@ -1142,17 +1238,32 @@ class AppServices:
         snapshot["multi_author_percent"] = (
             round((multi_author_count / quote_count) * 100, 1) if quote_count else 0
         )
-        snapshot["avg_authors_per_quote"] = round(author_slots / quote_count, 2) if quote_count else 0
+        snapshot["avg_authors_per_quote"] = (
+            round(author_slots / quote_count, 2) if quote_count else 0
+        )
 
         length_distribution = [
-            {"label": "Short (1-8 words)", "count": sum(1 for c in word_counts if c <= 8)},
-            {"label": "Medium (9-20 words)", "count": sum(1 for c in word_counts if 9 <= c <= 20)},
-            {"label": "Long (21+ words)", "count": sum(1 for c in word_counts if c >= 21)},
+            {
+                "label": "Short (1-8 words)",
+                "count": sum(1 for c in word_counts if c <= 8),
+            },
+            {
+                "label": "Medium (9-20 words)",
+                "count": sum(1 for c in word_counts if 9 <= c <= 20),
+            },
+            {
+                "label": "Long (21+ words)",
+                "count": sum(1 for c in word_counts if c >= 21),
+            },
         ]
-        max_length_bucket = max((bucket["count"] for bucket in length_distribution), default=1)
+        max_length_bucket = max(
+            (bucket["count"] for bucket in length_distribution), default=1
+        )
         for bucket in length_distribution:
             bucket["percent"] = (
-                int((bucket["count"] / max_length_bucket) * 100) if max_length_bucket else 0
+                int((bucket["count"] / max_length_bucket) * 100)
+                if max_length_bucket
+                else 0
             )
         snapshot["length_distribution"] = length_distribution
 
@@ -1165,13 +1276,19 @@ class AppServices:
         snapshot["top_terms"] = token_counts.most_common(10)
 
         total_battle_entries = sum(q.stats.get("battles", 0) for q in quotes)
-        snapshot["total_battles"] = total_battle_entries // 2 if total_battle_entries else 0
-        snapshot["most_battled"] = max(quotes, key=lambda q: q.stats.get("battles", 0), default=None)
+        snapshot["total_battles"] = (
+            total_battle_entries // 2 if total_battle_entries else 0
+        )
+        snapshot["most_battled"] = max(
+            quotes, key=lambda q: q.stats.get("battles", 0), default=None
+        )
         battle_quotes = [q for q in quotes if q.stats.get("battles", 0) > 0]
         snapshot["battle_participation"] = (
             round((len(battle_quotes) / quote_count) * 100, 1) if quote_count else 0
         )
-        snapshot["total_anarchy_points"] = sum(q.stats.get("anarchy_points", 0) for q in quotes)
+        snapshot["total_anarchy_points"] = sum(
+            q.stats.get("anarchy_points", 0) for q in quotes
+        )
         snapshot["most_anarchy"] = max(
             quotes,
             key=lambda q: q.stats.get("anarchy_points", 0),

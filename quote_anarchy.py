@@ -96,7 +96,9 @@ class QuoteAnarchyService:
                 except sqlite3.IntegrityError:
                     continue
             else:
-                raise QuoteAnarchyError("Unable to create a session code right now.", 503)
+                raise QuoteAnarchyError(
+                    "Unable to create a session code right now.", 503
+                )
 
             conn.execute(
                 """
@@ -116,7 +118,9 @@ class QuoteAnarchyService:
             "max_rounds": rounds,
         }
 
-    def join_session(self, session_code: str, player_name: str, player_id: str | None = None) -> dict:
+    def join_session(
+        self, session_code: str, player_name: str, player_id: str | None = None
+    ) -> dict:
         self._require_unlocked()
         self._cleanup_stale_sessions()
 
@@ -169,7 +173,9 @@ class QuoteAnarchyService:
                 raise QuoteAnarchyError(self._session_end_message(session), 409)
 
             if session["status"] != "waiting":
-                raise QuoteAnarchyError("This session already started. Try another code.", 409)
+                raise QuoteAnarchyError(
+                    "This session already started. Try another code.", 409
+                )
 
             current_players = self._list_players(conn, code)
             if len(current_players) >= self.MAX_PLAYERS:
@@ -188,7 +194,9 @@ class QuoteAnarchyService:
                     (code, new_player_id, display_name, seat, now_ts),
                 )
             except sqlite3.IntegrityError as exc:
-                raise QuoteAnarchyError("Unable to join with this player identity.", 409) from exc
+                raise QuoteAnarchyError(
+                    "Unable to join with this player identity.", 409
+                ) from exc
 
             conn.execute(
                 "UPDATE qa_sessions SET updated_at = ? WHERE code = ?",
@@ -279,8 +287,12 @@ class QuoteAnarchyService:
                 (code, round_number),
             ).fetchall()
             votes_submitted_count = len(vote_rows)
-            required_votes = len(players) if judging_mode == self.JUDGING_MODE_ALL_VOTE else 0
-            viewer_vote = next((row for row in vote_rows if row["voter_player_id"] == player_id), None)
+            required_votes = (
+                len(players) if judging_mode == self.JUDGING_MODE_ALL_VOTE else 0
+            )
+            viewer_vote = next(
+                (row for row in vote_rows if row["voter_player_id"] == player_id), None
+            )
 
             round_winners = conn.execute(
                 """
@@ -322,7 +334,9 @@ class QuoteAnarchyService:
                     winners.append(
                         {
                             "player_id": winner_id,
-                            "player_name": winner_row["display_name"] if winner_row else "Unknown",
+                            "player_name": (
+                                winner_row["display_name"] if winner_row else "Unknown"
+                            ),
                             "quote_id": int(winner["quote_id"]),
                             "quote": winner["quote_text"],
                             "authors": self._json_loads_list(winner["quote_authors"]),
@@ -344,7 +358,11 @@ class QuoteAnarchyService:
                 }
 
             submissions_payload = []
-            if status == "judging" and judging_mode == self.JUDGING_MODE_JUDGE and player_id == judge_player_id:
+            if (
+                status == "judging"
+                and judging_mode == self.JUDGING_MODE_JUDGE
+                and player_id == judge_player_id
+            ):
                 submissions_payload = [
                     {
                         "player_id": row["player_id"],
@@ -408,7 +426,8 @@ class QuoteAnarchyService:
                     "player_id": player_id,
                     "display_name": viewer["display_name"],
                     "is_host": player_id == session["host_player_id"],
-                    "is_judge": judging_mode == self.JUDGING_MODE_JUDGE and player_id == judge_player_id,
+                    "is_judge": judging_mode == self.JUDGING_MODE_JUDGE
+                    and player_id == judge_player_id,
                     "score": int(viewer["score"]),
                 },
                 "players": [
@@ -433,7 +452,9 @@ class QuoteAnarchyService:
                     "votes_submitted_count": votes_submitted_count,
                     "required_votes": required_votes,
                     "you_voted": bool(viewer_vote),
-                    "voted_player_id": viewer_vote["voted_player_id"] if viewer_vote else "",
+                    "voted_player_id": (
+                        viewer_vote["voted_player_id"] if viewer_vote else ""
+                    ),
                     "can_start": status == "waiting"
                     and player_id == session["host_player_id"]
                     and len(players) >= 2
@@ -447,7 +468,8 @@ class QuoteAnarchyService:
                     and not bool(viewer_vote)
                     and is_active,
                     "can_advance": can_advance,
-                    "can_end_game": player_id == session["host_player_id"] and is_active,
+                    "can_end_game": player_id == session["host_player_id"]
+                    and is_active,
                 },
             }
 
@@ -469,7 +491,9 @@ class QuoteAnarchyService:
 
             players = self._list_players(conn, code)
             if len(players) < 2:
-                raise QuoteAnarchyError("At least 2 players are required to start.", 400)
+                raise QuoteAnarchyError(
+                    "At least 2 players are required to start.", 400
+                )
 
             self._deal_round(
                 conn=conn,
@@ -549,7 +573,9 @@ class QuoteAnarchyService:
             ).fetchone()[0]
 
             required_submissions = self._required_submissions(players, mode)
-            next_status = "judging" if submitted_count >= required_submissions else "collecting"
+            next_status = (
+                "judging" if submitted_count >= required_submissions else "collecting"
+            )
             conn.execute(
                 "UPDATE qa_sessions SET status = ?, updated_at = ? WHERE code = ?",
                 (next_status, int(time.time()), code),
@@ -557,13 +583,17 @@ class QuoteAnarchyService:
 
         return {"ok": True}
 
-    def pick_winner(self, session_code: str, player_id: str, winner_player_id: str) -> dict:
+    def pick_winner(
+        self, session_code: str, player_id: str, winner_player_id: str
+    ) -> dict:
         self._require_unlocked()
         code = self._normalize_code(session_code)
         player_id = self._normalize_player_id(player_id)
         winner_player_id = self._normalize_player_id(winner_player_id)
         if not code or not player_id or not winner_player_id:
-            raise QuoteAnarchyError("Session code, player_id, and winner_player_id are required.", 400)
+            raise QuoteAnarchyError(
+                "Session code, player_id, and winner_player_id are required.", 400
+            )
 
         winner_quote_ids: list[int] = []
         game_completed = False
@@ -572,7 +602,9 @@ class QuoteAnarchyService:
             if not self._session_is_active(session):
                 raise QuoteAnarchyError(self._session_end_message(session), 409)
             if self._session_judging_mode(session) != self.JUDGING_MODE_JUDGE:
-                raise QuoteAnarchyError("This session is using everyone-votes mode.", 409)
+                raise QuoteAnarchyError(
+                    "This session is using everyone-votes mode.", 409
+                )
             if session["status"] != "judging":
                 raise QuoteAnarchyError("Winner selection is not open right now.", 409)
 
@@ -593,7 +625,9 @@ class QuoteAnarchyService:
                 (code, round_number, winner_player_id),
             ).fetchone()
             if not winning_submission:
-                raise QuoteAnarchyError("The selected winner did not submit a card.", 400)
+                raise QuoteAnarchyError(
+                    "The selected winner did not submit a card.", 400
+                )
 
             winner_quote_ids = self._store_round_winners(
                 conn=conn,
@@ -609,20 +643,26 @@ class QuoteAnarchyService:
                     }
                 ],
             )
-            self._set_reveal_or_end(conn=conn, session=session, round_number=round_number)
+            self._set_reveal_or_end(
+                conn=conn, session=session, round_number=round_number
+            )
             updated_session = self._require_session(conn, code)
             game_completed = not self._session_is_active(updated_session)
 
         self._record_quote_anarchy_points(winner_quote_ids)
         return {"ok": True, "winners_recorded": True, "game_completed": game_completed}
 
-    def vote_submission(self, session_code: str, player_id: str, voted_player_id: str) -> dict:
+    def vote_submission(
+        self, session_code: str, player_id: str, voted_player_id: str
+    ) -> dict:
         self._require_unlocked()
         code = self._normalize_code(session_code)
         player_id = self._normalize_player_id(player_id)
         voted_player_id = self._normalize_player_id(voted_player_id)
         if not code or not player_id or not voted_player_id:
-            raise QuoteAnarchyError("Session code, player_id, and voted_player_id are required.", 400)
+            raise QuoteAnarchyError(
+                "Session code, player_id, and voted_player_id are required.", 400
+            )
 
         winner_quote_ids: list[int] = []
         round_resolved = False
@@ -632,7 +672,9 @@ class QuoteAnarchyService:
             if not self._session_is_active(session):
                 raise QuoteAnarchyError(self._session_end_message(session), 409)
             if self._session_judging_mode(session) != self.JUDGING_MODE_ALL_VOTE:
-                raise QuoteAnarchyError("Voting endpoint is only for everyone-votes mode.", 409)
+                raise QuoteAnarchyError(
+                    "Voting endpoint is only for everyone-votes mode.", 409
+                )
             if session["status"] != "judging":
                 raise QuoteAnarchyError("Voting is not open right now.", 409)
 
@@ -662,7 +704,9 @@ class QuoteAnarchyService:
                 (code, round_number, voted_player_id),
             ).fetchone()
             if not voted_submission:
-                raise QuoteAnarchyError("That player does not have a valid submission.", 400)
+                raise QuoteAnarchyError(
+                    "That player does not have a valid submission.", 400
+                )
 
             conn.execute(
                 """
@@ -698,7 +742,11 @@ class QuoteAnarchyService:
                     raise QuoteAnarchyError("No votes recorded for this round.", 409)
 
                 top_score = int(grouped[0]["total_votes"])
-                winning_ids = [row["voted_player_id"] for row in grouped if int(row["total_votes"]) == top_score]
+                winning_ids = [
+                    row["voted_player_id"]
+                    for row in grouped
+                    if int(row["total_votes"]) == top_score
+                ]
 
                 winner_rows = []
                 for winner_id in winning_ids:
@@ -731,7 +779,9 @@ class QuoteAnarchyService:
                     round_number=round_number,
                     winner_rows=winner_rows,
                 )
-                self._set_reveal_or_end(conn=conn, session=session, round_number=round_number)
+                self._set_reveal_or_end(
+                    conn=conn, session=session, round_number=round_number
+                )
                 round_resolved = True
                 updated_session = self._require_session(conn, code)
                 game_completed = not self._session_is_active(updated_session)
@@ -761,7 +811,9 @@ class QuoteAnarchyService:
             if not self._session_is_active(session):
                 raise QuoteAnarchyError(self._session_end_message(session), 409)
             if session["status"] != "reveal":
-                raise QuoteAnarchyError("Next round is only available after revealing the winner.", 409)
+                raise QuoteAnarchyError(
+                    "Next round is only available after revealing the winner.", 409
+                )
             if session["host_player_id"] != player_id:
                 raise QuoteAnarchyError("Only the host can start the next round.", 403)
 
@@ -877,9 +929,15 @@ class QuoteAnarchyService:
                 next_ended_reason = ""
                 next_ended_at = 0
                 conn.execute("DELETE FROM qa_hands WHERE session_code = ?", (code,))
-                conn.execute("DELETE FROM qa_submissions WHERE session_code = ?", (code,))
-                conn.execute("DELETE FROM qa_round_results WHERE session_code = ?", (code,))
-                conn.execute("DELETE FROM qa_round_winners WHERE session_code = ?", (code,))
+                conn.execute(
+                    "DELETE FROM qa_submissions WHERE session_code = ?", (code,)
+                )
+                conn.execute(
+                    "DELETE FROM qa_round_results WHERE session_code = ?", (code,)
+                )
+                conn.execute(
+                    "DELETE FROM qa_round_winners WHERE session_code = ?", (code,)
+                )
                 conn.execute("DELETE FROM qa_votes WHERE session_code = ?", (code,))
 
             conn.execute(
@@ -1132,7 +1190,9 @@ class QuoteAnarchyService:
 
         if mode == self.JUDGING_MODE_JUDGE:
             judge_player_id = players[judge_index]["player_id"]
-            participants = [player for player in players if player["player_id"] != judge_player_id]
+            participants = [
+                player for player in players if player["player_id"] != judge_player_id
+            ]
         else:
             judge_index = 0
             participants = list(players)
@@ -1142,7 +1202,9 @@ class QuoteAnarchyService:
         dealt_at = int(time.time())
 
         conn.execute("DELETE FROM qa_hands WHERE session_code = ?", (session_code,))
-        conn.execute("DELETE FROM qa_submissions WHERE session_code = ?", (session_code,))
+        conn.execute(
+            "DELETE FROM qa_submissions WHERE session_code = ?", (session_code,)
+        )
         conn.execute("DELETE FROM qa_votes WHERE session_code = ?", (session_code,))
 
         card_index = 0
@@ -1289,7 +1351,12 @@ class QuoteAnarchyService:
                     updated_at = ?
                 WHERE code = ?
                 """,
-                (f"Game ended after {max_rounds} rounds.", now_ts, now_ts, session["code"]),
+                (
+                    f"Game ended after {max_rounds} rounds.",
+                    now_ts,
+                    now_ts,
+                    session["code"],
+                ),
             )
             return
 
@@ -1445,7 +1512,9 @@ class QuoteAnarchyService:
         ).fetchall()
 
     @staticmethod
-    def _ensure_column(conn: sqlite3.Connection, table_name: str, column_name: str, ddl_sql: str) -> None:
+    def _ensure_column(
+        conn: sqlite3.Connection, table_name: str, column_name: str, ddl_sql: str
+    ) -> None:
         columns = {
             row["name"]
             for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
@@ -1454,7 +1523,9 @@ class QuoteAnarchyService:
             return
         conn.execute(ddl_sql)
 
-    def _get_session(self, conn: sqlite3.Connection, session_code: str) -> sqlite3.Row | None:
+    def _get_session(
+        self, conn: sqlite3.Connection, session_code: str
+    ) -> sqlite3.Row | None:
         return conn.execute(
             """
             SELECT
@@ -1477,7 +1548,9 @@ class QuoteAnarchyService:
             (self.DEFAULT_MAX_ROUNDS, session_code),
         ).fetchone()
 
-    def _require_session(self, conn: sqlite3.Connection, session_code: str) -> sqlite3.Row:
+    def _require_session(
+        self, conn: sqlite3.Connection, session_code: str
+    ) -> sqlite3.Row:
         session = self._get_session(conn, session_code)
         if not session:
             raise QuoteAnarchyError("Session not found.", 404)

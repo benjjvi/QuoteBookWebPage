@@ -237,13 +237,18 @@ Digest data:
         for candidate_payload in payload_variants:
             try:
                 response = requests.post(
-                    self.OPENROUTER_URL, headers=headers, json=candidate_payload, timeout=60
+                    self.OPENROUTER_URL,
+                    headers=headers,
+                    json=candidate_payload,
+                    timeout=60,
                 )
                 response.raise_for_status()
                 answer = response.json()["choices"][0]["message"]["content"]
                 subject, body = self.parse_weekly_digest_response(answer)
                 if self.count_paragraphs(body) < 2:
-                    raise ValueError("AI weekly digest body must contain at least 2 paragraphs.")
+                    raise ValueError(
+                        "AI weekly digest body must contain at least 2 paragraphs."
+                    )
                 return subject, body
             except Exception as exc:
                 last_error = exc

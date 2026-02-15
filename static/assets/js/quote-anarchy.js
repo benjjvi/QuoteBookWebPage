@@ -114,18 +114,22 @@
   const modeLabel = (mode) =>
     mode === "all_vote" ? "Everyone Votes" : "Classic Judge";
 
-  const isMobileViewport = () => window.matchMedia("(max-width: 720px)").matches;
+  const isMobileViewport = () =>
+    window.matchMedia("(max-width: 720px)").matches;
 
   const syncRoundActionsVisibility = () => {
     if (!els.roundActions) return;
-    const hasVisibleActions = [els.startBtn, els.submitBtn, els.nextRoundBtn].some(
-      (button) => button && !button.hidden,
-    );
+    const hasVisibleActions = [
+      els.startBtn,
+      els.submitBtn,
+      els.nextRoundBtn,
+    ].some((button) => button && !button.hidden);
     els.roundActions.hidden = !hasVisibleActions;
   };
 
   const maybeScrollToRoundActions = () => {
-    if (!isMobileViewport() || !els.roundActions || els.roundActions.hidden) return;
+    if (!isMobileViewport() || !els.roundActions || els.roundActions.hidden)
+      return;
     window.requestAnimationFrame(() => {
       els.roundActions.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
@@ -177,8 +181,10 @@
 
   const renderLockState = () => {
     const unlocked = Boolean(bootstrap.unlocked);
-    if (els.lockMin) els.lockMin.textContent = String(bootstrap.min_quotes_required || 50);
-    if (els.lockCurrent) els.lockCurrent.textContent = String(bootstrap.total_quotes || 0);
+    if (els.lockMin)
+      els.lockMin.textContent = String(bootstrap.min_quotes_required || 50);
+    if (els.lockCurrent)
+      els.lockCurrent.textContent = String(bootstrap.total_quotes || 0);
     if (els.locked) els.locked.hidden = unlocked;
     if (els.main) els.main.hidden = !unlocked;
 
@@ -237,7 +243,9 @@
     els.soloDealBtn.disabled = true;
     els.soloDealBtn.textContent = "Dealing...";
     try {
-      const payload = await api("/api/quote-anarchy/solo/deal", { method: "POST" });
+      const payload = await api("/api/quote-anarchy/solo/deal", {
+        method: "POST",
+      });
       state.solo.blackCard = payload.black_card || "The best response is ____.";
       state.solo.hand = (payload.hand || []).map((item) => ({
         id: Number(item.id),
@@ -251,7 +259,8 @@
         els.soloBlackCard.textContent = state.solo.blackCard;
       }
       if (els.soloHint) {
-        els.soloHint.textContent = "Pick your funniest quote card to complete the prompt.";
+        els.soloHint.textContent =
+          "Pick your funniest quote card to complete the prompt.";
       }
       if (els.soloResult) {
         els.soloResult.hidden = true;
@@ -259,7 +268,9 @@
       renderSoloHand();
     } catch (err) {
       if (els.soloHint) {
-        els.soloHint.textContent = String(err.message || "Unable to deal a solo round.");
+        els.soloHint.textContent = String(
+          err.message || "Unable to deal a solo round.",
+        );
       }
     } finally {
       els.soloDealBtn.disabled = false;
@@ -310,7 +321,11 @@
         const tags = [];
         if (player.player_id === viewerId) tags.push("You");
         if (player.player_id === hostId) tags.push("Host");
-        if (isJudgeMode && player.player_id === judgeId && payload.session.status !== "waiting") {
+        if (
+          isJudgeMode &&
+          player.player_id === judgeId &&
+          payload.session.status !== "waiting"
+        ) {
           tags.push("Judge");
         }
         return `
@@ -335,7 +350,8 @@
     const round = payload.round;
     const mode = payload.session.judging_mode;
     const isCollecting = round.status === "collecting";
-    const shouldShow = isCollecting && (mode === "all_vote" || !payload.viewer.is_judge);
+    const shouldShow =
+      isCollecting && (mode === "all_vote" || !payload.viewer.is_judge);
 
     els.handWrap.hidden = !shouldShow;
     if (!shouldShow) {
@@ -393,7 +409,9 @@
     const session = payload.session;
     const mode = session.judging_mode;
 
-    const showJudge = round.status === "judging" && (round.can_pick_winner || mode === "all_vote");
+    const showJudge =
+      round.status === "judging" &&
+      (round.can_pick_winner || mode === "all_vote");
     els.judgeWrap.hidden = !showJudge;
     if (!showJudge) {
       els.judgeSubmissions.innerHTML = "";
@@ -460,7 +478,9 @@
           }
           await refreshSessionState();
         } catch (err) {
-          setLobbyMessage(String(err.message || "Unable to complete this action."));
+          setLobbyMessage(
+            String(err.message || "Unable to complete this action."),
+          );
         }
       });
     });
@@ -468,7 +488,8 @@
 
   const renderReveal = (payload) => {
     if (!els.revealWrap || !els.revealText) return;
-    const showReveal = payload.round.status === "reveal" && payload.round.result;
+    const showReveal =
+      payload.round.status === "reveal" && payload.round.result;
     els.revealWrap.hidden = !showReveal;
     if (!showReveal) {
       els.revealText.textContent = "";
@@ -516,8 +537,10 @@
       els.endBtn.hidden = !round.can_end_game;
     }
 
-    els.roundHeading.textContent = roundNumber > 0 ? `Round ${roundNumber}` : "Lobby";
-    els.roundBlackCard.textContent = round.black_card || "Waiting for the host to start.";
+    els.roundHeading.textContent =
+      roundNumber > 0 ? `Round ${roundNumber}` : "Lobby";
+    els.roundBlackCard.textContent =
+      round.black_card || "Waiting for the host to start.";
 
     let statusText = "";
     if (!isActive) {
@@ -532,9 +555,10 @@
       } else if (round.you_submitted) {
         statusText = `${round.submitted_count}/${round.required_submissions} submitted. Waiting for the rest.`;
       } else {
-        statusText = mode === "all_vote"
-          ? "Submit one white card. Everyone submits in this mode."
-          : "Pick one white card and submit it.";
+        statusText =
+          mode === "all_vote"
+            ? "Submit one white card. Everyone submits in this mode."
+            : "Pick one white card and submit it.";
       }
     } else if (status === "judging") {
       if (mode === "all_vote") {
@@ -570,17 +594,23 @@
 
     if (els.mobileTip) {
       let mobileTip = "";
-      const canSubmitCard = status === "collecting"
-        && !round.you_submitted
-        && (session.judging_mode === "all_vote" || !payload.viewer.is_judge);
+      const canSubmitCard =
+        status === "collecting" &&
+        !round.you_submitted &&
+        (session.judging_mode === "all_vote" || !payload.viewer.is_judge);
 
       if (isMobileViewport()) {
         if (canSubmitCard) {
           mobileTip = "Tap a card, then tap Submit.";
         } else if (status === "judging") {
-          mobileTip = session.judging_mode === "all_vote"
-            ? (round.can_vote ? "Tap one card to cast your vote." : "Waiting for everyone to vote.")
-            : (round.can_pick_winner ? "Tap one card to pick the winner." : "Judge is choosing.");
+          mobileTip =
+            session.judging_mode === "all_vote"
+              ? round.can_vote
+                ? "Tap one card to cast your vote."
+                : "Waiting for everyone to vote."
+              : round.can_pick_winner
+                ? "Tap one card to pick the winner."
+                : "Judge is choosing.";
         } else if (status === "reveal" && round.can_advance) {
           mobileTip = "Tap Next round when everyone is ready.";
         }
@@ -661,9 +691,14 @@
     event.preventDefault();
     const playerName = String(els.createName?.value || "").trim();
     const judgingMode = String(els.createMode?.value || "judge").trim();
-    const rawRounds = Number(els.createMaxRounds?.value || bootstrap.default_max_rounds || 8);
+    const rawRounds = Number(
+      els.createMaxRounds?.value || bootstrap.default_max_rounds || 8,
+    );
     const maxRoundsLimit = Number(bootstrap.max_rounds_limit || 30);
-    const maxRounds = Math.max(1, Math.min(maxRoundsLimit, Math.floor(rawRounds || 0) || 8));
+    const maxRounds = Math.max(
+      1,
+      Math.min(maxRoundsLimit, Math.floor(rawRounds || 0) || 8),
+    );
 
     if (!playerName) {
       setLobbyMessage("Enter your name to create a session.");
@@ -680,7 +715,9 @@
   const handleJoinSubmit = async (event) => {
     event.preventDefault();
     const playerName = String(els.joinName?.value || "").trim();
-    const sessionCode = String(els.joinCode?.value || "").trim().toUpperCase();
+    const sessionCode = String(els.joinCode?.value || "")
+      .trim()
+      .toUpperCase();
     if (!playerName || !sessionCode) {
       setLobbyMessage("Enter your name and a session code.");
       return;
@@ -695,7 +732,8 @@
   const tryResumeSession = async () => {
     const storedCode = localStorage.getItem(STORAGE_KEYS.sessionCode) || "";
     const storedPlayerId = localStorage.getItem(STORAGE_KEYS.playerId) || "";
-    const storedPlayerName = localStorage.getItem(STORAGE_KEYS.playerName) || "";
+    const storedPlayerName =
+      localStorage.getItem(STORAGE_KEYS.playerName) || "";
     if (!storedCode || !storedPlayerId) {
       renderLobbyOrSession(false);
       return;
@@ -729,7 +767,8 @@
         }
       } catch (_err) {
         if (els.soloHint) {
-          els.soloHint.textContent = "Clipboard blocked. Copy manually from the result card.";
+          els.soloHint.textContent =
+            "Clipboard blocked. Copy manually from the result card.";
         }
       }
     });
@@ -738,15 +777,21 @@
     els.joinForm?.addEventListener("submit", handleJoinSubmit);
     els.joinCode?.addEventListener("input", () => {
       if (!els.joinCode) return;
-      els.joinCode.value = els.joinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+      els.joinCode.value = els.joinCode.value
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 6);
     });
 
     els.startBtn?.addEventListener("click", async () => {
       try {
-        await api(`/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/start`, {
-          method: "POST",
-          body: { player_id: state.multi.playerId },
-        });
+        await api(
+          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/start`,
+          {
+            method: "POST",
+            body: { player_id: state.multi.playerId },
+          },
+        );
         await refreshSessionState();
       } catch (err) {
         setLobbyMessage(String(err.message || "Unable to start session."));
@@ -756,13 +801,16 @@
     els.submitBtn?.addEventListener("click", async () => {
       if (!state.multi.selectedQuoteId) return;
       try {
-        await api(`/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/submit`, {
-          method: "POST",
-          body: {
-            player_id: state.multi.playerId,
-            quote_id: state.multi.selectedQuoteId,
+        await api(
+          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/submit`,
+          {
+            method: "POST",
+            body: {
+              player_id: state.multi.playerId,
+              quote_id: state.multi.selectedQuoteId,
+            },
           },
-        });
+        );
         await refreshSessionState();
       } catch (err) {
         setLobbyMessage(String(err.message || "Unable to submit card."));
@@ -771,10 +819,13 @@
 
     els.nextRoundBtn?.addEventListener("click", async () => {
       try {
-        await api(`/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/next-round`, {
-          method: "POST",
-          body: { player_id: state.multi.playerId },
-        });
+        await api(
+          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/next-round`,
+          {
+            method: "POST",
+            body: { player_id: state.multi.playerId },
+          },
+        );
         await refreshSessionState();
         if (state.multi.lastState?.session?.is_active) {
           startPolling();
@@ -786,10 +837,13 @@
 
     els.endBtn?.addEventListener("click", async () => {
       try {
-        await api(`/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/end`, {
-          method: "POST",
-          body: { player_id: state.multi.playerId },
-        });
+        await api(
+          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/end`,
+          {
+            method: "POST",
+            body: { player_id: state.multi.playerId },
+          },
+        );
         await refreshSessionState();
       } catch (err) {
         setLobbyMessage(String(err.message || "Unable to end game."));
@@ -812,10 +866,13 @@
         return;
       }
       try {
-        await api(`/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/leave`, {
-          method: "POST",
-          body: { player_id: state.multi.playerId },
-        });
+        await api(
+          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/leave`,
+          {
+            method: "POST",
+            body: { player_id: state.multi.playerId },
+          },
+        );
       } catch (_err) {
         // Leave should still clear local state even if server reports an error.
       }

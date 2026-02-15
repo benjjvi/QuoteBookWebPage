@@ -233,7 +233,9 @@ def test_quote_anarchy_everyone_votes_tie_and_round_cap(client, quote_store, ser
     assert winner_ids == {host_player_id, guest_player_id}
     assert reveal_payload["round"]["result"]["is_tie"] is True
 
-    scores = {player["player_id"]: player["score"] for player in reveal_payload["players"]}
+    scores = {
+        player["player_id"]: player["score"] for player in reveal_payload["players"]
+    }
     assert scores[host_player_id] == 1
     assert scores[guest_player_id] == 1
 

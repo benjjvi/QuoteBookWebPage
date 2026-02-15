@@ -3,7 +3,6 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-
 UK_TZ = ZoneInfo("Europe/London")
 
 
@@ -88,7 +87,9 @@ def test_push_metrics_success_and_failure(services, monkeypatch):
         "app_services.webpush",
         lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("push failed")),
     )
-    sent_failed = services.send_push_notification("Title", "Body", "https://example.com")
+    sent_failed = services.send_push_notification(
+        "Title", "Body", "https://example.com"
+    )
     assert sent_failed == 0
 
     metrics = services.get_runtime_metrics()

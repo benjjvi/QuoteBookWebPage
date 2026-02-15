@@ -230,7 +230,9 @@ class QuoteClient:
         if self._local:
             return self._local.record_quote_anarchy_wins(normalized_ids)
 
-        payload = self._post_json("/api/quote-anarchy-wins", {"quote_ids": normalized_ids})
+        payload = self._post_json(
+            "/api/quote-anarchy-wins", {"quote_ids": normalized_ids}
+        )
         return [self._quote_from_dict(item) for item in payload.get("quotes", [])]
 
     def parse_authors(self, raw: str):

@@ -31,10 +31,13 @@ EDIT_PIN = os.getenv("EDIT_PIN", "").strip()
 VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "").strip()
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "").strip()
 VAPID_EMAIL = os.getenv("VAPID_EMAIL", "mailto:admin@example.com").strip()
-WEEKLY_EMAIL_ENABLED = (
-    os.getenv("WEEKLY_EMAIL_ENABLED", "false").strip().lower()
-    in {"1", "true", "yes", "y", "on"}
-)
+WEEKLY_EMAIL_ENABLED = os.getenv("WEEKLY_EMAIL_ENABLED", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+    "on",
+}
 WEEKLY_EMAIL_TO_SEED = [
     email.strip()
     for email in os.getenv("WEEKLY_EMAIL_TO_SEED", "").split(",")
@@ -53,9 +56,12 @@ ADSENSE_SLOT_FOOTER = os.getenv("ADSENSE_SLOT_FOOTER", "").strip()
 GOOGLE_ADSENSE_ACCOUNT = (
     os.getenv("GOOGLE_ADSENSE_ACCOUNT", "").strip() or ADSENSE_CLIENT_ID
 )
-ROBOTS_DISALLOW_ALL = (
-    os.getenv("ROBOTS_DISALLOW_ALL", "false").strip().lower() in {"1", "true", "yes", "on"}
-)
+ROBOTS_DISALLOW_ALL = os.getenv("ROBOTS_DISALLOW_ALL", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
 try:
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
