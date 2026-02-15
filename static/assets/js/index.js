@@ -34,6 +34,75 @@
     return outputArray;
   };
 
+  const setupHomepageLayout = () => {
+    const grid = document.querySelector(".index-grid");
+    if (!grid) return;
+
+    // Upgrade legacy markup into independent columns so each side stacks by its own height.
+    if (!grid.querySelector(".index-column")) {
+      const intro = grid.querySelector(".card-intro");
+      const nav = grid.querySelector(".card-nav");
+      const speakers = grid.querySelector(".card-speakers");
+      const support = grid.querySelector(".card-support");
+
+      if (intro && nav && speakers) {
+        const mainColumn = document.createElement("div");
+        mainColumn.className = "index-column index-column-main";
+        mainColumn.append(intro, nav);
+
+        const sideColumn = document.createElement("div");
+        sideColumn.className = "index-column index-column-side";
+        sideColumn.append(speakers);
+        if (support) sideColumn.append(support);
+
+        grid.replaceChildren(mainColumn, sideColumn);
+      }
+    }
+
+    // Upgrade legacy nav into compact primary links + "More links" bucket.
+    const navCard = grid.querySelector(".card-nav");
+    const navGrid = navCard?.querySelector("#navGrid");
+    if (!navCard || !navGrid) return;
+
+    navGrid.classList.add("nav-grid-primary");
+
+    if (!navCard.querySelector(".nav-more")) {
+      const isPrimaryPath = (pathname) =>
+        pathname === "/all_quotes" ||
+        pathname === "/random" ||
+        pathname === "/search" ||
+        pathname === "/add_quote" ||
+        pathname === "/ai" ||
+        pathname.startsWith("/timeline/");
+
+      const moved = [];
+      Array.from(navGrid.querySelectorAll(".nav-item")).forEach((item) => {
+        let pathname = "";
+        try {
+          pathname = new URL(item.getAttribute("href") || "", window.location.origin).pathname;
+        } catch (_err) {
+          pathname = "";
+        }
+        if (!isPrimaryPath(pathname)) moved.push(item);
+      });
+
+      if (moved.length) {
+        const details = document.createElement("details");
+        details.className = "nav-more";
+
+        const summary = document.createElement("summary");
+        summary.textContent = "More links";
+
+        const compactGrid = document.createElement("div");
+        compactGrid.className = "nav-grid nav-grid-compact";
+        moved.forEach((item) => compactGrid.append(item));
+
+        details.append(summary, compactGrid);
+        navCard.append(details);
+      }
+    }
+  };
+
   const setupInstallPrompt = () => {
     const installBtn = document.getElementById("installBtn");
     const installHelp = document.getElementById("installHelp");
@@ -400,6 +469,14 @@
         const allowed = item.dataset.offlineAllowed === "true";
         item.style.display = isOffline && !allowed ? "none" : "";
       });
+
+      document.querySelectorAll(".nav-more").forEach((group) => {
+        const hasVisibleLinks = Array.from(group.querySelectorAll(".nav-item")).some(
+          (item) => item.style.display !== "none"
+        );
+        group.style.display = hasVisibleLinks ? "" : "none";
+        if (!hasVisibleLinks) group.removeAttribute("open");
+      });
     };
 
     updateOfflineNav();
@@ -407,6 +484,7 @@
     window.addEventListener("offline", updateOfflineNav);
   };
 
+  setupHomepageLayout();
   setupInstallPrompt();
   setupPushPrompt();
   setupEmailSubscribePrompt();

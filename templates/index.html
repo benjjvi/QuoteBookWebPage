@@ -11,147 +11,159 @@
 
 {% block content %}
 <section class="index-grid">
-  <!-- Intro / Stats -->
-  <div class="card card-intro">
-    <h1>Quote Book</h1>
-    <p class="muted">
-      Enough for a trip to HR, but not enough to go to jail.
-    </p>
-
-    <div class="stats">
-      <div class="stat">
-        <span class="stat-number">{{ total_quotes }}</span>
-        <span class="stat-label">total quotes</span>
-      </div>
-
-      <div class="stat">
-        <span class="stat-label">Last checked</span>
-        <span class="stat-meta">
-          {{ now.strftime("%d %b %Y, %H:%M") }}
-        </span>
-      </div>
-    </div>
-
-    <div class="pwa-actions">
-      <button type="button" class="btn btn-primary btn-install" id="installBtn">
-        Install app
-      </button>
-    </div>
-    <p class="install-status" id="installStatus" aria-live="polite"></p>
-    <div class="install-help" id="installHelp" hidden></div>
-  </div>
-
-  <!-- Navigation -->
-  <div class="card card-nav">
-    <h2>Explore</h2>
-
-    <div class="nav-grid" id="navGrid">
-      <a
-        href="/all_quotes"
-        class="nav-item"
-        data-offline-allowed="true"
-      >
-        <img src="/static/assets/img/book.svg" alt="" />
-        <span>All quotes</span>
-      </a>
-
-      <a
-        href="/random"
-        class="nav-item"
-        data-offline-allowed="true"
-      >
-        <img src="/static/assets/img/dice.svg" alt="" />
-        <span>Random</span>
-      </a>
-
-      <a href="/battle" class="nav-item" data-offline-allowed="false">
-        <img src="/static/assets/img/battle.svg" alt="" />
-        <span>Battle</span>
-      </a>
-
-      <a href="/quote-anarchy" class="nav-item" data-offline-allowed="false">
-        <img src="/static/assets/quote-anarchy/icon.svg" alt="" />
-        <span>Quote Anarchy</span>
-      </a>
-
-      <a href="/search" class="nav-item" data-offline-allowed="false">
-        <img src="/static/assets/img/search.svg" alt="" />
-        <span>Search</span>
-      </a>
-
-      <a href="/add_quote" class="nav-item" data-offline-allowed="false">
-        <img src="/static/assets/img/add.svg" alt="" />
-        <span>Add quote</span>
-      </a>
-
-      <a href="/ai" class="nav-item" data-offline-allowed="false">
-        <img src="/static/assets/img/robot.svg" alt="" />
-        <span>AI</span>
-      </a>
-
-      <a
-        href="/timeline/{{ now.year }}/{{ now.month }}"
-        class="nav-item"
-        data-offline-allowed="false"
-      >
-        <img src="/static/assets/img/calendar.svg" alt="" />
-        <span>Calendar</span>
-      </a>
-
-      <a href="/stats" class="nav-item" data-offline-allowed="false">
-        <img src="/static/assets/img/stats.svg" alt="" />
-        <span>Stats</span>
-      </a>
-
-      <a href="/mailbox" class="nav-item" data-offline-allowed="false">
-        <img src="/static/assets/img/mailbox.svg" alt="" />
-        <span>Mailbox</span>
-      </a>
-      {% if support_url or sponsor_contact_url or sponsor_contact_email %}
-        <a href="/support" class="nav-item" data-offline-allowed="false">
-          <img src="/static/assets/img/support.svg" alt="" />
-          <span>Support</span>
-        </a>
-      {% endif %}
-      {% if edit_enabled %}
-        <a href="/edit" class="nav-item" data-offline-allowed="false">
-          <img src="/static/assets/img/edit.svg" alt="" />
-          <span>Edit</span>
-        </a>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Speakers -->
-  <div class="card card-speakers">
-    <h2>Speakers</h2>
-
-    <ul class="speaker-list">
-      {% for speaker, count in speaker_counts[:5] %}
-        <li>
-          <span class="speaker-name">{{ speaker }}</span>
-          <span class="speaker-count">{{ count }}</span>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  {% if support_url or sponsor_contact_url or sponsor_contact_email %}
-    <div class="card card-support offline-hide">
-      <h2>Keep This Running</h2>
+  <div class="index-column index-column-main">
+    <div class="card card-intro">
+      <span class="eyebrow">Welcome back</span>
+      <h1>Quote Book</h1>
       <p class="muted">
-        If you enjoy the chaos, you can support hosting costs or sponsor the site.
+        Enough for a trip to HR, but not enough to go to jail.
       </p>
-      <div class="support-actions">
-        {% if support_url %}
-          <a href="{{ support_url }}" class="btn btn-primary" rel="nofollow sponsored">
-            {{ support_label or "Support Quote Book" }}
-          </a>
-        {% endif %}
-        <a href="/advertise" class="btn btn-ghost">Sponsor / Partner</a>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-number">{{ total_quotes }}</span>
+          <span class="stat-label">total quotes</span>
+        </div>
+
+        <div class="stat">
+          <span class="stat-label">Last checked</span>
+          <span class="stat-meta">
+            {{ now.strftime("%d %b %Y, %H:%M") }}
+          </span>
+        </div>
+      </div>
+
+      <div class="pwa-actions">
+        <button type="button" class="btn btn-primary btn-install" id="installBtn">
+          Install app
+        </button>
+        <p class="install-status" id="installStatus" aria-live="polite"></p>
+        <div class="install-help" id="installHelp" hidden></div>
       </div>
     </div>
-  {% endif %}
+
+    <div class="card card-nav">
+      <h2>Explore</h2>
+      <p class="muted">
+        High-traffic routes up front, then everything else in one tap.
+      </p>
+
+      <div class="nav-grid nav-grid-primary" id="navGrid">
+        <a
+          href="/all_quotes"
+          class="nav-item"
+          data-offline-allowed="true"
+        >
+          <img src="/static/assets/img/book.svg" alt="" />
+          <span>All quotes</span>
+        </a>
+
+        <a
+          href="/random"
+          class="nav-item"
+          data-offline-allowed="true"
+        >
+          <img src="/static/assets/img/dice.svg" alt="" />
+          <span>Random</span>
+        </a>
+
+        <a href="/search" class="nav-item" data-offline-allowed="false">
+          <img src="/static/assets/img/search.svg" alt="" />
+          <span>Search</span>
+        </a>
+
+        <a href="/add_quote" class="nav-item" data-offline-allowed="false">
+          <img src="/static/assets/img/add.svg" alt="" />
+          <span>Add quote</span>
+        </a>
+
+        <a href="/ai" class="nav-item" data-offline-allowed="false">
+          <img src="/static/assets/img/robot.svg" alt="" />
+          <span>AI</span>
+        </a>
+
+        <a
+          href="/timeline/{{ now.year }}/{{ now.month }}"
+          class="nav-item"
+          data-offline-allowed="false"
+        >
+          <img src="/static/assets/img/calendar.svg" alt="" />
+          <span>Calendar</span>
+        </a>
+      </div>
+
+      <details class="nav-more">
+        <summary>More links</summary>
+        <div class="nav-grid nav-grid-compact">
+          <a href="/battle" class="nav-item" data-offline-allowed="false">
+            <img src="/static/assets/img/battle.svg" alt="" />
+            <span>Battle</span>
+          </a>
+
+          <a href="/quote-anarchy" class="nav-item" data-offline-allowed="false">
+            <img src="/static/assets/quote-anarchy/icon.svg" alt="" />
+            <span>Quote Anarchy</span>
+          </a>
+
+          <a href="/mailbox" class="nav-item" data-offline-allowed="false">
+            <img src="/static/assets/img/mailbox.svg" alt="" />
+            <span>Mailbox</span>
+          </a>
+
+          <a href="/stats" class="nav-item" data-offline-allowed="false">
+            <img src="/static/assets/img/stats.svg" alt="" />
+            <span>Stats</span>
+          </a>
+
+          {% if support_url or sponsor_contact_url or sponsor_contact_email %}
+            <a href="/support" class="nav-item" data-offline-allowed="false">
+              <img src="/static/assets/img/support.svg" alt="" />
+              <span>Support</span>
+            </a>
+          {% endif %}
+
+          {% if edit_enabled %}
+            <a href="/edit" class="nav-item" data-offline-allowed="false">
+              <img src="/static/assets/img/edit.svg" alt="" />
+              <span>Edit</span>
+            </a>
+          {% endif %}
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="index-column index-column-side">
+    <div class="card card-speakers">
+      <h2>Speakers</h2>
+
+      <ul class="speaker-list">
+        {% for speaker, count in speaker_counts[:5] %}
+          <li>
+            <span class="speaker-name">{{ speaker }}</span>
+            <span class="speaker-count">{{ count }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if support_url or sponsor_contact_url or sponsor_contact_email %}
+      <div class="card card-support offline-hide">
+        <h2>Keep This Running</h2>
+        <p class="muted">
+          If you enjoy the chaos, you can help with hosting costs or sponsor the site.
+        </p>
+        <div class="support-actions">
+          {% if support_url %}
+            <a href="{{ support_url }}" class="btn btn-primary" rel="nofollow sponsored">
+              {{ support_label or "Support Quote Book" }}
+            </a>
+          {% endif %}
+          <a href="/advertise" class="btn btn-ghost">Sponsor / Partner</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
 </section>
 
 <div class="notify-modal" id="notifyModal" hidden aria-hidden="true">
