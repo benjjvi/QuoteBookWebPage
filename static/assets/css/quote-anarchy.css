@@ -176,6 +176,12 @@
   gap: 0.72rem;
 }
 
+.qa-mobile-tip {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: rgba(255, 211, 122, 0.9);
+}
+
 .qa-hand-section {
   margin-top: 0.3rem;
   padding: 1.05rem;
@@ -317,6 +323,8 @@
   color: #f7f4ef;
   padding: 0.68rem 0.74rem;
   font: inherit;
+  min-height: 44px;
+  font-size: 1rem;
 }
 
 .qa-form select {
@@ -327,6 +335,8 @@
   color: #f7f4ef;
   padding: 0.68rem 0.74rem;
   font: inherit;
+  min-height: 44px;
+  font-size: 1rem;
 }
 
 .qa-room-grid {
@@ -430,6 +440,10 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
 }
 
+.qa-card:active {
+  transform: scale(0.99);
+}
+
 .btn-primary {
   background: linear-gradient(135deg, #ffd37a, #ff9a62);
   color: #1b1308;
@@ -476,5 +490,155 @@
 
   .qa-hand-section {
     padding: 0.86rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .qa-page {
+    gap: 1rem;
+    padding-bottom: calc(5.2rem + env(safe-area-inset-bottom));
+  }
+
+  .qa-stack-card {
+    display: none;
+  }
+
+  .qa-hero {
+    padding: 1.2rem;
+    border-radius: 20px;
+  }
+
+  .qa-hero-side {
+    width: 100%;
+  }
+
+  .qa-hero-side .btn {
+    width: 100%;
+  }
+
+  .qa-hero-meta {
+    gap: 0.35rem;
+  }
+
+  .pill {
+    font-size: 0.68rem;
+    padding: 0.32rem 0.62rem;
+  }
+
+  .qa-shell {
+    border-radius: 20px;
+  }
+
+  .qa-panel {
+    padding: 0.95rem;
+  }
+
+  .qa-mode-switch {
+    width: 100%;
+  }
+
+  .mode-btn {
+    min-height: 44px;
+    font-size: 0.95rem;
+    padding: 0.68rem 0.8rem;
+  }
+
+  .qa-hand {
+    grid-template-columns: 1fr;
+    gap: 0.72rem;
+  }
+
+  .qa-card {
+    min-height: 136px;
+    padding: 1rem 0.92rem 0.84rem;
+    border-radius: 14px;
+  }
+
+  .qa-card .quote {
+    font-size: 1rem;
+  }
+
+  .qa-session-top {
+    padding: 0.9rem;
+    align-items: flex-start;
+  }
+
+  .qa-session-top .qa-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+  }
+
+  .qa-session-top .qa-actions .btn {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.62rem 0.78rem;
+  }
+
+  .qa-session-top .qa-actions .btn-danger {
+    grid-column: 1 / -1;
+  }
+
+  .qa-players {
+    padding: 0.86rem;
+  }
+
+  .qa-players ul {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.52rem;
+    padding-bottom: 0.14rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .qa-player-item {
+    min-width: 170px;
+    scroll-snap-align: start;
+  }
+
+  .qa-round {
+    padding: 0.92rem 0.85rem 1.05rem;
+  }
+
+  #qaRoundActions {
+    position: sticky;
+    bottom: calc(0.45rem + env(safe-area-inset-bottom));
+    z-index: 7;
+    background: rgba(9, 10, 14, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 0.54rem;
+    backdrop-filter: blur(6px);
+    margin-top: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  #qaRoundActions .btn {
+    width: 100%;
+    min-height: 46px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.94rem;
+  }
+
+  .qa-mobile-tip {
+    margin-top: 0.4rem;
+  }
+}
+
+@media (hover: none) {
+  .qa-card:hover {
+    transform: none;
+    box-shadow:
+      0 8px 18px rgba(0, 0, 0, 0.18),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.52);
+    border-color: rgba(12, 14, 18, 0.18);
+  }
+
+  .btn:hover {
+    transform: none;
+    box-shadow: none;
   }
 }

@@ -61,6 +61,8 @@
     startBtn: document.getElementById("qaStartBtn"),
     submitBtn: document.getElementById("qaSubmitBtn"),
     nextRoundBtn: document.getElementById("qaNextRoundBtn"),
+    roundActions: document.getElementById("qaRoundActions"),
+    mobileTip: document.getElementById("qaMobileTip"),
 
     handWrap: document.getElementById("qaHandWrap"),
     roundHand: document.getElementById("qaRoundHand"),
@@ -111,6 +113,23 @@
 
   const modeLabel = (mode) =>
     mode === "all_vote" ? "Everyone Votes" : "Classic Judge";
+
+  const isMobileViewport = () => window.matchMedia("(max-width: 720px)").matches;
+
+  const syncRoundActionsVisibility = () => {
+    if (!els.roundActions) return;
+    const hasVisibleActions = [els.startBtn, els.submitBtn, els.nextRoundBtn].some(
+      (button) => button && !button.hidden,
+    );
+    els.roundActions.hidden = !hasVisibleActions;
+  };
+
+  const maybeScrollToRoundActions = () => {
+    if (!isMobileViewport() || !els.roundActions || els.roundActions.hidden) return;
+    window.requestAnimationFrame(() => {
+      els.roundActions.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  };
 
   const api = async (path, { method = "GET", body } = {}) => {
     const options = {
@@ -323,6 +342,7 @@
       els.roundHand.innerHTML = "";
       els.submitBtn.hidden = true;
       els.submitBtn.disabled = true;
+      syncRoundActionsVisibility();
       return;
     }
 
@@ -357,11 +377,13 @@
         const quoteId = Number(button.getAttribute("data-quote-id") || "0");
         state.multi.selectedQuoteId = quoteId;
         renderRoundHand(payload);
+        maybeScrollToRoundActions();
       });
     });
 
     els.submitBtn.hidden = submitted;
     els.submitBtn.disabled = submitted || !state.multi.selectedQuoteId;
+    syncRoundActionsVisibility();
   };
 
   const renderJudgeSubmissions = (payload) => {
@@ -544,6 +566,28 @@
     renderRoundHand(payload);
     renderJudgeSubmissions(payload);
     renderReveal(payload);
+    syncRoundActionsVisibility();
+
+    if (els.mobileTip) {
+      let mobileTip = "";
+      const canSubmitCard = status === "collecting"
+        && !round.you_submitted
+        && (session.judging_mode === "all_vote" || !payload.viewer.is_judge);
+
+      if (isMobileViewport()) {
+        if (canSubmitCard) {
+          mobileTip = "Tap a card, then tap Submit.";
+        } else if (status === "judging") {
+          mobileTip = session.judging_mode === "all_vote"
+            ? (round.can_vote ? "Tap one card to cast your vote." : "Waiting for everyone to vote.")
+            : (round.can_pick_winner ? "Tap one card to pick the winner." : "Judge is choosing.");
+        } else if (status === "reveal" && round.can_advance) {
+          mobileTip = "Tap Next round when everyone is ready.";
+        }
+      }
+      els.mobileTip.textContent = mobileTip;
+      els.mobileTip.hidden = !mobileTip;
+    }
   };
 
   const renderSession = (payload) => {
