@@ -23,42 +23,46 @@
   <div class="controls-bar">
     <form method="get" class="filter-form">
       <input type="hidden" name="page" value="1" />
-      <label for="speaker">Filter by speaker</label>
-      <div class="select-wrap">
-        <select
-          name="speaker"
-          id="speaker"
-          class="speaker-select"
-          onchange="this.form.submit()"
-        >
-          <option value="">All speakers</option>
-          {% for spk, count in speakers %}
-            <option
-              value="{{ spk }}"
-              {% if spk == selected_speaker %}selected{% endif %}
-            >
-              {{ spk }} ({{ count }})
-            </option>
-          {% endfor %}
-        </select>
-        <span class="select-icon">▾</span>
+      <div class="filter-group">
+        <label for="speaker">Filter by speaker</label>
+        <div class="select-wrap">
+          <select
+            name="speaker"
+            id="speaker"
+            class="speaker-select"
+            onchange="this.form.submit()"
+          >
+            <option value="">All speakers</option>
+            {% for spk, count in speakers %}
+              <option
+                value="{{ spk }}"
+                {% if spk == selected_speaker %}selected{% endif %}
+              >
+                {{ spk }} ({{ count }})
+              </option>
+            {% endfor %}
+          </select>
+          <span class="select-icon">▾</span>
+        </div>
       </div>
-      <label for="order">Sort by</label>
-      <div class="select-wrap">
-        <select
-          name="order"
-          id="order"
-          class="speaker-select"
-          onchange="this.form.submit()"
-        >
-          <option value="oldest" {% if sort_order != "newest" %}selected{% endif %}>
-            Oldest first
-          </option>
-          <option value="newest" {% if sort_order == "newest" %}selected{% endif %}>
-            Newest first
-          </option>
-        </select>
-        <span class="select-icon">▾</span>
+      <div class="filter-group">
+        <label for="order">Sort by</label>
+        <div class="select-wrap">
+          <select
+            name="order"
+            id="order"
+            class="speaker-select"
+            onchange="this.form.submit()"
+          >
+            <option value="oldest" {% if sort_order != "newest" %}selected{% endif %}>
+              Oldest first
+            </option>
+            <option value="newest" {% if sort_order == "newest" %}selected{% endif %}>
+              Newest first
+            </option>
+          </select>
+          <span class="select-icon">▾</span>
+        </div>
       </div>
       <noscript><button type="submit" class="btn btn-primary">Filter</button></noscript>
     </form>

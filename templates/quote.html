@@ -39,7 +39,7 @@
 
     <div class="quote-meta">
       <span>{{ date }}</span>
-      <span>•</span>
+      <span class="quote-meta-sep">•</span>
       <span>{{ time }}</span>
     </div>
 
@@ -156,7 +156,7 @@
 
         const metaEl = document.querySelector(".quote-meta");
         if (metaEl) {
-          metaEl.innerHTML = `<span>${formatDate(quote.timestamp)}</span><span>•</span><span>${formatTime(quote.timestamp)}</span>`;
+          metaEl.innerHTML = `<span>${formatDate(quote.timestamp)}</span><span class="quote-meta-sep">•</span><span>${formatTime(quote.timestamp)}</span>`;
         }
 
         const headerIdEl = document.querySelector(".quote-id");

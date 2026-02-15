@@ -1,106 +1,205 @@
-/* Page wrapper */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
+
 .quote-page {
+  --surface: rgba(15, 15, 18, 0.9);
+  --surface-soft: rgba(255, 255, 255, 0.05);
+  --surface-outline: rgba(255, 255, 255, 0.1);
+  --text-main: #f7f4ef;
+  --text-muted: rgba(247, 244, 239, 0.72);
+  --accent: #ffd37a;
+
   display: flex;
   justify-content: center;
-  padding: 3rem 1.5rem;
+  padding: clamp(0.4rem, 1.2vw, 1.1rem) 0;
+  color: var(--text-main);
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
 }
 
 .quote-card {
-  max-width: 720px;
-  width: fit-content;
-  min-width: 280px; /* prevent weird narrow cards */
-  background: rgba(20, 20, 20, 0.85);
-  backdrop-filter: blur(6px);
-  border-radius: 24px;
-  padding: 2.5rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  width: min(100%, 760px);
+  background:
+    radial-gradient(
+      circle at 84% 12%,
+      rgba(255, 211, 122, 0.08),
+      transparent 34%
+    ),
+    var(--surface);
+  border: 1px solid var(--surface-outline);
+  border-radius: 26px;
+  padding: clamp(1.2rem, 2.4vw, 2.1rem);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  align-self: flex-start;
+  gap: 1rem;
 }
 
-/* Header */
 .quote-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .quote-id {
-  font-size: 0.85rem;
-  opacity: 0.6;
-}
-
-/* Quote text */
-.quote-text {
-  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
-  line-height: 1.55;
-  color: #ffffff;
-  white-space: pre-line;
-}
-
-/* Author */
-.quote-author {
-  font-size: 1rem;
-  color: #dcdcdc;
-  opacity: 1;
-  align-self: flex-end;
-}
-
-/* Context */
-.quote-context {
-  font-size: 0.95rem;
-  color: #e0e0e0;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 1rem 1.2rem;
-  border-radius: 12px;
-  line-height: 1.5;
-}
-
-/* Meta row */
-.quote-meta {
-  display: flex;
-  gap: 0.6rem;
-  font-size: 0.85rem;
-  color: #cfcfcf;
-  align-self: flex-end;
-}
-
-/* Actions */
-.quote-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-/* Buttons */
-.btn {
-  padding: 0.6rem 1.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1rem;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
-  border: none;
+  padding: 0.22rem 0.62rem;
+}
+
+.quote-text {
+  margin: 0;
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: clamp(1.34rem, 2.9vw, 2.05rem);
+  line-height: 1.46;
+  color: #fff8ec;
+  white-space: pre-line;
+  text-wrap: pretty;
+}
+
+.quote-author {
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  align-self: flex-end;
+}
+
+.quote-context {
+  margin: 0.1rem 0;
+  font-size: 0.94rem;
+  color: var(--text-muted);
+  background: var(--surface-soft);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  line-height: 1.55;
+}
+
+.quote-context strong {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.quote-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.5rem;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.66);
+  align-self: flex-end;
+}
+
+.quote-meta-sep {
+  opacity: 0.45;
+}
+
+.quote-actions {
+  margin-top: 0.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.btn {
+  width: 100%;
+  font-family: inherit;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
   cursor: pointer;
   font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .btn-primary {
-  background: #ffffff;
-  color: #111;
+  background: linear-gradient(135deg, #ffd37a, #ff9a62);
+  color: #231503;
 }
 
 .btn-secondary {
-  background: #2a2a2a;
-  color: #f5f5f5;
+  background: transparent;
+  color: #f7f4ef;
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
-@media (max-width: 600px) {
+.quote-card .monetize-slot {
+  width: 100%;
+  max-width: none;
+  margin: 0.3rem 0 0;
+}
+
+@media (max-width: 720px) {
+  .quote-page {
+    padding: 0.2rem 0;
+  }
+
   .quote-card {
-    width: 100%;
-    padding: 2rem 1.5rem;
+    border-radius: 18px;
+    padding: 1.05rem;
+    gap: 0.9rem;
+  }
+
+  .quote-text {
+    font-size: clamp(1.2rem, 6.4vw, 1.48rem);
+    line-height: 1.42;
+  }
+
+  .quote-author,
+  .quote-meta {
+    align-self: flex-start;
+  }
+
+  .quote-meta {
+    font-size: 0.8rem;
+  }
+
+  .quote-meta-sep {
+    display: none;
   }
 
   .quote-actions {
-    justify-content: flex-start;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .btn {
+    padding: 0.68rem 0.9rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .quote-card {
+    border-radius: 16px;
+    padding: 0.95rem;
+  }
+
+  .quote-id {
+    font-size: 0.68rem;
+    letter-spacing: 0.08rem;
+  }
+
+  .quote-context {
+    padding: 0.78rem 0.84rem;
+    font-size: 0.88rem;
   }
 }
