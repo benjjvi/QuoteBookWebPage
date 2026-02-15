@@ -164,6 +164,22 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.quote-id-link {
+  color: #ffd37a;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.quote-id-link:hover,
+.quote-id-link:focus-visible {
+  color: #ffe6ac;
+  border-color: rgba(255, 211, 122, 0.85);
+}
+
 .bar-list {
   list-style: none;
   padding: 0;

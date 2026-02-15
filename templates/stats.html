@@ -113,13 +113,13 @@
         {% if most_battled %}
           <li>
             <span>Most battled quote</span>
-            <span>#{{ most_battled.id }} ({{ most_battled.stats.battles }} battles)</span>
+            <span><a class="quote-id-link" href="/quote/{{ most_battled.id }}">#{{ most_battled.id }}</a> ({{ most_battled.stats.battles }} battles)</span>
           </li>
         {% endif %}
         {% if most_anarchy and most_anarchy.stats.get("anarchy_points", 0) > 0 %}
           <li>
             <span>Most Quote Anarchy wins</span>
-            <span>#{{ most_anarchy.id }} ({{ most_anarchy.stats.get("anarchy_points", 0) }} points)</span>
+            <span><a class="quote-id-link" href="/quote/{{ most_anarchy.id }}">#{{ most_anarchy.id }}</a> ({{ most_anarchy.stats.get("anarchy_points", 0) }} points)</span>
           </li>
         {% endif %}
         {% if longest_quote %}
@@ -240,7 +240,7 @@
         <ul class="stat-list">
           {% for quote in top_winners %}
             <li>
-              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span><a class="quote-id-link" href="/quote/{{ quote.id }}">#{{ quote.id }}</a> · {{ quote.authors | join(", ") }}</span>
               <span>{{ quote.stats.wins }} wins</span>
             </li>
           {% else %}
@@ -254,7 +254,7 @@
         <ul class="stat-list">
           {% for quote in top_anarchy_quotes %}
             <li>
-              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span><a class="quote-id-link" href="/quote/{{ quote.id }}">#{{ quote.id }}</a> · {{ quote.authors | join(", ") }}</span>
               <span>{{ quote.stats.get("anarchy_points", 0) }} points</span>
             </li>
           {% else %}
@@ -268,7 +268,7 @@
         <ul class="stat-list">
           {% for quote, win_rate in best_win_rates %}
             <li>
-              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span><a class="quote-id-link" href="/quote/{{ quote.id }}">#{{ quote.id }}</a> · {{ quote.authors | join(", ") }}</span>
               <span>{{ (win_rate * 100) | round(1) }}%</span>
             </li>
           {% else %}
@@ -282,7 +282,7 @@
         <ul class="stat-list">
           {% for quote in top_losers %}
             <li>
-              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span><a class="quote-id-link" href="/quote/{{ quote.id }}">#{{ quote.id }}</a> · {{ quote.authors | join(", ") }}</span>
               <span>{{ quote.stats.losses }} losses</span>
             </li>
           {% else %}
@@ -296,7 +296,7 @@
         <ul class="stat-list">
           {% for quote in undefeated_quotes %}
             <li>
-              <span>#{{ quote.id }} · {{ quote.authors | join(", ") }}</span>
+              <span><a class="quote-id-link" href="/quote/{{ quote.id }}">#{{ quote.id }}</a> · {{ quote.authors | join(", ") }}</span>
               <span>{{ quote.stats.wins }}W / {{ quote.stats.battles }}B</span>
             </li>
           {% else %}
