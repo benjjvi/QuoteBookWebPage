@@ -7,6 +7,28 @@
   color: #f7f4ef;
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   padding-bottom: 2.3rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+.qa-shell,
+.qa-panel,
+.qa-main,
+.qa-mode,
+.qa-session,
+.qa-room-grid,
+.qa-round,
+.qa-hero,
+.qa-hero > div,
+.qa-hero-side,
+.qa-black-wrap,
+.qa-round-head,
+.qa-hand,
+.qa-card,
+.qa-session-top > div {
+  min-width: 0;
 }
 
 .qa-hero {
@@ -172,6 +194,8 @@
   font-size: clamp(1rem, 2.1vw, 1.35rem);
   line-height: 1.4;
   white-space: pre-line;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .qa-actions {
@@ -270,6 +294,8 @@
   font-family: "Fraunces", "Georgia", serif;
   font-size: 1.02rem;
   line-height: 1.42;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .qa-card .meta {
@@ -299,6 +325,15 @@
 .qa-result p {
   margin: 0 0 0.8rem;
   color: rgba(247, 244, 239, 0.8);
+}
+
+.qa-result p,
+.qa-reveal p,
+.session-note,
+#qaRoundStatus,
+#qaSessionMeta {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .qa-lobby-grid {
@@ -396,12 +431,17 @@
 .qa-player-item .left {
   display: grid;
   gap: 0.16rem;
+  min-width: 0;
 }
 
 .qa-player-item strong {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.4rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .qa-player-item .chip {
@@ -505,6 +545,8 @@
   .qa-page {
     gap: 1rem;
     padding-bottom: calc(5.2rem + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .qa-stack-card {
@@ -535,6 +577,7 @@
 
   .qa-shell {
     border-radius: 20px;
+    max-width: 100%;
   }
 
   .qa-panel {
@@ -607,6 +650,14 @@
 
   .qa-round {
     padding: 0.92rem 0.85rem 1.05rem;
+  }
+
+  .qa-black-card {
+    max-width: 100%;
+    min-height: 124px;
+    padding: 1.16rem;
+    font-size: clamp(0.98rem, 4.3vw, 1.18rem);
+    line-height: 1.36;
   }
 
   #qaRoundActions {

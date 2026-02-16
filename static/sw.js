@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v17";
+const CACHE_VERSION = "v19";
 const PRECACHE = `qb-precache-${CACHE_VERSION}`;
 const RUNTIME = `qb-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
