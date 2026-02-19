@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Blackline Rush{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/blackline-rush.css" />
+{% endblock %}
+
+{% block content %}
+<section class="blr-page">
+  <div class="offline-card offline-only">
+    <span class="eyebrow">Offline</span>
+    <h1>Blackline Rush needs a live connection</h1>
+    <p class="lead">
+      Rooms, turns, and ranking are synced live so everyone sees the same timeline.
+    </p>
+    <a href="/games" class="btn btn-ghost">Back to games</a>
+  </div>
+
+  <header class="blr-hero offline-hide">
+    <div>
+      <span class="eyebrow">Multiplayer</span>
+      <h1>{{ blackline_bootstrap.game_name }}</h1>
+      <p class="lead">
+        One player redacts a quote like a PDF file. Everyone else races to recover the original wording.
+      </p>
+      <div class="blr-hero-meta">
+        <span class="pill">Up to {{ blackline_bootstrap.max_players }} Players</span>
+        <span class="pill">Ranked Guessing</span>
+        <span class="pill">PDF Blackline Style</span>
+      </div>
+    </div>
+    <div class="blr-hero-actions">
+      <a href="/games" class="btn btn-ghost">Back to games</a>
+      <a href="/" class="btn btn-ghost">Home</a>
+    </div>
+  </header>
+
+  <section class="blr-shell offline-hide" id="blrShell">
+    <section class="blr-panel blr-locked" id="blrLocked" hidden>
+      <h2>Need Longer Quotes</h2>
+      <p>
+        This game needs at least one quote with
+        <strong id="blrMinWords">{{ blackline_bootstrap.min_words_for_quote }}</strong>
+        words.
+        Current eligible pool:
+        <strong id="blrEligibleCount">{{ blackline_bootstrap.eligible_quote_count }}</strong>.
+      </p>
+      <a class="btn btn-primary" href="/add_quote">Add more quotes</a>
+    </section>
+
+    <section class="blr-panel blr-main" id="blrMain" hidden>
+      <section class="blr-lobby" id="blrLobbyView">
+        <div class="blr-lobby-grid">
+          <form id="blrCreateForm" class="blr-form" autocomplete="off">
+            <h3>Create Room</h3>
+            <label for="blrCreateName">Name</label>
+            <input id="blrCreateName" name="player_name" maxlength="28" placeholder="Your name" required />
+            <button class="btn btn-primary" type="submit">Create</button>
+          </form>
+
+          <form id="blrJoinForm" class="blr-form" autocomplete="off">
+            <h3>Join Room</h3>
+            <label for="blrJoinName">Name</label>
+            <input id="blrJoinName" name="player_name" maxlength="28" placeholder="Your name" required />
+            <label for="blrJoinCode">Room code</label>
+            <input id="blrJoinCode" name="session_code" maxlength="6" placeholder="ABC123" required />
+            <button class="btn btn-primary" type="submit">Join</button>
+          </form>
+        </div>
+        <p id="blrLobbyMessage" class="muted" aria-live="polite"></p>
+      </section>
+
+      <section class="blr-session" id="blrSessionView" hidden>
+        <div class="blr-session-top">
+          <div>
+            <span class="eyebrow">Room</span>
+            <h3 id="blrSessionTitle">Room</h3>
+            <p class="muted" id="blrSessionMeta"></p>
+            <p class="session-note" id="blrSessionNotice"></p>
+          </div>
+          <div class="blr-actions">
+            <button id="blrEndBtn" class="btn btn-danger" type="button" hidden>End game</button>
+            <button id="blrCopyCodeBtn" class="btn btn-ghost" type="button">Copy code</button>
+            <button id="blrLeaveBtn" class="btn btn-ghost" type="button">Leave</button>
+          </div>
+        </div>
+
+        <div class="blr-room-grid">
+          <aside class="blr-players">
+            <h4>Players</h4>
+            <ul id="blrPlayersList"></ul>
+          </aside>
+
+          <section class="blr-turn">
+            <div class="blr-turn-head">
+              <h4 id="blrTurnHeading">Turn</h4>
+              <p id="blrTurnStatus" class="muted"></p>
+            </div>
+
+            <article class="blr-pdf-card">
+              <div class="blr-pdf-meta">
+                <span class="blr-stamp">CLASSIFIED</span>
+                <span id="blrPdfMetaRight">Awaiting host start</span>
+              </div>
+              <div id="blrPuzzle" class="blr-pdf-text">
+                Waiting for host to start.
+              </div>
+            </article>
+
+            <div class="blr-actions" id="blrTurnActions">
+              <button id="blrStartBtn" class="btn btn-primary" type="button" hidden>Start game</button>
+              <button id="blrEndTurnBtn" class="btn btn-primary" type="button" hidden>Reveal answers</button>
+              <button id="blrNextTurnBtn" class="btn btn-primary" type="button" hidden>Next turn</button>
+            </div>
+            <p id="blrMobileTip" class="blr-mobile-tip" hidden></p>
+
+            <div id="blrRedactorWrap" class="blr-block" hidden>
+              <h4>Choose Words To Blackline</h4>
+              <p class="muted" id="blrRedactionHint"></p>
+              <p class="muted" id="blrRedactionCount"></p>
+              <div id="blrRedactionWords" class="blr-word-grid"></div>
+              <div class="blr-actions">
+                <button id="blrSubmitRedactionBtn" class="btn btn-primary" type="button" disabled>
+                  Lock redactions
+                </button>
+              </div>
+            </div>
+
+            <div id="blrGuessWrap" class="blr-block" hidden>
+              <h4>Reconstruct The Original</h4>
+              <p class="muted" id="blrGuessHint"></p>
+              <form id="blrGuessForm" class="blr-guess-form">
+                <div id="blrGuessFields" class="blr-guess-fields"></div>
+                <div class="blr-actions">
+                  <button id="blrGuessSubmitBtn" class="btn btn-primary" type="submit">Submit guess</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="blr-block">
+              <h4>Turn Leaderboard</h4>
+              <ul id="blrSolverList" class="blr-solver-list"></ul>
+            </div>
+
+            <div id="blrRevealWrap" class="blr-reveal" hidden>
+              <h4>Answer Key</h4>
+              <p id="blrRevealAnswers"></p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </section>
+  </section>
+</section>
+
+<script id="blrBootstrapData" type="application/json">
+  {{ blackline_bootstrap | tojson }}
+</script>
+<script src="/static/assets/js/blackline-rush.js"></script>
+{% endblock %}

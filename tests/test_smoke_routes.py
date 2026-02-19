@@ -6,6 +6,7 @@ def test_smoke_routes(client):
     home = client.get("/")
     assert home.status_code == 200
     assert b"Quote Book" in home.data
+    assert b"Games" in home.data
     assert b"card-support offline-hide" in home.data
 
     all_quotes = client.get("/all_quotes")
@@ -18,6 +19,14 @@ def test_smoke_routes(client):
     quote_anarchy = client.get("/quote-anarchy")
     assert quote_anarchy.status_code == 200
     assert b"Quote Anarchy" in quote_anarchy.data
+
+    games = client.get("/games")
+    assert games.status_code == 200
+    assert b"Launcher" in games.data
+
+    blackline = client.get("/games/blackline-rush")
+    assert blackline.status_code == 200
+    assert b"Blackline Rush" in blackline.data
 
     mailbox = client.get("/mailbox")
     assert mailbox.status_code == 200

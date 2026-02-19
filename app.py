@@ -11,6 +11,7 @@ import ai_helpers
 from app_services import AppServiceConfig, AppServices
 from blueprints.api import create_api_blueprint
 from blueprints.web import create_web_blueprint
+from quote_blackline import QuoteBlacklineService
 from quote_anarchy import QuoteAnarchyService
 from quote_client import get_quote_client
 
@@ -124,6 +125,10 @@ quote_anarchy_service = QuoteAnarchyService(
         "black-cards.json",
     ),
 )
+quote_blackline_service = QuoteBlacklineService(
+    db_path=services.get_push_db_path(),
+    quote_store=quote_store,
+)
 
 app.jinja_env.filters["month_name"] = services.month_name
 app.jinja_env.filters["to_uk_datetime"] = services.to_uk_datetime
@@ -139,6 +144,7 @@ app.register_blueprint(
         ai_worker=ai_worker,
         services=services,
         quote_anarchy_service=quote_anarchy_service,
+        quote_blackline_service=quote_blackline_service,
         uk_tz=UK_TZ,
         edit_pin=EDIT_PIN,
         vapid_public_key=VAPID_PUBLIC_KEY,
@@ -160,6 +166,7 @@ app.register_blueprint(
         quote_store=quote_store,
         services=services,
         quote_anarchy_service=quote_anarchy_service,
+        quote_blackline_service=quote_blackline_service,
         vapid_public_key=VAPID_PUBLIC_KEY,
         vapid_private_key=VAPID_PRIVATE_KEY,
     )

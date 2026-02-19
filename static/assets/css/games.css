@@ -1,0 +1,168 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+.games-page {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1.25rem;
+  color: #f7f4ef;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  padding-bottom: 2.2rem;
+}
+
+.games-hero {
+  background:
+    linear-gradient(135deg, rgba(255, 211, 122, 0.12), rgba(255, 154, 98, 0.06)),
+    rgba(13, 14, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 1.6rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.games-hero h1 {
+  margin: 0.15rem 0 0.5rem;
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: clamp(1.85rem, 4vw, 2.5rem);
+}
+
+.lead {
+  margin: 0;
+  color: rgba(247, 244, 239, 0.74);
+}
+
+.games-meta {
+  margin-top: 0.95rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 0.35rem 0.72rem;
+  font-size: 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.games-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.game-card {
+  background: rgba(13, 14, 19, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.7rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+}
+
+.game-card-blackline {
+  background:
+    linear-gradient(160deg, rgba(255, 211, 122, 0.15), rgba(13, 14, 19, 0.85)),
+    rgba(13, 14, 19, 0.9);
+}
+
+.game-card h2 {
+  margin: 0;
+  font-family: "Fraunces", "Georgia", serif;
+  font-size: 1.3rem;
+}
+
+.muted {
+  margin: 0;
+  color: rgba(247, 244, 239, 0.76);
+}
+
+.game-facts {
+  list-style: none;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.38rem;
+}
+
+.game-facts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  padding: 0.5rem 0.58rem;
+  font-size: 0.82rem;
+}
+
+.btn {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  border-radius: 999px;
+  padding: 0.62rem 1.1rem;
+  font-size: 0.84rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffd37a, #ff9a62);
+  color: #1b1308;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #f2eee7;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16rem;
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 980px) {
+  .games-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .games-hero {
+    flex-direction: column;
+    padding: 1.3rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .games-page {
+    gap: 0.9rem;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .games-hero {
+    border-radius: 20px;
+    padding: 1.05rem;
+  }
+
+  .games-hero .btn {
+    width: 100%;
+  }
+
+  .game-card {
+    border-radius: 16px;
+    padding: 0.88rem;
+  }
+
+  .game-card .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}

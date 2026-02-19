@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Games{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/games.css" />
+{% endblock %}
+
+{% block content %}
+<section class="games-page">
+  <div class="offline-card offline-only">
+    <span class="eyebrow">Offline</span>
+    <h1>Games need a live connection</h1>
+    <p class="lead">
+      Multiplayer state sync and fresh quote pulls are required for game rooms.
+    </p>
+    <a href="/" class="btn btn-ghost">Back home</a>
+  </div>
+
+  <header class="games-hero offline-hide">
+    <div>
+      <span class="eyebrow">Launcher</span>
+      <h1>Games</h1>
+      <p class="lead">
+        Pick a mode and spin up a room. Built for quick mobile rounds, still clean on desktop.
+      </p>
+      <div class="games-meta">
+        <span class="pill">Live Rooms</span>
+        <span class="pill">Mobile First</span>
+        <span class="pill">Quote-Powered</span>
+      </div>
+    </div>
+    <a href="/" class="btn btn-ghost">Back home</a>
+  </header>
+
+  <section class="games-grid offline-hide">
+    <article class="game-card game-card-blackline">
+      <span class="eyebrow">New</span>
+      <h2>{{ blackline_bootstrap.game_name }}</h2>
+      <p class="muted">
+        One player blacklines a quote like a badly redacted PDF. Everyone else races to reconstruct the original words.
+      </p>
+      <ul class="game-facts">
+        <li><span>Room size</span><span>Up to {{ blackline_bootstrap.max_players }}</span></li>
+        <li><span>Quote requirement</span><span>{{ blackline_bootstrap.min_words_for_quote }}+ words</span></li>
+        <li><span>Playable quotes</span><span>{{ blackline_bootstrap.eligible_quote_count }}</span></li>
+      </ul>
+      <a href="/games/blackline-rush" class="btn btn-primary">Launch Blackline Rush</a>
+    </article>
+
+    <article class="game-card">
+      <span class="eyebrow">Card Game</span>
+      <h2>{{ quote_anarchy_bootstrap.game_name }}</h2>
+      <p class="muted">
+        CAH-style chaos from your own quote book. Play solo or spin up a room.
+      </p>
+      <ul class="game-facts">
+        <li><span>Room size</span><span>Up to {{ quote_anarchy_bootstrap.max_players }}</span></li>
+        <li><span>Unlock at</span><span>{{ quote_anarchy_bootstrap.min_quotes_required }} quotes</span></li>
+        <li><span>Current total</span><span>{{ quote_anarchy_bootstrap.total_quotes }}</span></li>
+      </ul>
+      <a href="/quote-anarchy" class="btn btn-primary">Open Quote Anarchy</a>
+    </article>
+
+    <article class="game-card">
+      <span class="eyebrow">Classic</span>
+      <h2>Battle</h2>
+      <p class="muted">
+        Head-to-head quote duels. Pick a winner and keep the leaderboard moving.
+      </p>
+      <ul class="game-facts">
+        <li><span>Mode</span><span>Single device</span></li>
+        <li><span>Format</span><span>Vote per matchup</span></li>
+        <li><span>Best for</span><span>Quick rounds</span></li>
+      </ul>
+      <a href="/battle" class="btn btn-primary">Start Battle</a>
+    </article>
+  </section>
+</section>
+{% endblock %}

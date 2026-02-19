@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 from app_services import AppServiceConfig, AppServices
 from blueprints.api import create_api_blueprint
 from blueprints.web import create_web_blueprint
+from quote_blackline import QuoteBlacklineService
 from quote_anarchy import QuoteAnarchyService
 from quote_client import QuoteClient
 
@@ -108,6 +109,10 @@ def app_ctx(tmp_path):
             ROOT / "static" / "assets" / "quote-anarchy" / "black-cards.json"
         ),
     )
+    quote_blackline_service = QuoteBlacklineService(
+        db_path=str(db_path),
+        quote_store=quote_store,
+    )
 
     app.register_blueprint(
         create_web_blueprint(
@@ -115,6 +120,7 @@ def app_ctx(tmp_path):
             ai_worker=DummyAI(),
             services=services,
             quote_anarchy_service=quote_anarchy_service,
+            quote_blackline_service=quote_blackline_service,
             uk_tz=UK_TZ,
             edit_pin="1234",
             vapid_public_key="test-public",
@@ -136,6 +142,7 @@ def app_ctx(tmp_path):
             quote_store=quote_store,
             services=services,
             quote_anarchy_service=quote_anarchy_service,
+            quote_blackline_service=quote_blackline_service,
             vapid_public_key="test-public",
             vapid_private_key="test-private",
         )

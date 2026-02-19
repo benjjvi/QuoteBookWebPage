@@ -25,6 +25,7 @@ def create_api_blueprint(
     quote_store,
     services,
     quote_anarchy_service,
+    quote_blackline_service,
     vapid_public_key: str,
     vapid_private_key: str,
 ):
@@ -39,6 +40,17 @@ def create_api_blueprint(
             if status_code >= 500:
                 current_app.logger.error("Quote Anarchy API failure: %s", exc)
                 return jsonify(error="Quote Anarchy is temporarily unavailable."), 500
+            return jsonify(error=str(exc)), status_code
+
+    def _blackline_response(fn):
+        try:
+            payload = fn()
+            return jsonify(payload)
+        except Exception as exc:
+            status_code = getattr(exc, "status_code", 500)
+            if status_code >= 500:
+                current_app.logger.error("Blackline Rush API failure: %s", exc)
+                return jsonify(error="Blackline Rush is temporarily unavailable."), 500
             return jsonify(error=str(exc)), status_code
 
     @bp.route("/api/latest", endpoint="api_latest_quote")
@@ -451,6 +463,166 @@ def create_api_blueprint(
         player_id = (data.get("player_id") or "").strip()
         return _quote_anarchy_response(
             lambda: quote_anarchy_service.leave_session(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/bootstrap",
+        methods=["GET"],
+        endpoint="api_blackline_bootstrap",
+    )
+    def api_blackline_bootstrap():
+        return _blackline_response(quote_blackline_service.bootstrap)
+
+    @bp.route(
+        "/api/blackline-rush/sessions",
+        methods=["POST"],
+        endpoint="api_blackline_create_session",
+    )
+    def api_blackline_create_session():
+        data = request.get_json(silent=True) or {}
+        player_name = (data.get("player_name") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.create_session(player_name=player_name)
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/join",
+        methods=["POST"],
+        endpoint="api_blackline_join_session",
+    )
+    def api_blackline_join_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_name = (data.get("player_name") or "").strip()
+        player_id = (data.get("player_id") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.join_session(
+                session_code=session_code,
+                player_name=player_name,
+                player_id=player_id or None,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>",
+        methods=["GET"],
+        endpoint="api_blackline_session_state",
+    )
+    def api_blackline_session_state(session_code: str):
+        player_id = (request.args.get("player_id") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.get_state(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/start",
+        methods=["POST"],
+        endpoint="api_blackline_start_session",
+    )
+    def api_blackline_start_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.start_session(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/submit-redaction",
+        methods=["POST"],
+        endpoint="api_blackline_submit_redaction",
+    )
+    def api_blackline_submit_redaction(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        redaction_indices = data.get("redaction_indices") or []
+        return _blackline_response(
+            lambda: quote_blackline_service.submit_redaction(
+                session_code=session_code,
+                player_id=player_id,
+                redaction_indices=redaction_indices,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/guess",
+        methods=["POST"],
+        endpoint="api_blackline_submit_guess",
+    )
+    def api_blackline_submit_guess(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        guesses = data.get("guesses") or []
+        return _blackline_response(
+            lambda: quote_blackline_service.submit_guess(
+                session_code=session_code,
+                player_id=player_id,
+                guesses=guesses,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/end-turn",
+        methods=["POST"],
+        endpoint="api_blackline_end_turn",
+    )
+    def api_blackline_end_turn(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.end_turn(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/next-turn",
+        methods=["POST"],
+        endpoint="api_blackline_next_turn",
+    )
+    def api_blackline_next_turn(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.next_turn(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/end",
+        methods=["POST"],
+        endpoint="api_blackline_end_session",
+    )
+    def api_blackline_end_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.end_session(
+                session_code=session_code,
+                player_id=player_id,
+            )
+        )
+
+    @bp.route(
+        "/api/blackline-rush/sessions/<string:session_code>/leave",
+        methods=["POST"],
+        endpoint="api_blackline_leave_session",
+    )
+    def api_blackline_leave_session(session_code: str):
+        data = request.get_json(silent=True) or {}
+        player_id = (data.get("player_id") or "").strip()
+        return _blackline_response(
+            lambda: quote_blackline_service.leave_session(
                 session_code=session_code,
                 player_id=player_id,
             )
