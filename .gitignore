@@ -231,3 +231,4 @@ qb.db
 qb.qbf.bak
 cache/*.json
 ops_control_gui.py
+ops.py
