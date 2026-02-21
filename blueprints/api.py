@@ -49,8 +49,13 @@ def create_api_blueprint(
         except Exception as exc:
             status_code = getattr(exc, "status_code", 500)
             if status_code >= 500:
-                current_app.logger.error("Blackline Rush API failure: %s", exc)
-                return jsonify(error="Blackline Rush is temporarily unavailable."), 500
+                current_app.logger.error("Redacted Black Line Rush API failure: %s", exc)
+                return (
+                    jsonify(
+                        error="Redacted: Black Line Rush is temporarily unavailable."
+                    ),
+                    500,
+                )
             return jsonify(error=str(exc)), status_code
 
     @bp.route("/api/latest", endpoint="api_latest_quote")

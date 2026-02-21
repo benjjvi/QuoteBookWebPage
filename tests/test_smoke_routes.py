@@ -26,7 +26,7 @@ def test_smoke_routes(client):
 
     blackline = client.get("/games/blackline-rush")
     assert blackline.status_code == 200
-    assert b"Blackline Rush" in blackline.data
+    assert b"Redacted: Black Line Rush" in blackline.data
 
     mailbox = client.get("/mailbox")
     assert mailbox.status_code == 200

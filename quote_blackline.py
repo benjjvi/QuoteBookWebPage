@@ -18,7 +18,7 @@ class QuoteBlacklineError(Exception):
 
 
 class QuoteBlacklineService:
-    GAME_NAME = "The Epstein Files: Blackline Rush"
+    GAME_NAME = "Redacted: Black Line Rush"
     MAX_PLAYERS = 8
     MIN_PLAYERS = 2
     MIN_WORDS_FOR_QUOTE = 10
