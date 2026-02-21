@@ -12,6 +12,14 @@ def test_smoke_routes(client):
     all_quotes = client.get("/all_quotes")
     assert all_quotes.status_code == 200
 
+    social = client.get("/social")
+    assert social.status_code == 200
+    assert b"Quote Stream" in social.data
+
+    social_author = client.get("/social/author/Alice")
+    assert social_author.status_code == 200
+    assert b"Author page" in social_author.data
+
     stats = client.get("/stats")
     assert stats.status_code == 200
     assert b"Quote Anarchy points" in stats.data

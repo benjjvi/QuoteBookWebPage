@@ -179,5 +179,20 @@
         window.addEventListener("offline", updateStatus);
       })();
     </script>
+    <script>
+      (() => {
+        if (window.location.pathname.startsWith("/social")) return;
+        const socialKeys = [
+          "qb_social_avatar_map_v1",
+          "qb_social_avatar_order_v1",
+          "qb_social_avatar_cursor_v1",
+        ];
+        try {
+          socialKeys.forEach((key) => window.sessionStorage.removeItem(key));
+        } catch (_error) {
+          return;
+        }
+      })();
+    </script>
   </body>
 </html>

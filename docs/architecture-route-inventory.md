@@ -32,6 +32,8 @@
 - `/edit`
 - `/all_quotes`
 - `/search`
+- `/social`
+- `/social/author/<author_name>`
 - `/stats`
 - `/timeline/<year>/<month>`
 - `/timeline/day/<timestamp>`

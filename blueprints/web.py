@@ -1,5 +1,6 @@
 import calendar as pycalendar
 import json
+import os
 import random as randlib
 from datetime import datetime, time, timedelta
 from xml.sax.saxutils import escape
@@ -49,6 +50,134 @@ def create_web_blueprint(
 
     def _normalise_email(raw_email: str) -> str:
         return (raw_email or "").strip().lower()
+
+    social_generic_posts = [
+        {
+            "title": "Hallway Bulletin",
+            "body": "Reminder: coffee machine diplomacy is still the fastest path to peace.",
+        },
+        {
+            "title": "Studio Update",
+            "body": "Today's vibe report says everyone is one spreadsheet away from poetry.",
+        },
+        {
+            "title": "Community Note",
+            "body": "If a quote starts with 'technically', brace for impact.",
+        },
+        {
+            "title": "Signal Boost",
+            "body": "Context lines are climbing. Future-you is grateful already.",
+        },
+        {
+            "title": "Mood Index",
+            "body": "Peak posting window remains late evening and lightly unhinged.",
+        },
+    ]
+
+    def _sorted_quotes_newest_first():
+        return sorted(
+            quote_store.get_all_quotes(),
+            key=lambda item: (item.timestamp, item.id),
+            reverse=True,
+        )
+
+    def _social_author_directory():
+        return [
+            {"name": author, "count": count}
+            for author, count in quote_store.get_speaker_counts()
+        ]
+
+    def _social_match_authors(author_directory, query: str):
+        query = (query or "").strip()
+        if not query:
+            return []
+        query_lower = query.lower()
+        return [
+            item for item in author_directory if query_lower in item["name"].lower()
+        ]
+
+    def _social_quote_matches(quote, query: str) -> bool:
+        query = (query or "").strip()
+        if not query:
+            return True
+
+        query_lower = query.lower()
+        if query_lower in quote.quote.lower():
+            return True
+        if query_lower in (quote.context or "").lower():
+            return True
+        return any(query_lower in author.lower() for author in quote.authors)
+
+    def _filter_social_quotes(quotes, query: str):
+        if not query:
+            return list(quotes)
+        return [quote for quote in quotes if _social_quote_matches(quote, query)]
+
+    def _build_social_feed_items(quotes):
+        feed_items = []
+        generic_index = 0
+
+        for quote_index, quote in enumerate(quotes):
+            primary_author = quote.authors[0] if quote.authors else "Unknown"
+            feed_items.append(
+                {
+                    "kind": "quote",
+                    "quote": quote,
+                    "primary_author": primary_author,
+                }
+            )
+
+            should_insert_generic = (
+                social_generic_posts
+                and (quote_index + 1) % 4 == 0
+                and quote_index < len(quotes) - 1
+            )
+            if should_insert_generic:
+                generic_post = social_generic_posts[
+                    generic_index % len(social_generic_posts)
+                ]
+                feed_items.append({"kind": "generic", "post": generic_post})
+                generic_index += 1
+
+        return feed_items
+
+    def _social_avatar_urls():
+        avatar_dir = os.path.join(
+            current_app.static_folder or "static",
+            "assets",
+            "img",
+            "ui_profile_pictures",
+        )
+        if not os.path.isdir(avatar_dir):
+            current_app.logger.warning(
+                "Social profile picture directory missing: %s",
+                avatar_dir,
+            )
+            return []
+
+        def _avatar_sort_key(filename: str):
+            stem = filename.rsplit(".", 1)[0]
+            if stem.isdigit():
+                return (0, int(stem))
+            return (1, stem.lower())
+
+        allowed_exts = (".jpg", ".jpeg", ".png", ".webp", ".gif")
+        filenames = [
+            name
+            for name in os.listdir(avatar_dir)
+            if name.lower().endswith(allowed_exts)
+        ]
+        filenames.sort(key=_avatar_sort_key)
+        return [f"/static/assets/img/ui_profile_pictures/{name}" for name in filenames]
+
+    def _resolve_author_name(author_directory, raw_name: str):
+        raw_name = (raw_name or "").strip()
+        if not raw_name:
+            return None
+        for entry in author_directory:
+            if entry["name"].casefold() == raw_name.casefold():
+                return entry["name"]
+        return None
 
     @bp.app_context_processor
     def inject_marketing_context():
@@ -114,6 +243,7 @@ def create_web_blueprint(
         now = datetime.now(uk_tz).strftime("%Y-%m-%d")
         static_pages = [
             ("/", "daily", "1.0"),
+            ("/social", "daily", "0.9"),
             ("/all_quotes", "daily", "0.9"),
             ("/random", "daily", "0.8"),
             ("/stats", "daily", "0.7"),
@@ -694,6 +824,79 @@ def create_web_blueprint(
             results=results,
             len_results=len(results),
             query=query,
+        )
+
+    @bp.route("/social", endpoint="social_feed")
+    def social_feed():
+        query = (request.args.get("q") or "").strip()
+        quotes = _sorted_quotes_newest_first()
+        author_directory = _social_author_directory()
+        filtered_quotes = _filter_social_quotes(quotes, query)
+        matched_authors = _social_match_authors(author_directory, query)
+
+        return render_template(
+            "social.html",
+            social_mode="feed",
+            query=query,
+            active_author="",
+            feed_items=_build_social_feed_items(filtered_quotes),
+            feed_quote_count=len(filtered_quotes),
+            matched_authors=matched_authors,
+            author_directory=author_directory[:32],
+            all_authors=[entry["name"] for entry in author_directory],
+            avatar_urls=_social_avatar_urls(),
+            profile_meta={},
+        )
+
+    @bp.route("/social/author/<path:author_name>", endpoint="social_author")
+    def social_author(author_name):
+        query = (request.args.get("q") or "").strip()
+        author_directory = _social_author_directory()
+        canonical_author = _resolve_author_name(author_directory, author_name)
+        if not canonical_author:
+            abort(404)
+
+        quotes = _sorted_quotes_newest_first()
+        author_quotes = [
+            quote
+            for quote in quotes
+            if any(
+                canonical_author.casefold() == author.casefold()
+                for author in quote.authors
+            )
+        ]
+        filtered_author_quotes = _filter_social_quotes(author_quotes, query)
+        matched_authors = _social_match_authors(author_directory, query)
+
+        co_author_counts = {}
+        for quote in author_quotes:
+            for author in quote.authors:
+                if author.casefold() == canonical_author.casefold():
+                    continue
+                co_author_counts[author] = co_author_counts.get(author, 0) + 1
+
+        top_coauthors = sorted(
+            co_author_counts.items(),
+            key=lambda item: (-item[1], item[0].casefold()),
+        )[:3]
+
+        return render_template(
+            "social.html",
+            social_mode="author",
+            query=query,
+            active_author=canonical_author,
+            feed_items=_build_social_feed_items(filtered_author_quotes),
+            feed_quote_count=len(filtered_author_quotes),
+            matched_authors=matched_authors,
+            author_directory=author_directory[:32],
+            all_authors=[entry["name"] for entry in author_directory],
+            avatar_urls=_social_avatar_urls(),
+            profile_meta={
+                "quote_count": len(author_quotes),
+                "latest_timestamp": author_quotes[0].timestamp if author_quotes else 0,
+                "oldest_timestamp": author_quotes[-1].timestamp if author_quotes else 0,
+                "top_coauthors": top_coauthors,
+            },
         )
 
     @bp.route("/stats", endpoint="stats")

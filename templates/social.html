@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if social_mode == "author" %}
+    {{ active_author }} - Social View
+  {% else %}
+    Quote Book Social
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="/static/assets/css/social.css"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="social-shell">
+  <header class="social-topbar">
+    <div class="brand-block">
+      <span class="brand-kicker">Social View</span>
+      <h1>Quote Stream</h1>
+      <p>
+        A parody timeline of the quote book. No accounts, just chaos.
+      </p>
+    </div>
+
+    <div class="topbar-actions">
+      <a href="/social" class="btn btn-ghost">Main stream</a>
+      <a href="/" class="btn btn-primary">Back home</a>
+    </div>
+  </header>
+
+  <form method="get" action="/social" class="social-search">
+    <label for="socialSearchInput">Search people or quotes</label>
+    <div class="search-row">
+      <input
+        id="socialSearchInput"
+        name="q"
+        type="text"
+        value="{{ query }}"
+        placeholder="Type a person name, phrase, or context"
+      />
+      <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+    <p class="search-note">
+      Searches author names, quote text, and quote context.
+    </p>
+  </form>
+
+  <div class="social-layout">
+    <aside class="social-panel panel-rail">
+      <h2>People</h2>
+      <ul class="people-list">
+        {% for person in author_directory %}
+          <li>
+            <a
+              href="{{ url_for('web.social_author', author_name=person.name) }}"
+              class="people-link {% if social_mode == 'author' and person.name == active_author %}is-active{% endif %}"
+            >
+              <img
+                class="avatar avatar-small"
+                src="/static/favicon.png"
+                data-social-author="{{ person.name }}"
+                alt="{{ person.name }} profile picture"
+              />
+              <span class="people-name">{{ person.name }}</span>
+              <span class="people-count">{{ person.count }}</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="people-empty">No speakers yet</li>
+        {% endfor %}
+      </ul>
+    </aside>
+
+    <main class="feed-column">
+      {% if social_mode == "author" %}
+        <section class="profile-card">
+          <img
+            class="avatar avatar-profile"
+            src="/static/favicon.png"
+            data-social-author="{{ active_author }}"
+            alt="{{ active_author }} profile picture"
+          />
+          <div>
+            <span class="profile-kicker">Author page</span>
+            <h2>{{ active_author }}</h2>
+            <p class="profile-meta">
+              {{ profile_meta.quote_count }} quote{% if profile_meta.quote_count != 1 %}s{% endif %}
+              {% if profile_meta.latest_timestamp %}
+                · latest {{ profile_meta.latest_timestamp | uk_date }}
+              {% endif %}
+            </p>
+            {% if profile_meta.top_coauthors %}
+              <p class="profile-meta">
+                Often appears with:
+                {% for name, count in profile_meta.top_coauthors %}
+                  <a href="{{ url_for('web.social_author', author_name=name) }}">{{ name }}</a>
+                  ({{ count }}){% if not loop.last %}, {% endif %}
+                {% endfor %}
+              </p>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+
+      {% if query %}
+        <section class="query-summary">
+          <h2>Search results</h2>
+          <p>
+            {{ feed_quote_count }} quote{% if feed_quote_count != 1 %}s{% endif %}
+            found for "{{ query }}".
+          </p>
+        </section>
+      {% endif %}
+
+      <div class="feed-list">
+        {% for item in feed_items %}
+          {% if item.kind == "quote" %}
+            <article class="post-card post-quote">
+              <header class="post-head">
+                <img
+                  class="avatar"
+                  src="/static/favicon.png"
+                  data-social-author="{{ item.primary_author }}"
+                  alt="{{ item.primary_author }} profile picture"
+                />
+                <div class="post-author-wrap">
+                  <div class="author-links">
+                    {% for author in item.quote.authors %}
+                      <a href="{{ url_for('web.social_author', author_name=author) }}">{{ author }}</a>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </div>
+                  <p class="post-meta">
+                    {{ item.quote.timestamp | uk_date }} at {{ item.quote.timestamp | uk_time }}
+                  </p>
+                </div>
+              </header>
+
+              <blockquote class="quote-text">
+                "{{ item.quote.quote }}"
+              </blockquote>
+
+              {% if item.quote.context %}
+                <p class="quote-context">{{ item.quote.context }}</p>
+              {% endif %}
+
+              <footer class="post-foot">
+                <a href="/quote/{{ item.quote.id }}">Open quote #{{ item.quote.id }}</a>
+                <a href="/timeline/day/{{ item.quote.timestamp }}">View day</a>
+              </footer>
+            </article>
+          {% else %}
+            <article class="post-card post-generic">
+              <span class="generic-label">{{ item.post.title }}</span>
+              <p>{{ item.post.body }}</p>
+            </article>
+          {% endif %}
+        {% else %}
+          <article class="post-card post-generic">
+            <span class="generic-label">No posts</span>
+            <p>No quotes matched this view yet. Try a different search term.</p>
+          </article>
+        {% endfor %}
+      </div>
+    </main>
+
+    <aside class="social-panel panel-side">
+      <h2>Search matches</h2>
+      {% if query %}
+        <p class="panel-note">
+          Author matches for "{{ query }}"
+        </p>
+        <ul class="match-list">
+          {% for person in matched_authors[:10] %}
+            <li>
+              <a href="{{ url_for('web.social_author', author_name=person.name) }}">
+                <img
+                  class="avatar avatar-small"
+                  src="/static/favicon.png"
+                  data-social-author="{{ person.name }}"
+                  alt="{{ person.name }} profile picture"
+                />
+                <span>{{ person.name }}</span>
+                <strong>{{ person.count }}</strong>
+              </a>
+            </li>
+          {% else %}
+            <li class="match-empty">No author names matched.</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="panel-note">Tip: use search to jump straight to a person or quote.</p>
+      {% endif %}
+
+      <div class="panel-callout">
+        <h3>How avatars work</h3>
+        <p>
+          Each author gets one profile picture when this social view opens.
+          That picture sticks while you stay in social mode.
+        </p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<script id="socialConfig" type="application/json">
+  {{
+    {
+      "avatarUrls": avatar_urls,
+      "allAuthors": all_authors,
+    } | tojson
+  }}
+</script>
+<script src="/static/assets/js/social.js"></script>
+{% endblock %}
