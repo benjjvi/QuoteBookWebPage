@@ -34,8 +34,22 @@
   </header>
 
   <section class="games-grid offline-hide">
-    <article class="game-card game-card-blackline">
+    <article class="game-card game-card-who-said">
       <span class="eyebrow">New</span>
+      <h2>{{ who_said_bootstrap.game_name }}</h2>
+      <p class="muted">
+        A quote appears, four authors show up, and everyone slaps an answer. Faster correct picks get bigger points.
+      </p>
+      <ul class="game-facts">
+        <li><span>Room size</span><span>{{ who_said_bootstrap.min_players }}-{{ who_said_bootstrap.max_players }}</span></li>
+        <li><span>Options</span><span>{{ who_said_bootstrap.options_per_question }} authors per quote</span></li>
+        <li><span>Playable quotes</span><span>{{ who_said_bootstrap.eligible_quote_count }}</span></li>
+      </ul>
+      <a href="/games/who-said-it" class="btn btn-primary">Open Who Even Said That?</a>
+    </article>
+
+    <article class="game-card">
+      <span class="eyebrow">Redacted Chaos</span>
       <h2>{{ blackline_bootstrap.game_name }}</h2>
       <p class="muted">
         One player blacklines a quote like a badly redacted PDF. Everyone else races to reconstruct the original words.

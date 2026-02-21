@@ -29,6 +29,7 @@ def create_web_blueprint(
     services,
     quote_anarchy_service,
     quote_blackline_service,
+    quote_who_said_service,
     uk_tz,
     edit_pin: str,
     vapid_public_key: str,
@@ -120,6 +121,7 @@ def create_web_blueprint(
             ("/battle", "weekly", "0.6"),
             ("/games", "weekly", "0.7"),
             ("/games/blackline-rush", "weekly", "0.7"),
+            ("/games/who-said-it", "weekly", "0.7"),
             ("/quote-anarchy", "weekly", "0.7"),
             ("/mailbox", "weekly", "0.6"),
             ("/unsubscribe", "monthly", "0.3"),
@@ -344,6 +346,7 @@ def create_web_blueprint(
             "games.html",
             quote_anarchy_bootstrap=quote_anarchy_service.bootstrap(),
             blackline_bootstrap=quote_blackline_service.bootstrap(),
+            who_said_bootstrap=quote_who_said_service.bootstrap(),
         )
 
     @bp.route("/games/blackline-rush", endpoint="blackline_rush")
@@ -351,6 +354,13 @@ def create_web_blueprint(
         return render_template(
             "blackline_rush.html",
             blackline_bootstrap=quote_blackline_service.bootstrap(),
+        )
+
+    @bp.route("/games/who-said-it", endpoint="who_said_it")
+    def who_said_it():
+        return render_template(
+            "who_said_it.html",
+            who_said_bootstrap=quote_who_said_service.bootstrap(),
         )
 
     @bp.route("/mailbox", methods=["GET", "POST"], endpoint="mailbox")

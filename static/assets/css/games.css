@@ -70,6 +70,12 @@
     rgba(13, 14, 19, 0.9);
 }
 
+.game-card-who-said {
+  background:
+    linear-gradient(160deg, rgba(112, 219, 201, 0.16), rgba(13, 14, 19, 0.84)),
+    rgba(13, 14, 19, 0.9);
+}
+
 .game-card h2 {
   margin: 0;
   font-family: "Fraunces", "Georgia", serif;

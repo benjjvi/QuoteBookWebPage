@@ -14,6 +14,7 @@ from blueprints.api import create_api_blueprint
 from blueprints.web import create_web_blueprint
 from quote_blackline import QuoteBlacklineService
 from quote_anarchy import QuoteAnarchyService
+from quote_who_said_it import QuoteWhoSaidItService
 from quote_client import QuoteClient
 
 UK_TZ = ZoneInfo("Europe/London")
@@ -113,6 +114,10 @@ def app_ctx(tmp_path):
         db_path=str(db_path),
         quote_store=quote_store,
     )
+    quote_who_said_service = QuoteWhoSaidItService(
+        db_path=str(db_path),
+        quote_store=quote_store,
+    )
 
     app.register_blueprint(
         create_web_blueprint(
@@ -121,6 +126,7 @@ def app_ctx(tmp_path):
             services=services,
             quote_anarchy_service=quote_anarchy_service,
             quote_blackline_service=quote_blackline_service,
+            quote_who_said_service=quote_who_said_service,
             uk_tz=UK_TZ,
             edit_pin="1234",
             vapid_public_key="test-public",
@@ -143,6 +149,7 @@ def app_ctx(tmp_path):
             services=services,
             quote_anarchy_service=quote_anarchy_service,
             quote_blackline_service=quote_blackline_service,
+            quote_who_said_service=quote_who_said_service,
             vapid_public_key="test-public",
             vapid_private_key="test-private",
         )

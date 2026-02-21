@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Who Even Said That?{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/who-said-it.css" />
+{% endblock %}
+
+{% block content %}
+<section class="wsi-page">
+  <div class="offline-card offline-only">
+    <span class="eyebrow">Offline</span>
+    <h1>Who Even Said That? needs a live connection</h1>
+    <p class="lead">
+      Rooms, answer speed, and score sync are all live.
+    </p>
+    <a href="/games" class="btn btn-ghost">Back to games</a>
+  </div>
+
+  <header class="wsi-hero offline-hide">
+    <div>
+      <span class="eyebrow">Multiplayer Quiz</span>
+      <h1>{{ who_said_bootstrap.game_name }}</h1>
+      <p class="lead">
+        One quote. Four author options. Fastest correct taps take the most points.
+      </p>
+      <div class="wsi-hero-meta">
+        <span class="pill">{{ who_said_bootstrap.min_players }}-{{ who_said_bootstrap.max_players }} Players</span>
+        <span class="pill">4 Choices Per Turn</span>
+        <span class="pill">Speed-Scored</span>
+      </div>
+    </div>
+    <div class="wsi-hero-actions">
+      <a href="/games" class="btn btn-ghost">Back to games</a>
+      <a href="/" class="btn btn-ghost">Home</a>
+    </div>
+  </header>
+
+  <section class="wsi-shell offline-hide">
+    <section class="wsi-panel wsi-locked" id="wsiLocked" hidden>
+      <h2>Not Enough Eligible Quotes Yet</h2>
+      <p>
+        This game only uses quotes with one author. Current playable pool:
+        <strong id="wsiEligibleCount">{{ who_said_bootstrap.eligible_quote_count }}</strong>.
+        Distinct single-author speakers:
+        <strong id="wsiAuthorPool">{{ who_said_bootstrap.author_pool_count }}</strong>.
+      </p>
+      <a class="btn btn-primary" href="/add_quote">Add more quotes</a>
+    </section>
+
+    <section class="wsi-panel wsi-main" id="wsiMain" hidden>
+      <section class="wsi-lobby" id="wsiLobbyView">
+        <div class="wsi-lobby-grid">
+          <form id="wsiCreateForm" class="wsi-form" autocomplete="off">
+            <h3>Create Room</h3>
+            <label for="wsiCreateName">Name</label>
+            <input id="wsiCreateName" name="player_name" maxlength="28" placeholder="Your name" required />
+            <button class="btn btn-primary" type="submit">Create</button>
+          </form>
+
+          <form id="wsiJoinForm" class="wsi-form" autocomplete="off">
+            <h3>Join Room</h3>
+            <label for="wsiJoinName">Name</label>
+            <input id="wsiJoinName" name="player_name" maxlength="28" placeholder="Your name" required />
+            <label for="wsiJoinCode">Room code</label>
+            <input id="wsiJoinCode" name="session_code" maxlength="6" placeholder="ABC123" required />
+            <button class="btn btn-primary" type="submit">Join</button>
+          </form>
+        </div>
+        <p id="wsiLobbyMessage" class="muted" aria-live="polite"></p>
+      </section>
+
+      <section class="wsi-session" id="wsiSessionView" hidden>
+        <div class="wsi-session-top">
+          <div>
+            <span class="eyebrow">Room</span>
+            <h3 id="wsiSessionTitle">Room</h3>
+            <p class="muted" id="wsiSessionMeta"></p>
+            <p class="session-note" id="wsiSessionNotice"></p>
+          </div>
+          <div class="wsi-actions">
+            <button id="wsiEndBtn" class="btn btn-danger" type="button" hidden>End game</button>
+            <button id="wsiCopyCodeBtn" class="btn btn-ghost" type="button">Copy code</button>
+            <button id="wsiLeaveBtn" class="btn btn-ghost" type="button">Leave</button>
+          </div>
+        </div>
+
+        <div class="wsi-room-grid">
+          <aside class="wsi-players">
+            <h4>Players</h4>
+            <ul id="wsiPlayersList"></ul>
+          </aside>
+
+          <section class="wsi-turn">
+            <div class="wsi-turn-head">
+              <h4 id="wsiTurnHeading">Turn</h4>
+              <p id="wsiTurnStatus" class="muted"></p>
+            </div>
+
+            <article class="wsi-quote-card">
+              <div class="wsi-quote-meta">
+                <span class="wsi-tag">QUOTE</span>
+                <span id="wsiQuoteMetaRight">Waiting for host start</span>
+              </div>
+              <blockquote id="wsiQuoteText" class="wsi-quote-text">
+                Waiting for host to start.
+              </blockquote>
+            </article>
+
+            <div class="wsi-actions" id="wsiTurnActions">
+              <button id="wsiStartBtn" class="btn btn-primary" type="button" hidden>Start game</button>
+              <button id="wsiEndTurnBtn" class="btn btn-primary" type="button" hidden>Reveal now</button>
+              <button id="wsiNextTurnBtn" class="btn btn-primary" type="button" hidden>Next turn</button>
+            </div>
+            <p id="wsiTurnHint" class="wsi-turn-hint"></p>
+
+            <div id="wsiAnswerWrap" class="wsi-block" hidden>
+              <h4>Who said this?</h4>
+              <form id="wsiAnswerForm" class="wsi-answer-form">
+                <div id="wsiOptionList" class="wsi-option-list"></div>
+                <div class="wsi-actions">
+                  <button id="wsiAnswerSubmitBtn" class="btn btn-primary" type="submit" disabled>
+                    Lock answer
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="wsi-block">
+              <h4>Turn Status</h4>
+              <ul id="wsiTurnBoard" class="wsi-turn-board"></ul>
+            </div>
+
+            <div id="wsiRevealWrap" class="wsi-reveal" hidden>
+              <h4>Correct Author</h4>
+              <p id="wsiRevealAnswer"></p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </section>
+  </section>
+</section>
+
+<script id="wsiBootstrapData" type="application/json">
+  {{ who_said_bootstrap | tojson }}
+</script>
+<script src="/static/assets/js/who-said-it.js"></script>
+{% endblock %}

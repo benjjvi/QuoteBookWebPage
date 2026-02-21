@@ -28,6 +28,10 @@ def test_smoke_routes(client):
     assert blackline.status_code == 200
     assert b"Redacted: Black Line Rush" in blackline.data
 
+    who_said = client.get("/games/who-said-it")
+    assert who_said.status_code == 200
+    assert b"Who Even Said That?" in who_said.data
+
     mailbox = client.get("/mailbox")
     assert mailbox.status_code == 200
     assert b"Weekly Digest Mailbox" in mailbox.data
