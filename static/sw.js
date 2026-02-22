@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v20";
+const CACHE_VERSION = "v21";
 const PRECACHE = `qb-precache-${CACHE_VERSION}`;
 const RUNTIME = `qb-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -7,6 +7,8 @@ const PRECACHE_URLS = [
   "/",
   "/all_quotes",
   "/random",
+  "/search",
+  "/stats",
   "/mailbox",
   "/unsubscribe",
   OFFLINE_URL,
@@ -19,9 +21,19 @@ const PRECACHE_URLS = [
   "/static/assets/css/main.css",
   "/static/assets/css/footer.css",
   "/static/assets/css/index.css",
+  "/static/assets/css/all-quotes.css",
+  "/static/assets/css/quote.css",
+  "/static/assets/css/search.css",
+  "/static/assets/css/stats.css",
   "/static/assets/css/mailbox.css",
   "/static/assets/js/background.js",
+  "/static/assets/js/index.js",
   "/static/assets/js/pwa-sync.js",
+  "/static/assets/img/book.svg",
+  "/static/assets/img/dice.svg",
+  "/static/assets/img/search.svg",
+  "/static/assets/img/mailbox.svg",
+  "/static/assets/img/stats.svg",
 ];
 
 self.addEventListener("install", (event) => {

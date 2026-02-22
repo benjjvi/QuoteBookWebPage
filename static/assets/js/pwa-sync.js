@@ -12,6 +12,7 @@
   let inMemorySync = false;
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const tokenize = (value) => String(value || "").match(/\b\w+\b/g) || [];
 
   const getConnection = () =>
     navigator.connection ||
@@ -375,12 +376,82 @@
     }
   };
 
+  const searchOfflineQuotes = async (query, { limit } = {}) => {
+    try {
+      const normalizedQuery = String(query || "").trim().toLowerCase();
+      if (!normalizedQuery) return [];
+
+      const queryTokens = tokenize(normalizedQuery);
+      const queryTokenSet = new Set(queryTokens);
+      const quotes = await getAllQuotes();
+      const scoredResults = [];
+
+      quotes.forEach((quote) => {
+        const quoteText = String(quote.quote || "").toLowerCase();
+        const authorsText = Array.isArray(quote.authors)
+          ? quote.authors.join(" ").toLowerCase()
+          : "";
+        const contextText = String(quote.context || "").toLowerCase();
+
+        let score = 0;
+
+        if (quoteText.includes(normalizedQuery)) score += 8;
+        if (authorsText.includes(normalizedQuery)) score += 10;
+        if (contextText.includes(normalizedQuery)) score += 5;
+
+        const quoteTokens = new Set(tokenize(quoteText));
+        const authorTokens = new Set(tokenize(authorsText));
+        const contextTokens = new Set(tokenize(contextText));
+
+        queryTokens.forEach((token) => {
+          if (quoteTokens.has(token)) score += 2;
+          if (authorTokens.has(token)) score += 3;
+          if (contextTokens.has(token)) score += 1;
+        });
+
+        if (
+          queryTokenSet.size &&
+          Array.from(queryTokenSet).every(
+            (token) =>
+              quoteTokens.has(token) ||
+              authorTokens.has(token) ||
+              contextTokens.has(token),
+          )
+        ) {
+          score += 3;
+        }
+
+        if (score > 0) scoredResults.push([score, quote]);
+      });
+
+      scoredResults.sort((a, b) => {
+        if (b[0] !== a[0]) return b[0] - a[0];
+        const tsA = Number(a[1]?.timestamp) || 0;
+        const tsB = Number(b[1]?.timestamp) || 0;
+        if (tsB !== tsA) return tsB - tsA;
+        const idA = Number(a[1]?.id) || 0;
+        const idB = Number(b[1]?.id) || 0;
+        return idA - idB;
+      });
+
+      const matches = scoredResults.map(([, quote]) => quote);
+      const maxResults = Number(limit);
+      if (Number.isFinite(maxResults) && maxResults > 0) {
+        return matches.slice(0, maxResults);
+      }
+      return matches;
+    } catch (err) {
+      return [];
+    }
+  };
+
   window.qbPwa = {
     syncQuotes: runSync,
     getLocalStats,
     getOfflineQuotePage,
     getOfflineQuoteById,
     getRandomOfflineQuote,
+    searchOfflineQuotes,
   };
 
   window.addEventListener("online", scheduleSync);

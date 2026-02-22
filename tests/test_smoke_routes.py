@@ -1,3 +1,16 @@
+import re
+from pathlib import Path
+
+
+def _offline_allowed_for_path(html: str, path: str) -> str:
+    match = re.search(
+        rf'href="{re.escape(path)}"[^>]*data-offline-allowed="(true|false)"',
+        html,
+    )
+    assert match, f"Missing nav item for {path}"
+    return match.group(1)
+
+
 def test_smoke_routes(client):
     health = client.get("/health")
     assert health.status_code == 200
@@ -95,3 +108,39 @@ def test_search_supports_get_query(client):
     response = client.get("/search", query_string={"q": "first"})
     assert response.status_code == 200
     assert b"results for" in response.data
+
+
+def test_home_offline_flags_match_offline_ready_pages(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+
+    assert _offline_allowed_for_path(html, "/all_quotes") == "true"
+    assert _offline_allowed_for_path(html, "/random") == "true"
+    assert _offline_allowed_for_path(html, "/search") == "true"
+    assert _offline_allowed_for_path(html, "/mailbox") == "true"
+    assert _offline_allowed_for_path(html, "/stats") == "true"
+
+    assert _offline_allowed_for_path(html, "/add_quote") == "false"
+    assert _offline_allowed_for_path(html, "/ai") == "false"
+    assert _offline_allowed_for_path(html, "/games") == "false"
+    assert _offline_allowed_for_path(html, "/social") == "false"
+
+
+def test_service_worker_precaches_offline_ready_pages():
+    sw_source = Path("static/sw.js").read_text(encoding="utf-8")
+    expected = [
+        '"/"',
+        '"/all_quotes"',
+        '"/random"',
+        '"/search"',
+        '"/stats"',
+        '"/mailbox"',
+        '"/static/assets/css/all-quotes.css"',
+        '"/static/assets/css/quote.css"',
+        '"/static/assets/css/search.css"',
+        '"/static/assets/css/stats.css"',
+        '"/static/assets/js/index.js"',
+    ]
+    for token in expected:
+        assert token in sw_source

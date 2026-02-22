@@ -20,7 +20,7 @@
     <a href="/" class="btn btn-ghost">Back home</a>
   </header>
 
-  <form class="search-form" method="get">
+  <form class="search-form" method="get" id="searchForm">
     <label for="q">Search query</label>
     <div class="search-input">
       <input
@@ -33,16 +33,25 @@
       />
       <button type="submit" class="btn btn-primary">Search</button>
     </div>
-    <p class="hint">Tip: searching a speaker name will also match their quotes.</p>
+    <p class="hint offline-hide">Tip: searching a speaker name will also match their quotes.</p>
+    <p class="hint offline-only">
+      Offline mode searches the quotes currently cached on this device.
+    </p>
   </form>
 
-  {% if query %}
-    <div class="results-header">
-      <h2>{{ results|length }} results for “{{ query }}”</h2>
-    </div>
-  {% endif %}
+  <div
+    class="results-header"
+    id="resultsHeader"
+    {% if not query %}hidden{% endif %}
+  >
+    <h2 id="resultsTitle">
+      {% if query %}
+        {{ results|length }} results for “{{ query }}”
+      {% endif %}
+    </h2>
+  </div>
 
-  <div class="results-grid">
+  <div class="results-grid" id="resultsGrid">
     {% for q in results %}
       <article class="result-card">
         <div class="quote-text">“{{ q.quote }}”</div>
@@ -63,11 +72,146 @@
     {% endfor %}
   </div>
 
-  {% if query and not results %}
-    <div class="empty-state">
-      <h2>No quotes found</h2>
-      <p>Try a different phrase or a speaker name.</p>
-    </div>
-  {% endif %}
+  <div
+    class="empty-state"
+    id="resultsEmpty"
+    {% if not (query and not results) %}hidden{% endif %}
+  >
+    <h2>No quotes found</h2>
+    <p>Try a different phrase or a speaker name.</p>
+  </div>
 </section>
+
+<script>
+  const searchForm = document.getElementById("searchForm");
+  const queryInput = document.getElementById("q");
+  const resultsHeader = document.getElementById("resultsHeader");
+  const resultsTitle = document.getElementById("resultsTitle");
+  const resultsGrid = document.getElementById("resultsGrid");
+  const resultsEmpty = document.getElementById("resultsEmpty");
+
+  const escapeHtml = (value) => {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+  };
+
+  const formatDate = (epochSeconds) => {
+    const date = new Date((Number(epochSeconds) || 0) * 1000);
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  };
+
+  const formatTime = (epochSeconds) => {
+    const date = new Date((Number(epochSeconds) || 0) * 1000);
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
+
+  const renderResults = (query, results) => {
+    if (!resultsHeader || !resultsTitle || !resultsGrid || !resultsEmpty) return;
+
+    const normalizedQuery = String(query || "").trim();
+    if (!normalizedQuery) {
+      resultsHeader.hidden = true;
+      resultsTitle.textContent = "";
+      resultsGrid.innerHTML = "";
+      resultsEmpty.hidden = true;
+      return;
+    }
+
+    const count = Array.isArray(results) ? results.length : 0;
+    const resultWord = count === 1 ? "result" : "results";
+    resultsTitle.textContent = `${count} ${resultWord} for “${normalizedQuery}”`;
+    resultsHeader.hidden = false;
+
+    if (!count) {
+      resultsGrid.innerHTML = "";
+      resultsEmpty.hidden = false;
+      return;
+    }
+
+    resultsGrid.innerHTML = results
+      .map((quote) => {
+        const quoteText = escapeHtml(quote.quote || "");
+        const authorText = Array.isArray(quote.authors)
+          ? quote.authors.map((author) => escapeHtml(author)).join(", ")
+          : "";
+        const contextHtml = quote.context
+          ? `<p class="quote-context">${escapeHtml(quote.context)}</p>`
+          : "";
+        return `
+          <article class="result-card">
+            <div class="quote-text">“${quoteText}”</div>
+            <div class="quote-meta">
+              <span class="quote-author">${authorText}</span>
+              <span class="dot">•</span>
+              <span>${formatDate(quote.timestamp)}</span>
+              <span class="dot">•</span>
+              <span>${formatTime(quote.timestamp)}</span>
+            </div>
+            ${contextHtml}
+            <a href="/quote/${encodeURIComponent(quote.id)}" class="btn btn-primary">View</a>
+          </article>
+        `;
+      })
+      .join("");
+    resultsEmpty.hidden = true;
+  };
+
+  const updateQueryInUrl = (query) => {
+    const params = new URLSearchParams(window.location.search);
+    if (query) {
+      params.set("q", query);
+    } else {
+      params.delete("q");
+    }
+    const queryString = params.toString();
+    const nextUrl = queryString
+      ? `${window.location.pathname}?${queryString}`
+      : window.location.pathname;
+    window.history.replaceState({}, "", nextUrl);
+  };
+
+  const runOfflineSearch = async (query) => {
+    if (!window.qbPwa?.searchOfflineQuotes) return false;
+    const normalizedQuery = String(query || "").trim();
+    const results = normalizedQuery
+      ? await window.qbPwa.searchOfflineQuotes(normalizedQuery)
+      : [];
+    renderResults(normalizedQuery, results);
+    updateQueryInUrl(normalizedQuery);
+    return true;
+  };
+
+  const scheduleOfflineSearch = (attempt = 0) => {
+    if (navigator.onLine) return;
+
+    if (window.qbPwa?.searchOfflineQuotes) {
+      runOfflineSearch(queryInput?.value || "");
+      return;
+    }
+
+    if (attempt < 12) {
+      setTimeout(() => scheduleOfflineSearch(attempt + 1), 300);
+    }
+  };
+
+  searchForm?.addEventListener("submit", (event) => {
+    if (navigator.onLine) return;
+    event.preventDefault();
+    runOfflineSearch(queryInput?.value || "");
+  });
+
+  window.addEventListener("offline", () => scheduleOfflineSearch());
+  window.addEventListener("load", () => scheduleOfflineSearch());
+</script>
 {% endblock %}
