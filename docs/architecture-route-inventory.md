@@ -34,6 +34,9 @@
 - `/search`
 - `/social`
 - `/social/author/<author_name>`
+- `/social/quote/<quote_id>`
+- `/social/quote/<quote_id>/react` (`POST`)
+- `/social/quote/<quote_id>/comment` (`POST`)
 - `/stats`
 - `/timeline/<year>/<month>`
 - `/timeline/day/<timestamp>`

@@ -15,7 +15,7 @@
   const allAuthors = Array.isArray(config.allAuthors)
     ? config.allAuthors.filter((value) => typeof value === "string" && value.trim().length > 0)
     : [];
-  if (!avatarUrls.length) return;
+  const hasAvatars = avatarUrls.length > 0;
 
   const MAP_KEY = "qb_social_avatar_map_v1";
   const ORDER_KEY = "qb_social_avatar_order_v1";
@@ -73,58 +73,81 @@
     }
   };
 
-  let avatarOrder = parseStoredArray(readStorage(ORDER_KEY)).filter((avatarPath) =>
-    avatarUrls.includes(avatarPath)
-  );
-  if (avatarOrder.length !== avatarUrls.length) {
-    avatarOrder = shuffle(avatarUrls);
-    writeStorage(ORDER_KEY, JSON.stringify(avatarOrder));
-  }
-
-  const storedMap = parseStoredObject(readStorage(MAP_KEY));
-  const avatarMap = {};
-  Object.entries(storedMap).forEach(([authorKey, avatarPath]) => {
-    if (typeof avatarPath === "string" && avatarOrder.includes(avatarPath)) {
-      avatarMap[authorKey] = avatarPath;
-    }
-  });
-
-  let cursor = Number.parseInt(readStorage(CURSOR_KEY) || "0", 10);
-  if (!Number.isFinite(cursor) || cursor < 0) {
-    cursor = 0;
-  }
-
-  const assignAvatar = (authorName) => {
-    const normalized = normalizeAuthor(authorName);
-    if (!normalized) return avatarOrder[0];
-    if (avatarMap[normalized]) {
-      return avatarMap[normalized];
+  if (hasAvatars) {
+    let avatarOrder = parseStoredArray(readStorage(ORDER_KEY)).filter((avatarPath) =>
+      avatarUrls.includes(avatarPath)
+    );
+    if (avatarOrder.length !== avatarUrls.length) {
+      avatarOrder = shuffle(avatarUrls);
+      writeStorage(ORDER_KEY, JSON.stringify(avatarOrder));
     }
 
-    const nextAvatar = avatarOrder[cursor % avatarOrder.length];
-    avatarMap[normalized] = nextAvatar;
-    cursor += 1;
-    return nextAvatar;
+    const storedMap = parseStoredObject(readStorage(MAP_KEY));
+    const avatarMap = {};
+    Object.entries(storedMap).forEach(([authorKey, avatarPath]) => {
+      if (typeof avatarPath === "string" && avatarOrder.includes(avatarPath)) {
+        avatarMap[authorKey] = avatarPath;
+      }
+    });
+
+    let cursor = Number.parseInt(readStorage(CURSOR_KEY) || "0", 10);
+    if (!Number.isFinite(cursor) || cursor < 0) {
+      cursor = 0;
+    }
+
+    const assignAvatar = (authorName) => {
+      const normalized = normalizeAuthor(authorName);
+      if (!normalized) return avatarOrder[0];
+      if (avatarMap[normalized]) {
+        return avatarMap[normalized];
+      }
+
+      const nextAvatar = avatarOrder[cursor % avatarOrder.length];
+      avatarMap[normalized] = nextAvatar;
+      cursor += 1;
+      return nextAvatar;
+    };
+
+    allAuthors.forEach((authorName) => assignAvatar(authorName));
+
+    document.querySelectorAll("[data-social-author]").forEach((node) => {
+      const authorName = node.getAttribute("data-social-author") || "";
+      const avatarPath = assignAvatar(authorName);
+      if (!avatarPath) return;
+
+      if (node.tagName === "IMG") {
+        node.src = avatarPath;
+        if (!node.alt) {
+          node.alt = authorName ? `${authorName} profile picture` : "Profile picture";
+        }
+        return;
+      }
+
+      node.style.backgroundImage = `url("${avatarPath}")`;
+    });
+
+    writeStorage(MAP_KEY, JSON.stringify(avatarMap));
+    writeStorage(CURSOR_KEY, String(cursor));
+  }
+
+  const isInteractiveTarget = (target) => {
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest("a, button, input, textarea, select, label, form"));
   };
 
-  allAuthors.forEach((authorName) => assignAvatar(authorName));
+  document.querySelectorAll(".post-card-clickable[data-post-url]").forEach((card) => {
+    const targetUrl = card.getAttribute("data-post-url");
+    if (!targetUrl) return;
 
-  document.querySelectorAll("[data-social-author]").forEach((node) => {
-    const authorName = node.getAttribute("data-social-author") || "";
-    const avatarPath = assignAvatar(authorName);
-    if (!avatarPath) return;
+    card.addEventListener("click", (event) => {
+      if (isInteractiveTarget(event.target)) return;
+      window.location.assign(targetUrl);
+    });
 
-    if (node.tagName === "IMG") {
-      node.src = avatarPath;
-      if (!node.alt) {
-        node.alt = authorName ? `${authorName} profile picture` : "Profile picture";
-      }
-      return;
-    }
-
-    node.style.backgroundImage = `url("${avatarPath}")`;
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      window.location.assign(targetUrl);
+    });
   });
-
-  writeStorage(MAP_KEY, JSON.stringify(avatarMap));
-  writeStorage(CURSOR_KEY, String(cursor));
 })();

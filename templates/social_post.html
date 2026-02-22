@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Social Post · Quote #{{ quote.id }}{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="/static/assets/css/social.css"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="social-shell social-post-shell">
+  <header class="social-topbar">
+    <div class="brand-block">
+      <span class="brand-kicker">Social Post</span>
+      <h1>Quote #{{ quote.id }}</h1>
+      <p>
+        Reactions and comments are tied to this quote post.
+      </p>
+    </div>
+
+    <div class="topbar-actions">
+      {% if quote.authors %}
+        <a
+          href="{{ url_for('web.social_author', author_name=quote.authors[0]) }}"
+          class="btn btn-ghost"
+        >
+          {{ quote.authors[0] }} page
+        </a>
+      {% endif %}
+      <a href="/social" class="btn btn-ghost">Main stream</a>
+      <a href="/" class="btn btn-primary">Back home</a>
+    </div>
+  </header>
+
+  <div class="social-post-layout">
+    <article class="post-detail-card">
+      <header class="post-head post-head-large">
+        <img
+          class="avatar avatar-profile"
+          src="/static/favicon.png"
+          data-social-author="{{ quote.authors[0] if quote.authors else 'Unknown' }}"
+          alt="{{ quote.authors[0] if quote.authors else 'Unknown' }} profile picture"
+        />
+        <div class="post-author-wrap">
+          <div class="author-links author-links-large">
+            {% for author in quote.authors %}
+              <a href="{{ url_for('web.social_author', author_name=author) }}">{{ author }}</a>{% if not loop.last %}, {% endif %}
+            {% else %}
+              <span>Unknown</span>
+            {% endfor %}
+          </div>
+          <p class="post-meta">
+            {{ quote.timestamp | uk_date }} at {{ quote.timestamp | uk_time }}
+          </p>
+        </div>
+      </header>
+
+      <blockquote class="quote-text quote-text-large">
+        "{{ quote.quote }}"
+      </blockquote>
+
+      {% if quote.context %}
+        <p class="quote-context quote-context-large">{{ quote.context }}</p>
+      {% endif %}
+
+      <p class="post-quote-link">
+        <a href="/quote/{{ quote.id }}">Open original quote page</a>
+      </p>
+
+      {% if social_notice %}
+        <p class="social-notice social-notice-{{ social_notice.kind }}">
+          {{ social_notice.text }}
+        </p>
+      {% endif %}
+
+      <section class="engagement-panel" id="reactions">
+        <div class="engagement-header">
+          <h2>Reactions</h2>
+          <p>{{ reaction_total }} total reaction{% if reaction_total != 1 %}s{% endif %}</p>
+        </div>
+
+        <form method="post" action="{{ url_for('web.social_quote_react', quote_id=quote.id) }}" class="reaction-grid">
+          {% for reaction in reaction_catalog %}
+            <button
+              type="submit"
+              name="reaction"
+              value="{{ reaction.key }}"
+              class="reaction-btn {% if user_reaction == reaction.key %}is-selected{% endif %}"
+              aria-label="{{ reaction.label }}"
+            >
+              <span class="reaction-emoji">{{ reaction.emoji }}</span>
+              <span class="reaction-count">{{ reaction_counts[reaction.key] }}</span>
+            </button>
+          {% endfor %}
+        </form>
+      </section>
+
+      <section class="engagement-panel" id="comments">
+        <div class="engagement-header">
+          <h2>Comments</h2>
+          <p>{{ comments | length }} comment{% if comments|length != 1 %}s{% endif %}</p>
+        </div>
+
+        <form method="post" action="{{ url_for('web.social_quote_comment', quote_id=quote.id) }}" class="comment-form">
+          <label for="commenter_name">Name</label>
+          <input
+            id="commenter_name"
+            name="commenter_name"
+            type="text"
+            required
+            maxlength="{{ comment_name_max }}"
+            placeholder="Your name"
+          />
+
+          <label for="comment_text">Comment</label>
+          <textarea
+            id="comment_text"
+            name="comment_text"
+            rows="4"
+            required
+            maxlength="{{ comment_text_max }}"
+            placeholder="Say what needs saying"
+          ></textarea>
+
+          <button type="submit" class="btn btn-primary">Post comment</button>
+        </form>
+
+        <ul class="comment-list">
+          {% for item in comments %}
+            <li class="comment-item">
+              <div class="comment-head">
+                <strong>{{ item.display_name }}</strong>
+                <span>{{ item.created_at | uk_date }} · {{ item.created_at | uk_time }}</span>
+              </div>
+              <p>{{ item.comment_text }}</p>
+            </li>
+          {% else %}
+            <li class="comment-empty">No comments yet.</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </article>
+
+    <aside class="social-panel panel-side">
+      <h2>More from this page</h2>
+      <ul class="match-list">
+        {% for item in related_quotes %}
+          <li>
+            <a href="{{ url_for('web.social_quote_post', quote_id=item.id) }}">
+              <img
+                class="avatar avatar-small"
+                src="/static/favicon.png"
+                data-social-author="{{ item.authors[0] if item.authors else 'Unknown' }}"
+                alt="Profile picture"
+              />
+              <span>#{{ item.id }} · {{ item.quote | truncate(48, True, "...") }}</span>
+              <strong>{{ item.timestamp | uk_date }}</strong>
+            </a>
+          </li>
+        {% else %}
+          <li class="match-empty">No related quotes found.</li>
+        {% endfor %}
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<script id="socialConfig" type="application/json">
+  {{
+    {
+      "avatarUrls": avatar_urls,
+      "allAuthors": all_authors,
+    } | tojson
+  }}
+</script>
+<script src="/static/assets/js/social.js"></script>
+{% endblock %}

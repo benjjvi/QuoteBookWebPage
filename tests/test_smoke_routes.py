@@ -20,6 +20,11 @@ def test_smoke_routes(client):
     assert social_author.status_code == 200
     assert b"Author page" in social_author.data
 
+    social_post = client.get("/social/quote/1")
+    assert social_post.status_code == 200
+    assert b"Reactions" in social_post.data
+    assert b"Comments" in social_post.data
+
     stats = client.get("/stats")
     assert stats.status_code == 200
     assert b"Quote Anarchy points" in stats.data

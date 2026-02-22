@@ -57,6 +57,18 @@ class AppServiceConfig:
 
 
 class AppServices:
+    SOCIAL_COMMENT_NAME_MAX = 40
+    SOCIAL_COMMENT_TEXT_MAX = 280
+    SOCIAL_REACTIONS = (
+        {"key": "thumbs_up", "emoji": "👍", "label": "Thumbs up"},
+        {"key": "thumbs_down", "emoji": "👎", "label": "Thumbs down"},
+        {"key": "heart", "emoji": "❤️", "label": "Heart"},
+        {"key": "laugh_cry", "emoji": "😂", "label": "Crying with laughter"},
+        {"key": "sob", "emoji": "😭", "label": "Sobbing"},
+        {"key": "anger", "emoji": "😡", "label": "Anger"},
+    )
+    SOCIAL_REACTION_KEYS = {item["key"] for item in SOCIAL_REACTIONS}
+
     def __init__(self, app, quote_store, ai_worker, uk_tz, config: AppServiceConfig):
         self.app = app
         self.quote_store = quote_store
@@ -227,6 +239,235 @@ class AppServices:
         if getattr(self.quote_store, "_local", None):
             return self.quote_store._local.filepath
         return os.getenv("QUOTEBOOK_DB", "qb.db")
+
+    def get_social_reaction_catalog(self) -> list[dict]:
+        return [dict(item) for item in self.SOCIAL_REACTIONS]
+
+    def ensure_social_tables(self) -> bool:
+        db_path = self.get_push_db_path()
+        try:
+            with sqlite3.connect(db_path) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS social_post_reactions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        quote_id INTEGER NOT NULL,
+                        device_id TEXT NOT NULL,
+                        reaction_type TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        expires_at INTEGER NOT NULL,
+                        UNIQUE (quote_id, device_id)
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_social_post_reactions_quote_expires
+                    ON social_post_reactions (quote_id, expires_at)
+                    """
+                )
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS social_post_comments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        quote_id INTEGER NOT NULL,
+                        display_name TEXT NOT NULL,
+                        comment_text TEXT NOT NULL,
+                        created_at INTEGER NOT NULL
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_social_post_comments_quote_created
+                    ON social_post_comments (quote_id, created_at, id)
+                    """
+                )
+            return True
+        except sqlite3.Error as exc:
+            self.app.logger.error("Unable to ensure social tables: %s", exc)
+            return False
+
+    def record_social_reaction(
+        self,
+        *,
+        quote_id: int,
+        device_id: str,
+        reaction_type: str,
+        now_ts: int | None = None,
+    ) -> bool:
+        normalized_device_id = (device_id or "").strip()
+        normalized_reaction = (reaction_type or "").strip()
+        if (
+            quote_id <= 0
+            or not normalized_device_id
+            or normalized_reaction not in self.SOCIAL_REACTION_KEYS
+        ):
+            return False
+        if len(normalized_device_id) > 255:
+            return False
+        if not self.ensure_social_tables():
+            return False
+
+        now_ts = int(now_ts if now_ts is not None else timelib.time())
+
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            existing = conn.execute(
+                """
+                SELECT reaction_type
+                FROM social_post_reactions
+                WHERE quote_id = ? AND device_id = ?
+                """,
+                (int(quote_id), normalized_device_id),
+            ).fetchone()
+            if existing and str(existing[0]) == normalized_reaction:
+                conn.execute(
+                    """
+                    DELETE FROM social_post_reactions
+                    WHERE quote_id = ? AND device_id = ?
+                    """,
+                    (int(quote_id), normalized_device_id),
+                )
+                return True
+
+            conn.execute(
+                """
+                INSERT INTO social_post_reactions
+                (quote_id, device_id, reaction_type, created_at, updated_at, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT (quote_id, device_id)
+                DO UPDATE SET
+                    reaction_type = excluded.reaction_type,
+                    updated_at = excluded.updated_at,
+                    expires_at = excluded.expires_at
+                """,
+                (
+                    int(quote_id),
+                    normalized_device_id,
+                    normalized_reaction,
+                    now_ts,
+                    now_ts,
+                    0,
+                ),
+            )
+        return True
+
+    def get_social_reactions_for_quote(
+        self,
+        *,
+        quote_id: int,
+        device_id: str = "",
+        now_ts: int | None = None,
+    ) -> dict:
+        counts = {item["key"]: 0 for item in self.SOCIAL_REACTIONS}
+        payload = {
+            "counts": counts,
+            "total": 0,
+            "user_reaction": "",
+        }
+        if quote_id <= 0:
+            return payload
+        if not self.ensure_social_tables():
+            return payload
+
+        normalized_device_id = (device_id or "").strip()
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT reaction_type, COUNT(*) AS reaction_count
+                FROM social_post_reactions
+                WHERE quote_id = ?
+                GROUP BY reaction_type
+                """,
+                (int(quote_id),),
+            ).fetchall()
+            for row in rows:
+                key = str(row["reaction_type"])
+                if key in counts:
+                    counts[key] = int(row["reaction_count"])
+
+            if normalized_device_id:
+                row = conn.execute(
+                    """
+                    SELECT reaction_type
+                    FROM social_post_reactions
+                    WHERE quote_id = ? AND device_id = ?
+                    """,
+                    (int(quote_id), normalized_device_id),
+                ).fetchone()
+                if row:
+                    payload["user_reaction"] = str(row["reaction_type"])
+
+        payload["total"] = sum(counts.values())
+        return payload
+
+    def add_social_comment(
+        self,
+        *,
+        quote_id: int,
+        display_name: str,
+        comment_text: str,
+        now_ts: int | None = None,
+    ) -> bool:
+        if quote_id <= 0:
+            return False
+        if not self.ensure_social_tables():
+            return False
+
+        normalized_name = " ".join((display_name or "").split()).strip()
+        normalized_comment = (comment_text or "").strip()
+        if (
+            not normalized_name
+            or not normalized_comment
+            or len(normalized_name) > self.SOCIAL_COMMENT_NAME_MAX
+            or len(normalized_comment) > self.SOCIAL_COMMENT_TEXT_MAX
+        ):
+            return False
+
+        now_ts = int(now_ts if now_ts is not None else timelib.time())
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.execute(
+                """
+                INSERT INTO social_post_comments
+                (quote_id, display_name, comment_text, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (int(quote_id), normalized_name, normalized_comment, now_ts),
+            )
+        return True
+
+    def get_social_comments_for_quote(self, *, quote_id: int, limit: int = 200) -> list[dict]:
+        if quote_id <= 0:
+            return []
+        if not self.ensure_social_tables():
+            return []
+
+        cap = max(1, min(int(limit), 500))
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT id, quote_id, display_name, comment_text, created_at
+                FROM social_post_comments
+                WHERE quote_id = ?
+                ORDER BY created_at ASC, id ASC
+                LIMIT ?
+                """,
+                (int(quote_id), cap),
+            ).fetchall()
+
+        return [
+            {
+                "id": int(row["id"]),
+                "quote_id": int(row["quote_id"]),
+                "display_name": str(row["display_name"]),
+                "comment_text": str(row["comment_text"]),
+                "created_at": int(row["created_at"]),
+            }
+            for row in rows
+        ]
 
     def ensure_scheduler_table(self) -> bool:
         db_path = self.get_push_db_path()
