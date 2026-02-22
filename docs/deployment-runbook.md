@@ -32,9 +32,13 @@
 - Web API passthrough behavior: `GET /api/quotes?page=1&per_page=1`
 
 ## Weekly Digest Notes
-- Scheduler runs in Flask app process.
+- `WEEKLY_SCHEDULER_MODE=thread` runs scheduler in Flask app process.
+- `WEEKLY_SCHEDULER_MODE=external` disables in-process scheduler thread.
 - Avoid running multiple scheduler-active replicas without a clear leader strategy.
 - Confirm recipients table is populated before expecting sends.
+- For PythonAnywhere, prefer `WEEKLY_SCHEDULER_MODE=external` and run
+  `python scripts/run_weekly_digest_once.py` from a Scheduled Task.
+- In `external` mode, the app still runs throttled eligibility checks during requests.
 
 ## Operational Commands
 - Run tests: `pytest`

@@ -85,6 +85,7 @@ Set these environment variables:
 ```bash
 WEEKLY_EMAIL_ENABLED=true
 WEEKLY_EMAIL_FROM="quotes@example.com"   # optional if SMTP_USER is set
+WEEKLY_SCHEDULER_MODE="auto"             # auto/thread/external
 SMTP_HOST="smtp.example.com"
 SMTP_PORT=587
 SMTP_USER="smtp_username"
@@ -107,7 +108,11 @@ WEEKLY_EMAIL_TO_SEED="friend1@example.com,friend2@example.com"
 ```
 
 Notes:
-- The scheduler runs inside the Flask process.
+- `WEEKLY_SCHEDULER_MODE=thread` runs the scheduler in-process (default on non-PythonAnywhere hosts).
+- `WEEKLY_SCHEDULER_MODE=external` disables the in-process thread. Use a host scheduler/cron task to run:
+  `python scripts/run_weekly_digest_once.py`
+- In `external` mode, the app also performs a throttled due-check during normal requests, so Monday sends still trigger on active sites even without cron.
+- On PythonAnywhere, prefer `external` mode and configure a Scheduled Task.
 - The app deduplicates the weekly run per Monday date in SQLite to avoid duplicate sends.
 - If `OPENROUTER_KEY` is set, the digest body/subject are generated via the AI helper (API-style JSON output).
 

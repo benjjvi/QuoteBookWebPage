@@ -7,6 +7,7 @@
 - `EDIT_PIN` (if edit UI should be enabled)
 - `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_EMAIL` (push)
 - `WEEKLY_EMAIL_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`/`WEEKLY_EMAIL_FROM` (weekly digest)
+- `WEEKLY_SCHEDULER_MODE` (`external` for PythonAnywhere)
 - Run regression tests: `pytest`.
 - Run security scan: Bandit workflow.
 - Confirm `/health` and `/health/details` are healthy in staging.

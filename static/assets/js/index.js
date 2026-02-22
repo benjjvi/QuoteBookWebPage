@@ -256,32 +256,34 @@
       setStatus("");
     };
 
-    const shouldPrompt = async () => {
-      if (!isStandalone()) return false;
-      if (!supportsPush) return false;
-      if (!vapidPublicKey) return false;
-      if (!navigator.onLine) return false;
-      if (!isSecureOrigin()) return false;
-      if (Notification.permission === "denied") return false;
+    const normalizeBase64Url = (value) =>
+      String(value || "")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
 
-      const declinedAt = Number(
-        localStorage.getItem("qb_push_declined_at") || "0",
-      );
-      if (declinedAt && Date.now() - declinedAt < 24 * 60 * 60 * 1000)
-        return false;
-
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        const existing = await reg.pushManager.getSubscription();
-        if (existing) {
-          localStorage.setItem("qb_push_prompted", "accepted");
-          return false;
-        }
-      } catch (_err) {
-        return false;
+    const bytesToBase64Url = (bytesLike) => {
+      const bytes =
+        bytesLike instanceof Uint8Array
+          ? bytesLike
+          : new Uint8Array(bytesLike || []);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 1) {
+        binary += String.fromCharCode(bytes[i]);
       }
+      return normalizeBase64Url(btoa(binary));
+    };
 
-      return true;
+    const subscriptionUsesCurrentVapidKey = (subscription) => {
+      try {
+        const current = normalizeBase64Url(vapidPublicKey);
+        if (!current) return true;
+        const appServerKey = subscription?.options?.applicationServerKey;
+        if (!appServerKey) return true;
+        return bytesToBase64Url(appServerKey) === current;
+      } catch (_err) {
+        return true;
+      }
     };
 
     const refreshSubscribeToken = async () => {
@@ -295,13 +297,7 @@
       pushSubscribeToken = data.token;
     };
 
-    const subscribeUser = async () => {
-      const reg = await navigator.serviceWorker.ready;
-      const subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-      });
-
+    const syncSubscriptionWithServer = async (subscription) => {
       const sendSubscribe = async () =>
         fetch("/api/push/subscribe", {
           method: "POST",
@@ -320,6 +316,56 @@
         response = await sendSubscribe();
       }
       if (!response.ok) throw new Error("Subscription failed");
+    };
+
+    const subscribeUser = async () => {
+      const reg = await navigator.serviceWorker.ready;
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+      await syncSubscriptionWithServer(subscription);
+      return subscription;
+    };
+
+    const shouldPrompt = async () => {
+      if (!isStandalone()) return false;
+      if (!supportsPush) return false;
+      if (!vapidPublicKey) return false;
+      if (!navigator.onLine) return false;
+      if (!isSecureOrigin()) return false;
+      if (Notification.permission === "denied") return false;
+
+      const declinedAt = Number(
+        localStorage.getItem("qb_push_declined_at") || "0",
+      );
+      if (declinedAt && Date.now() - declinedAt < 24 * 60 * 60 * 1000)
+        return false;
+
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) {
+          if (!subscriptionUsesCurrentVapidKey(existing)) {
+            await existing.unsubscribe();
+            localStorage.removeItem("qb_push_prompted");
+            if (Notification.permission === "granted") {
+              await subscribeUser();
+              localStorage.setItem("qb_push_prompted", "accepted");
+              localStorage.removeItem("qb_push_declined_at");
+              return false;
+            }
+            return true;
+          }
+          await syncSubscriptionWithServer(existing);
+          localStorage.setItem("qb_push_prompted", "accepted");
+          return false;
+        }
+      } catch (_err) {
+        return false;
+      }
+
+      return true;
     };
 
     acceptBtn.addEventListener("click", async () => {

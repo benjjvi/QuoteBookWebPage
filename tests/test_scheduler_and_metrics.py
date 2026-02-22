@@ -2,6 +2,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pytest
+from pywebpush import WebPushException
 
 UK_TZ = ZoneInfo("Europe/London")
 
@@ -96,3 +97,64 @@ def test_push_metrics_success_and_failure(services, monkeypatch):
     assert metrics["push_attempted"] >= 2
     assert metrics["push_sent"] >= 1
     assert metrics["push_failed"] >= 1
+
+
+@pytest.mark.usefixtures("services")
+def test_add_weekly_email_recipient_attempts_scheduler_start(services, monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(
+        services, "start_weekly_email_scheduler", lambda: calls.append("started")
+    )
+
+    assert services.add_weekly_email_recipient("scheduler@example.com") is True
+    assert calls == ["started"]
+
+
+@pytest.mark.usefixtures("services")
+def test_push_403_prunes_subscription(services, monkeypatch):
+    services.save_push_subscription(
+        {
+            "endpoint": "https://push.example.com/sub-403",
+            "keys": {"auth": "a", "p256dh": "b"},
+        },
+        "pytest",
+    )
+
+    class DummyResponse:
+        status_code = 403
+        text = "forbidden"
+
+    monkeypatch.setattr(
+        "app_services.webpush",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            WebPushException("forbidden", response=DummyResponse())
+        ),
+    )
+
+    sent = services.send_push_notification("Title", "Body", "https://example.com")
+    assert sent == 0
+    assert services.load_push_subscriptions() == []
+
+    metrics = services.get_runtime_metrics()
+    assert metrics["push_failed"] >= 1
+    assert metrics["push_pruned"] >= 1
+    assert "status=403" in metrics["push_last_error"]
+
+
+@pytest.mark.usefixtures("services")
+def test_opportunistic_scheduler_runs_in_external_mode(services, monkeypatch):
+    checks = []
+    now = {"value": 1000.0}
+
+    monkeypatch.setattr(services, "resolve_weekly_scheduler_mode", lambda: "external")
+    monkeypatch.setattr(services, "maybe_send_weekly_email_digest", lambda: checks.append("run"))
+    monkeypatch.setattr("app_services.timelib.time", lambda: now["value"])
+
+    services.maybe_run_scheduled_jobs_opportunistically()
+    services.maybe_run_scheduled_jobs_opportunistically()
+    assert checks == ["run"]
+
+    now["value"] += services.opportunistic_scheduler_interval_seconds + 1
+    services.maybe_run_scheduled_jobs_opportunistically()
+    assert checks == ["run", "run"]

@@ -83,6 +83,7 @@ SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").strip().lower() in {
     "yes",
     "on",
 }
+WEEKLY_SCHEDULER_MODE = os.getenv("WEEKLY_SCHEDULER_MODE", "auto").strip().lower()
 PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
 
 app.config.update(
@@ -112,6 +113,7 @@ services = AppServices(
         smtp_use_tls=SMTP_USE_TLS,
         smtp_use_ssl=SMTP_USE_SSL,
         is_prod=IS_PROD,
+        weekly_scheduler_mode=WEEKLY_SCHEDULER_MODE,
         weekly_digest_sponsor_line=WEEKLY_DIGEST_SPONSOR_LINE,
     ),
 )
@@ -234,6 +236,7 @@ def log_exception(exception):
 
 @app.before_request
 def refresh_qb():
+    services.maybe_run_scheduled_jobs_opportunistically()
     services.refresh_qb()
 
 

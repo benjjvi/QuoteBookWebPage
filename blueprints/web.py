@@ -1172,8 +1172,11 @@ def create_web_blueprint(
             features={
                 "ai_enabled": bool(ai_worker.can_generate),
                 "edit_enabled": bool(edit_pin),
-                "push_enabled": bool(vapid_public_key),
+                "push_enabled": bool(
+                    services.config.vapid_public_key and services.config.vapid_private_key
+                ),
                 "weekly_email_configured": bool(services.weekly_email_is_configured()),
+                "weekly_scheduler_mode": services.resolve_weekly_scheduler_mode(),
             },
         )
 

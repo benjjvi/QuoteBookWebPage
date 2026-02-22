@@ -53,6 +53,7 @@ class AppServiceConfig:
     smtp_use_tls: bool
     smtp_use_ssl: bool
     is_prod: bool
+    weekly_scheduler_mode: str = "auto"
     weekly_digest_sponsor_line: str = ""
 
 
@@ -81,6 +82,10 @@ class AppServices:
 
         self._weekly_scheduler_thread: threading.Thread | None = None
         self._weekly_scheduler_lock = threading.Lock()
+        self._opportunistic_scheduler_lock = threading.Lock()
+        self._opportunistic_last_check_at = 0.0
+        self._scheduler_mode_cache: str | None = None
+        self._external_scheduler_notice_emitted = False
         self.metrics_lock = threading.Lock()
         self.runtime_metrics: dict[str, int] = {
             "push_attempted": 0,
@@ -97,6 +102,11 @@ class AppServices:
             "weekly_digest_claim_conflict": 0,
             "weekly_scheduler_loop_errors": 0,
         }
+        self.runtime_status: dict[str, str] = {
+            "push_last_error": "",
+            "email_last_error": "",
+        }
+        self.opportunistic_scheduler_interval_seconds = 300
 
     # ------------------------
     # Runtime validation + metrics
@@ -131,6 +141,17 @@ class AppServices:
                 "SMTP_USE_SSL and SMTP_USE_TLS are both enabled; SSL takes precedence."
             )
 
+        mode = (self.config.weekly_scheduler_mode or "auto").strip().lower()
+        if mode not in {"auto", "thread", "external"}:
+            warnings.append(
+                "WEEKLY_SCHEDULER_MODE should be one of: auto, thread, external."
+            )
+
+        if self._looks_like_pythonanywhere() and self.resolve_weekly_scheduler_mode() == "thread":
+            warnings.append(
+                "PythonAnywhere detected; prefer WEEKLY_SCHEDULER_MODE=external and run digest via scheduled task."
+            )
+
         if warnings:
             for warning in warnings:
                 self.app.logger.warning("Config warning: %s", warning)
@@ -144,15 +165,53 @@ class AppServices:
         with self.metrics_lock:
             self.runtime_metrics[name] = self.runtime_metrics.get(name, 0) + amount
 
+    def _set_runtime_status(self, key: str, value: str) -> None:
+        text = (value or "").strip()
+        if len(text) > 500:
+            text = text[:497] + "..."
+        with self.metrics_lock:
+            self.runtime_status[key] = text
+
+    @staticmethod
+    def _looks_like_pythonanywhere() -> bool:
+        if any(
+            os.getenv(name)
+            for name in (
+                "PYTHONANYWHERE_SITE",
+                "PYTHONANYWHERE_DOMAIN",
+                "PYTHONANYWHERE_USERNAME",
+                "PA_SITE",
+            )
+        ):
+            return True
+        hostname = (os.getenv("HOSTNAME") or "").strip().lower()
+        return "pythonanywhere" in hostname
+
+    def resolve_weekly_scheduler_mode(self) -> str:
+        if self._scheduler_mode_cache is not None:
+            return self._scheduler_mode_cache
+
+        raw_mode = (self.config.weekly_scheduler_mode or "auto").strip().lower()
+        if raw_mode not in {"auto", "thread", "external"}:
+            raw_mode = "auto"
+        if raw_mode == "auto":
+            mode = "external" if self._looks_like_pythonanywhere() else "thread"
+        else:
+            mode = raw_mode
+        self._scheduler_mode_cache = mode
+        return mode
+
     def get_runtime_metrics(self) -> dict:
         with self.metrics_lock:
             snapshot = dict(self.runtime_metrics)
+            snapshot.update(self.runtime_status)
         snapshot["weekly_scheduler_thread_alive"] = (
             self._weekly_scheduler_thread.is_alive()
             if self._weekly_scheduler_thread is not None
             else False
         )
         snapshot["weekly_email_enabled"] = bool(self.config.weekly_email_enabled)
+        snapshot["weekly_scheduler_mode"] = self.resolve_weekly_scheduler_mode()
         return snapshot
 
     # ------------------------
@@ -623,6 +682,8 @@ class AppServices:
                 """,
                 (normalized, now),
             )
+        # Scheduler may not have started at boot if recipients were added later.
+        self.start_weekly_email_scheduler()
         return cur.rowcount > 0
 
     def remove_weekly_email_recipient(self, email: str) -> bool:
@@ -1069,9 +1130,13 @@ class AppServices:
                     if self.config.smtp_user and self.config.smtp_pass:
                         server.login(self.config.smtp_user, self.config.smtp_pass)
                     server.send_message(message)
-        except Exception:
+        except Exception as exc:
             self._increment_metric("email_failed", recipient_count)
+            self._set_runtime_status(
+                "email_last_error", f"{type(exc).__name__}: {exc}"
+            )
             raise
+        self._set_runtime_status("email_last_error", "")
         self._increment_metric("email_sent", recipient_count)
 
     def maybe_send_weekly_email_digest(self, now_uk: datetime | None = None) -> bool:
@@ -1144,6 +1209,13 @@ class AppServices:
         if not self.weekly_email_is_configured():
             self.app.logger.info("Weekly email scheduler disabled or not configured.")
             return
+        if self.resolve_weekly_scheduler_mode() == "external":
+            if not self._external_scheduler_notice_emitted:
+                self.app.logger.info(
+                    "Weekly email scheduler is in external mode; use host scheduler/cron to run digest checks."
+                )
+                self._external_scheduler_notice_emitted = True
+            return
         if not self.config.is_prod and os.getenv("WERKZEUG_RUN_MAIN") != "true":
             return
 
@@ -1159,6 +1231,34 @@ class AppServices:
                 daemon=True,
             )
             self._weekly_scheduler_thread.start()
+
+    def maybe_run_scheduled_jobs_opportunistically(self, force: bool = False) -> None:
+        """
+        In external scheduler mode, run digest eligibility checks on live requests.
+        This keeps PythonAnywhere deployments functional even without background
+        threads, while still allowing real cron/scheduled-task execution.
+        """
+        if self.resolve_weekly_scheduler_mode() != "external":
+            return
+        if not self.config.weekly_email_enabled:
+            return
+
+        now_ts = timelib.time()
+        with self._opportunistic_scheduler_lock:
+            if not force and (
+                now_ts - self._opportunistic_last_check_at
+                < self.opportunistic_scheduler_interval_seconds
+            ):
+                return
+            self._opportunistic_last_check_at = now_ts
+
+        try:
+            self.maybe_send_weekly_email_digest()
+        except Exception as exc:
+            self._increment_metric("weekly_scheduler_loop_errors")
+            self.app.logger.warning(
+                "Opportunistic weekly digest check failed: %s", exc
+            )
 
     # ------------------------
     # Push
@@ -1222,6 +1322,18 @@ class AppServices:
                 continue
         return subscriptions
 
+    @staticmethod
+    def _should_prune_push_subscription(status_code: int | None) -> bool:
+        # Client errors generally mean the subscription is no longer usable.
+        return status_code in {400, 401, 403, 404, 410}
+
+    @staticmethod
+    def _truncate_push_error(text: str) -> str:
+        compact = " ".join((text or "").split())
+        if len(compact) > 240:
+            return compact[:237] + "..."
+        return compact
+
     def send_push_notification(self, title: str, body: str, url: str) -> int:
         if not self.config.vapid_private_key or not self.config.vapid_public_key:
             self.app.logger.warning("Push notification skipped: missing VAPID keys.")
@@ -1248,14 +1360,29 @@ class AppServices:
             except WebPushException as exc:
                 self._increment_metric("push_failed")
                 status = getattr(exc.response, "status_code", None)
-                if status in (404, 410) and endpoint:
+                response_text = ""
+                if getattr(exc, "response", None) is not None:
+                    response_text = self._truncate_push_error(
+                        getattr(exc.response, "text", "")
+                    )
+                detail = f"status={status} {response_text or str(exc)}".strip()
+                self._set_runtime_status("push_last_error", detail)
+
+                if self._should_prune_push_subscription(status) and endpoint:
                     self.delete_push_subscription(endpoint)
                     self._increment_metric("push_pruned")
                 else:
-                    self.app.logger.warning("Push failed for %s: %s", endpoint, exc)
+                    self.app.logger.warning(
+                        "Push failed for %s: %s", endpoint, detail
+                    )
             except Exception as exc:
                 self._increment_metric("push_failed")
+                self._set_runtime_status(
+                    "push_last_error", f"{type(exc).__name__}: {exc}"
+                )
                 self.app.logger.warning("Push error for %s: %s", endpoint, exc)
+        if sent:
+            self._set_runtime_status("push_last_error", "")
         return sent
 
     # ------------------------
