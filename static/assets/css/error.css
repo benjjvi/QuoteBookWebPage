@@ -1,0 +1,42 @@
+.error-page {
+  grid-column: 1 / -1;
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+}
+
+.error-card {
+  width: min(520px, 100%);
+  background: var(--qb-surface-strong);
+  border: 1px solid var(--qb-border-subtle);
+  border-radius: 24px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: var(--qb-shadow-card);
+}
+
+.error-code {
+  margin: 0;
+  font-family: var(--qb-font-display);
+  font-size: clamp(2.3rem, 8vw, 3.3rem);
+  letter-spacing: 0.05em;
+}
+
+.error-name {
+  margin: 0.65rem 0 1rem;
+  font-size: 1.05rem;
+  color: var(--qb-text-muted);
+}
+
+.error-desc {
+  margin: 0 0 1.4rem;
+  color: var(--qb-text-muted);
+  line-height: 1.55;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+}

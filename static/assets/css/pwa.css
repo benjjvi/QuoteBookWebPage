@@ -1,0 +1,74 @@
+.pwa-diag {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2rem;
+  color: var(--qb-text-primary);
+  font-family: var(--qb-font-body);
+}
+
+.pwa-diag header {
+  background: var(--qb-surface);
+  border-radius: 26px;
+  padding: 2rem;
+  border: 1px solid var(--qb-border-subtle);
+  box-shadow: var(--qb-shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pwa-diag h1 {
+  font-family: var(--qb-font-display);
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  margin: 0 0 0.4rem;
+}
+
+.pwa-diag .lead {
+  color: var(--qb-text-muted);
+}
+
+.diag-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.diag-card {
+  background: var(--qb-surface);
+  border-radius: 22px;
+  padding: 1.6rem;
+  border: 1px solid var(--qb-border-subtle);
+  box-shadow: var(--qb-shadow-card);
+}
+
+.diag-card h2 {
+  font-family: var(--qb-font-display);
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+}
+
+.diag-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  color: var(--qb-text-muted);
+}
+
+.diag-card strong {
+  color: var(--qb-text-primary);
+}
+
+.cache-details {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--qb-text-faint);
+}
+
+.notify-status {
+  margin: 0.9rem 0 0;
+  font-size: 0.85rem;
+  color: var(--qb-text-muted);
+}

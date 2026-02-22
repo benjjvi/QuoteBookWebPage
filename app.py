@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+from flask.sessions import SecureCookieSessionInterface
 from werkzeug.exceptions import HTTPException
 
 import ai_helpers
@@ -18,7 +19,29 @@ from quote_client import get_quote_client
 
 load_dotenv()
 
+
+class RequestAwareSessionInterface(SecureCookieSessionInterface):
+    """Allow localhost HTTP sessions while keeping secure cookies for HTTPS traffic."""
+
+    def get_cookie_secure(self, app: Flask) -> bool:
+        secure_config = bool(app.config.get("SESSION_COOKIE_SECURE"))
+        if not secure_config:
+            return False
+
+        forwarded_proto = (
+            request.headers.get("X-Forwarded-Proto", "").split(",", 1)[0].strip().lower()
+        )
+        if request.is_secure or forwarded_proto == "https":
+            return True
+
+        host = (request.host or "").split(":", 1)[0].strip().lower()
+        if host in {"127.0.0.1", "localhost", "0.0.0.0"}:
+            return False
+
+        return True
+
 app = Flask(__name__)
+app.session_interface = RequestAwareSessionInterface()
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", secrets.token_hex(32))
 quote_store = get_quote_client()
 ai_worker = ai_helpers.AI()

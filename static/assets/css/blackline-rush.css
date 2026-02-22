@@ -4,8 +4,8 @@
   grid-column: 1 / -1;
   display: grid;
   gap: 1.15rem;
-  color: #f7f4ef;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: var(--qb-text-primary);
+  font-family: var(--qb-font-body);
   padding-bottom: 2.4rem;
   width: 100%;
   max-width: 100%;
@@ -29,9 +29,9 @@
 
 .blr-hero {
   background:
-    linear-gradient(135deg, rgba(255, 211, 122, 0.09), rgba(255, 154, 98, 0.04)),
-    rgba(14, 16, 22, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+    linear-gradient(135deg, var(--qb-focus-ring-soft), rgba(255, 154, 98, 0.04)),
+    var(--qb-surface);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 24px;
   padding: 1.45rem;
   display: flex;
@@ -43,13 +43,13 @@
 
 .blr-hero h1 {
   margin: 0.22rem 0 0.58rem;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(1.85rem, 4vw, 2.55rem);
 }
 
 .lead {
   margin: 0;
-  color: rgba(247, 244, 239, 0.74);
+  color: var(--qb-text-muted);
 }
 
 .blr-hero-meta {
@@ -63,7 +63,7 @@
   border-radius: 999px;
   padding: 0.36rem 0.74rem;
   font-size: 0.72rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--qb-border);
   color: rgba(255, 255, 255, 0.84);
 }
 
@@ -75,9 +75,9 @@
 .blr-shell {
   background:
     linear-gradient(rgba(9, 10, 13, 0.89), rgba(9, 10, 13, 0.95)),
-    radial-gradient(circle at 20% -10%, rgba(255, 211, 122, 0.08), transparent 35%);
+    radial-gradient(circle at 20% -10%, var(--qb-focus-ring-soft), transparent 35%);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--qb-border-subtle);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.56);
   overflow: hidden;
 }
@@ -93,11 +93,11 @@
 
 .blr-locked h2 {
   margin: 0 0 0.65rem;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
 }
 
 .blr-locked p {
-  color: rgba(247, 244, 239, 0.78);
+  color: var(--qb-text-muted);
   margin: 0 auto 1rem;
   width: min(620px, 100%);
 }
@@ -115,7 +115,7 @@
 
 .blr-form {
   background: rgba(14, 16, 22, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 16px;
   padding: 0.95rem;
   display: grid;
@@ -127,20 +127,20 @@
 .blr-session h4,
 .blr-turn h4 {
   margin: 0;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
 }
 
 .blr-form label {
   font-size: 0.82rem;
-  color: rgba(247, 244, 239, 0.78);
+  color: var(--qb-text-muted);
 }
 
 .blr-form input {
   width: 100%;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--qb-border);
   background: rgba(8, 9, 13, 0.86);
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   padding: 0.68rem 0.74rem;
   font: inherit;
   min-height: 44px;
@@ -155,7 +155,7 @@
 .blr-players,
 .blr-turn {
   background: rgba(14, 16, 22, 0.83);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 16px;
   padding: 0.9rem;
 }
@@ -171,7 +171,7 @@
 .session-note {
   margin: 0.3rem 0 0;
   font-size: 0.82rem;
-  color: rgba(255, 211, 122, 0.9);
+  color: var(--qb-focus-ring);
 }
 
 .blr-room-grid {
@@ -190,7 +190,7 @@
 
 .blr-player {
   border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--qb-border-subtle);
   background: rgba(8, 9, 13, 0.72);
   padding: 0.5rem 0.58rem;
   display: flex;
@@ -209,7 +209,7 @@
 .blr-player .tag {
   margin-left: 0.34rem;
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--qb-text-faint);
 }
 
 .blr-turn-head {
@@ -265,7 +265,7 @@
 .blr-redaction {
   display: inline-block;
   background: #0a0a0a;
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   border-radius: 3px;
   padding: 0.03rem 0.3rem;
   letter-spacing: 0.08em;
@@ -281,13 +281,13 @@
 .blr-mobile-tip {
   margin: 0.45rem 0 0;
   font-size: 0.8rem;
-  color: rgba(255, 211, 122, 0.9);
+  color: var(--qb-focus-ring);
 }
 
 .blr-block {
   margin-top: 0.86rem;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--qb-border-subtle);
   background: rgba(9, 10, 14, 0.64);
   padding: 0.8rem;
 }
@@ -303,7 +303,7 @@
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.17);
   background: rgba(16, 17, 24, 0.92);
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   padding: 0.48rem 0.55rem;
   font-family: "IBM Plex Mono", "Courier New", monospace;
   font-size: 0.82rem;
@@ -315,7 +315,7 @@
 }
 
 .blr-word-btn.is-selected {
-  border-color: rgba(255, 211, 122, 0.88);
+  border-color: var(--qb-focus-ring);
   background: rgba(255, 211, 122, 0.16);
 }
 
@@ -333,9 +333,9 @@
 
 .blr-guess-fields input {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--qb-border);
   background: rgba(8, 9, 13, 0.9);
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   padding: 0.62rem 0.64rem;
   font: inherit;
   min-height: 44px;
@@ -351,7 +351,7 @@
 
 .blr-solver-list li {
   border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--qb-border-subtle);
   background: rgba(8, 9, 13, 0.7);
   padding: 0.5rem 0.58rem;
   display: flex;
@@ -362,7 +362,7 @@
 .blr-reveal {
   margin-top: 0.9rem;
   border-radius: 14px;
-  border: 1px solid rgba(255, 211, 122, 0.3);
+  border: 1px solid var(--qb-focus-ring-soft);
   background: rgba(255, 211, 122, 0.1);
   padding: 0.82rem;
 }
@@ -375,7 +375,7 @@
 }
 
 .btn {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
   border-radius: 999px;
   padding: 0.62rem 1.1rem;
   font-size: 0.84rem;
@@ -403,27 +403,27 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 .btn-ghost {
   background: transparent;
-  color: #f2eee7;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #ff8a63, #ef4f64);
-  color: #fff4ef;
-  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(135deg, var(--qb-danger), var(--qb-danger-2));
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.16rem;
   font-size: 0.66rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--qb-text-faint);
 }
 
 @media (max-width: 980px) {
@@ -509,7 +509,7 @@
     bottom: calc(0.42rem + env(safe-area-inset-bottom));
     z-index: 7;
     background: rgba(9, 10, 14, 0.93);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--qb-border-subtle);
     border-radius: 14px;
     padding: 0.5rem;
     backdrop-filter: blur(6px);

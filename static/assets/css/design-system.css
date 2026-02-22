@@ -1,0 +1,334 @@
+/* Shared design language applied after page-specific styles. */
+
+:where(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--qb-font-display) !important;
+  color: var(--qb-text-primary);
+  letter-spacing: -0.01em;
+}
+
+:where(
+    body,
+    [class$="-page"],
+    [class*="-page "],
+    .social-shell,
+    .social-post-shell,
+    .qa-shell,
+    .blr-shell,
+    .wsi-shell
+  ) {
+  font-family: var(--qb-font-body) !important;
+}
+
+:where(p, li, label, input, textarea, select, button) {
+  font-family: var(--qb-font-body) !important;
+  color: inherit;
+}
+
+:where([class$="-page"], [class*="-page "], .social-shell, .social-post-shell) {
+  color: var(--qb-text-primary);
+}
+
+:where(
+    .card,
+    .offline-card,
+    .panel,
+    .social-panel,
+    .profile-card,
+    .post-card,
+    .post-detail-card,
+    .engagement-panel,
+    .quote-card,
+    .result-card,
+    .stat-card,
+    .mailbox-card,
+    .monetize-card,
+    .support-panel,
+    .ads-panel,
+    .game-card,
+    .ai-card,
+    .privacy-card,
+    .credits-card,
+    .edit-card,
+    .add-quote-card,
+    .screenplay-card,
+    .diag-card,
+    .blr-panel,
+    .qa-panel,
+    .wsi-panel,
+    .day-card
+  ) {
+  background: var(--qb-surface) !important;
+  border: 1px solid var(--qb-border-subtle) !important;
+  box-shadow: var(--qb-shadow-card) !important;
+  color: var(--qb-text-primary);
+  backdrop-filter: blur(8px);
+}
+
+:where(.muted, .lead, .panel-note, .stat-label, .eyebrow, .footer-disclosure) {
+  color: var(--qb-text-muted) !important;
+}
+
+:where(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select
+  ) {
+  border-radius: 14px !important;
+  border: 1px solid var(--qb-border) !important;
+  background: var(--qb-surface-soft) !important;
+  color: var(--qb-text-primary) !important;
+}
+
+:where(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select
+  ):focus {
+  outline: none;
+  border-color: var(--qb-focus-ring) !important;
+  box-shadow: 0 0 0 3px var(--qb-focus-ring-soft) !important;
+}
+
+:where(.btn, .btn-primary, .btn-ghost, .btn-danger) {
+  border-radius: 999px !important;
+  font-family: var(--qb-font-body) !important;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--qb-accent),
+    var(--qb-accent-2)
+  ) !important;
+  color: var(--qb-accent-contrast) !important;
+  box-shadow: var(--qb-shadow-button) !important;
+}
+
+.btn-ghost {
+  background: var(--qb-surface-soft) !important;
+  color: var(--qb-text-primary) !important;
+  border-color: var(--qb-border) !important;
+}
+
+.btn-danger {
+  background: linear-gradient(
+    135deg,
+    var(--qb-danger),
+    var(--qb-danger-2)
+  ) !important;
+  color: var(--qb-accent-contrast) !important;
+  border-color: var(--qb-border) !important;
+}
+
+:where(a) {
+  color: var(--qb-link);
+  text-decoration-color: color-mix(in srgb, var(--qb-link) 55%, transparent);
+}
+
+:where(a:hover) {
+  color: var(--qb-link-hover);
+}
+
+:where(
+    body,
+    .games-page,
+    .qa-page,
+    .blr-page,
+    .wsi-page,
+    .social-shell,
+    .social-post-shell
+  ) {
+  background:
+    radial-gradient(circle at 8% -8%, var(--qb-bg-1), transparent 36%),
+    radial-gradient(circle at 92% -14%, var(--qb-bg-2), transparent 38%),
+    var(--qb-bg-0) !important;
+}
+
+:where(
+    .games-hero,
+    .qa-hero,
+    .wsi-hero,
+    .blr-hero,
+    .social-topbar,
+    .social-search,
+    .qa-shell,
+    .wsi-shell,
+    .blr-shell,
+    .game-card-blackline,
+    .game-card-who-said
+  ) {
+  background: var(--qb-surface) !important;
+  border: 1px solid var(--qb-border-subtle) !important;
+  box-shadow: var(--qb-shadow-card) !important;
+}
+
+:root[data-theme="light"]
+  :where(
+    .qa-shell,
+    .qa-panel,
+    .qa-mode-switch,
+    .mode-btn,
+    .qa-form,
+    .qa-session-top,
+    .qa-players,
+    .qa-round,
+    .qa-result,
+    .qa-reveal,
+    .qa-player-item,
+    .qa-black-card,
+    .qa-card,
+    .blr-shell,
+    .blr-panel,
+    .blr-form,
+    .blr-session-top,
+    .blr-players,
+    .blr-turn,
+    .blr-player,
+    .blr-pdf-card,
+    .blr-word-btn,
+    .blr-solver-list li,
+    .blr-reveal,
+    .blr-block,
+    .wsi-shell,
+    .wsi-panel,
+    .wsi-form,
+    .wsi-session-top,
+    .wsi-players,
+    .wsi-turn,
+    .wsi-player,
+    .wsi-quote-card,
+    .wsi-option-btn,
+    .wsi-turn-board li,
+    .wsi-reveal,
+    .wsi-block
+  ) {
+  background: var(--qb-surface) !important;
+  border-color: var(--qb-border-subtle) !important;
+  color: var(--qb-text-primary) !important;
+  box-shadow: var(--qb-shadow-card) !important;
+}
+
+:root[data-theme="light"] :where(.qa-page, .blr-page, .wsi-page) .btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--qb-accent),
+    var(--qb-accent-2)
+  ) !important;
+  color: var(--qb-accent-contrast) !important;
+}
+
+:root[data-theme="light"]
+  :where(
+    .qa-page .muted,
+    .blr-page .muted,
+    .wsi-page .muted,
+    .qa-page .session-note,
+    .blr-page .session-note,
+    .wsi-page .session-note,
+    .wsi-page .wsi-turn-hint,
+    .qa-page .qa-card .meta,
+    .wsi-page .wsi-tag,
+    .blr-page .blr-stamp
+  ) {
+  color: var(--qb-text-muted) !important;
+}
+
+:where(
+    .pill,
+    .brand-kicker,
+    .search-note,
+    .profile-kicker,
+    .panel-note
+  ) {
+  color: var(--qb-text-muted) !important;
+  border-color: var(--qb-border) !important;
+}
+
+:where(.nav-item, .topic-chip, .reaction-button, .pager .btn) {
+  border-color: var(--qb-border-subtle) !important;
+  background: var(--qb-surface-soft) !important;
+}
+
+:where(.nav-item:hover, .topic-chip:hover, .reaction-button:hover, .pager .btn:hover) {
+  border-color: var(--qb-focus-ring) !important;
+  background: color-mix(in srgb, var(--qb-accent) 18%, transparent) !important;
+}
+
+:root[data-theme="light"] :where(.nav-item img) {
+  filter: saturate(1.05) brightness(0.86) !important;
+  opacity: 0.88;
+}
+
+:root[data-theme="dark"] :where(.nav-item img) {
+  filter: brightness(1.1) saturate(0) invert(0.95) sepia(0.38) hue-rotate(-18deg)
+    !important;
+  opacity: 0.9;
+}
+
+.theme-switcher {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.9rem;
+}
+
+.theme-toggle {
+  border: 1px solid var(--qb-border);
+  background: var(--qb-surface-soft);
+  color: var(--qb-text-primary);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: var(--qb-focus-ring);
+  box-shadow: var(--qb-shadow-button);
+}
+
+.theme-toggle-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--qb-accent) 35%, transparent);
+}
+
+.theme-toggle-copy {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.theme-toggle-copy strong {
+  font-size: 0.82rem;
+}
+
+.theme-toggle-copy span {
+  color: var(--qb-text-muted);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 720px) {
+  .theme-switcher {
+    justify-content: flex-start;
+  }
+
+  .theme-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+}

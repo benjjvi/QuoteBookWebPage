@@ -4,8 +4,8 @@
   grid-column: 1 / -1;
   display: grid;
   gap: 1.75rem;
-  color: #f7f4ef;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: var(--qb-text-primary);
+  font-family: var(--qb-font-body);
   padding-bottom: 2.3rem;
   width: 100%;
   max-width: 100%;
@@ -35,11 +35,11 @@
   background:
     linear-gradient(
       135deg,
-      rgba(255, 211, 122, 0.09),
+      var(--qb-focus-ring-soft),
       rgba(255, 154, 98, 0.04)
     ),
-    rgba(14, 16, 22, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+    var(--qb-surface);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 28px;
   padding: 2.35rem;
   display: flex;
@@ -51,13 +51,13 @@
 
 .qa-hero h1 {
   margin: 0.2rem 0 0.6rem;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(2rem, 3.2vw, 2.9rem);
 }
 
 .qa-hero .lead {
   margin: 0;
-  color: rgba(247, 244, 239, 0.72);
+  color: var(--qb-text-muted);
 }
 
 .qa-hero-meta {
@@ -71,7 +71,7 @@
   border-radius: 999px;
   padding: 0.38rem 0.78rem;
   font-size: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--qb-border);
   color: rgba(255, 255, 255, 0.82);
 }
 
@@ -93,7 +93,7 @@
     linear-gradient(rgba(9, 10, 13, 0.86), rgba(9, 10, 13, 0.93)),
     url("/static/assets/quote-anarchy/table-bg.svg") center / cover no-repeat;
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--qb-border-subtle);
   box-shadow: 0 26px 70px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   backdrop-filter: blur(1px);
@@ -109,14 +109,14 @@
 }
 
 .qa-locked h2 {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   margin: 0 0 0.7rem;
 }
 
 .qa-locked p {
   margin: 0 auto 1.2rem;
   width: min(620px, 100%);
-  color: rgba(247, 244, 239, 0.76);
+  color: var(--qb-text-muted);
 }
 
 .qa-main {
@@ -127,7 +127,7 @@
 .qa-mode-switch {
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--qb-border);
   border-radius: 999px;
   background: rgba(11, 12, 16, 0.72);
   padding: 0.24rem;
@@ -137,7 +137,7 @@
 .mode-btn {
   border: 0;
   background: transparent;
-  color: rgba(247, 244, 239, 0.72);
+  color: var(--qb-text-muted);
   border-radius: 999px;
   padding: 0.58rem 0.8rem;
   cursor: pointer;
@@ -146,8 +146,8 @@
 }
 
 .mode-btn.is-active {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 .qa-grid {
@@ -159,7 +159,7 @@
 
 .qa-stack-card {
   background: rgba(15, 16, 22, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 18px;
   padding: 1rem;
   display: grid;
@@ -174,7 +174,7 @@
 
 .qa-stack-card p {
   margin: 0;
-  color: rgba(247, 244, 239, 0.68);
+  color: var(--qb-text-muted);
   font-size: 0.86rem;
 }
 
@@ -186,11 +186,11 @@
 .qa-black-card {
   border-radius: 18px;
   background: #0f1218;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #f7f4ef;
+  border: 1px solid var(--qb-border-subtle);
+  color: var(--qb-text-primary);
   padding: 1.42rem;
   min-height: 136px;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(1rem, 2.1vw, 1.35rem);
   line-height: 1.4;
   white-space: pre-line;
@@ -207,14 +207,14 @@
 .qa-mobile-tip {
   margin: 0.25rem 0 0;
   font-size: 0.82rem;
-  color: rgba(255, 211, 122, 0.9);
+  color: var(--qb-focus-ring);
 }
 
 .qa-hand-section {
   margin-top: 0.3rem;
   padding: 1.05rem;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--qb-border-subtle);
   background: rgba(11, 12, 18, 0.58);
 }
 
@@ -225,7 +225,7 @@
 .qa-session h4,
 .qa-round h4 {
   margin: 0 0 0.55rem;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
 }
 
 .qa-hand {
@@ -239,7 +239,7 @@
   border-radius: 16px;
   border: 1px solid rgba(12, 14, 18, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0))
+    linear-gradient(180deg, var(--qb-text-muted), rgba(255, 255, 255, 0))
       top / 100% 32px no-repeat,
     linear-gradient(180deg, #faf8f3 0%, #f0ece3 100%);
   color: #121212;
@@ -274,12 +274,12 @@
   transform: translateY(-3px);
   box-shadow:
     0 16px 28px rgba(0, 0, 0, 0.24),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+    inset 0 0 0 1px var(--qb-text-faint);
   border-color: rgba(255, 154, 98, 0.75);
 }
 
 .qa-card.is-selected {
-  border-color: #ff9a62;
+  border-color: var(--qb-accent-2);
   box-shadow:
     0 0 0 2px rgba(255, 154, 98, 0.45),
     0 14px 24px rgba(0, 0, 0, 0.25);
@@ -291,7 +291,7 @@
 
 .qa-card .quote {
   margin: 0;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: 1.02rem;
   line-height: 1.42;
   overflow-wrap: anywhere;
@@ -317,7 +317,7 @@
 
 .qa-result {
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--qb-border-subtle);
   background: rgba(13, 15, 21, 0.8);
   padding: 1.2rem;
 }
@@ -344,7 +344,7 @@
 
 .qa-form {
   background: rgba(14, 16, 22, 0.84);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 16px;
   padding: 1.2rem;
   display: grid;
@@ -353,15 +353,15 @@
 
 .qa-form label {
   font-size: 0.86rem;
-  color: rgba(247, 244, 239, 0.78);
+  color: var(--qb-text-muted);
 }
 
 .qa-form input {
   width: 100%;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--qb-border);
   background: rgba(8, 9, 13, 0.86);
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   padding: 0.68rem 0.74rem;
   font: inherit;
   min-height: 44px;
@@ -371,9 +371,9 @@
 .qa-form select {
   width: 100%;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--qb-border);
   background: rgba(8, 9, 13, 0.86);
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   padding: 0.68rem 0.74rem;
   font: inherit;
   min-height: 44px;
@@ -390,7 +390,7 @@
 .qa-round,
 .qa-session-top {
   background: rgba(14, 16, 22, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 16px;
   padding: 1.1rem;
 }
@@ -406,7 +406,7 @@
 .session-note {
   margin: 0.3rem 0 0;
   font-size: 0.82rem;
-  color: rgba(255, 211, 122, 0.88);
+  color: var(--qb-focus-ring);
 }
 
 .qa-players ul {
@@ -419,7 +419,7 @@
 
 .qa-player-item {
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--qb-border-subtle);
   background: rgba(8, 9, 13, 0.7);
   padding: 0.52rem 0.6rem;
   display: flex;
@@ -451,14 +451,14 @@
 
 .qa-player-item .tag {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--qb-text-faint);
 }
 
 .qa-reveal {
   margin-top: 1rem;
   border-radius: 14px;
-  border: 1px solid rgba(255, 211, 122, 0.3);
-  background: rgba(255, 211, 122, 0.09);
+  border: 1px solid var(--qb-focus-ring-soft);
+  background: var(--qb-focus-ring-soft);
   padding: 1.12rem;
 }
 
@@ -468,7 +468,7 @@
 }
 
 .btn {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
   border-radius: 999px;
   padding: 0.64rem 1.2rem;
   font-size: 0.87rem;
@@ -493,24 +493,24 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 .btn-ghost {
   background: transparent;
-  color: #f2eee7;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #ff8a63, #ef4f64);
-  color: #fff4ef;
-  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(135deg, var(--qb-danger), var(--qb-danger-2));
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .muted {
-  color: rgba(247, 244, 239, 0.68);
+  color: var(--qb-text-muted);
 }
 
 @media (max-width: 960px) {
@@ -665,7 +665,7 @@
     bottom: calc(0.45rem + env(safe-area-inset-bottom));
     z-index: 7;
     background: rgba(9, 10, 14, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--qb-border-subtle);
     border-radius: 14px;
     padding: 0.54rem;
     backdrop-filter: blur(6px);

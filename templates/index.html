@@ -10,6 +10,16 @@
 {% endblock %}
 
 {% block content %}
+<div class="theme-switcher">
+  <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">
+    <span class="theme-toggle-dot" aria-hidden="true"></span>
+    <span class="theme-toggle-copy">
+      <strong data-theme-toggle-state>Light mode</strong>
+      <span data-theme-toggle-source>System</span>
+    </span>
+  </button>
+</div>
+
 <section class="index-grid">
   <div class="index-column index-column-main">
     <div class="card card-intro">

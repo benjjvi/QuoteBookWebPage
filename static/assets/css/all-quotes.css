@@ -1,19 +1,19 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
 .all-quotes-page {
-  --surface: rgba(15, 15, 18, 0.9);
-  --surface-soft: rgba(255, 255, 255, 0.04);
-  --surface-outline: rgba(255, 255, 255, 0.1);
-  --text-main: #f7f4ef;
-  --text-muted: rgba(255, 255, 255, 0.7);
-  --accent: #ffd37a;
+  --surface: var(--qb-surface);
+  --surface-soft: var(--qb-surface-soft);
+  --surface-outline: var(--qb-border-subtle);
+  --text-main: var(--qb-text-primary);
+  --text-muted: var(--qb-text-muted);
+  --accent: var(--qb-accent);
 
   grid-column: 1 / -1;
   display: grid;
   gap: clamp(1rem, 2.6vw, 2rem);
   padding-bottom: 1.5rem;
   color: var(--text-main);
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
 }
 
 .page-header {
@@ -27,7 +27,7 @@
   background:
     radial-gradient(
       circle at 88% 14%,
-      rgba(255, 211, 122, 0.08),
+      var(--qb-focus-ring-soft),
       transparent 35%
     ),
     var(--surface);
@@ -38,7 +38,7 @@
 }
 
 .page-header h1 {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(2rem, 3vw, 2.8rem);
   margin: 0 0 0.4rem 0;
 }
@@ -47,7 +47,7 @@
   text-transform: uppercase;
   letter-spacing: 0.2rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--qb-text-faint);
   display: inline-block;
   margin-bottom: 0.8rem;
 }
@@ -68,8 +68,8 @@
   gap: 1rem;
   padding: 1rem 1.1rem;
   border-radius: 22px;
-  background: rgba(10, 10, 14, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--qb-surface);
+  border: 1px solid var(--qb-border-subtle);
 }
 
 .filter-form {
@@ -92,7 +92,7 @@
 .filter-form label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--qb-text-primary);
 }
 
 .select-wrap {
@@ -105,8 +105,8 @@
   padding: 0.8rem 2.5rem 0.8rem 1rem;
   border-radius: 16px;
   background: var(--surface-soft);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--qb-text-primary);
+  border: 1px solid var(--qb-border);
   font-family: inherit;
   font-size: 0.95rem;
   line-height: 1.2;
@@ -123,7 +123,7 @@
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--qb-text-faint);
 }
 
 .filter-pill {
@@ -132,11 +132,11 @@
   gap: 0.5rem;
   justify-content: center;
   padding: 0.62rem 1rem;
-  background: rgba(255, 211, 122, 0.12);
+  background: var(--qb-focus-ring-soft);
   border-radius: 999px;
-  border: 1px solid rgba(255, 211, 122, 0.3);
+  border: 1px solid var(--qb-focus-ring-soft);
   font-size: 0.9rem;
-  color: rgba(255, 247, 231, 0.94);
+  color: var(--qb-text-primary);
 }
 
 .pill-clear {
@@ -154,8 +154,8 @@
 }
 
 .quote-card {
-  background: rgba(15, 15, 18, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--qb-surface);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 22px;
   padding: 1.35rem;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
@@ -174,9 +174,9 @@
 }
 
 .quote-text {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(1.06rem, 1.2vw, 1.2rem);
-  color: #fef7ea;
+  color: var(--qb-text-primary);
   line-height: 1.4;
   margin: 0;
 }
@@ -187,12 +187,12 @@
   align-items: center;
   gap: 0.35rem 0.5rem;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--qb-text-muted);
 }
 
 .quote-author {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--qb-text-primary);
 }
 
 .dot {
@@ -203,28 +203,28 @@
   margin: 0;
   padding: 0.8rem 1rem;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.75);
+  background: var(--qb-surface-soft);
+  color: var(--qb-text-muted);
   font-size: 0.9rem;
 }
 
 .empty-state {
-  background: rgba(15, 15, 18, 0.88);
+  background: var(--qb-surface);
   border-radius: 20px;
   padding: 2rem;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1px dashed var(--qb-border);
   text-align: center;
   width: min(100%, 940px);
   margin: 0 auto;
 }
 
 .empty-state h2 {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   margin-bottom: 0.5rem;
 }
 
 .btn {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
   border-radius: 999px;
   padding: 0.65rem 1.4rem;
   font-size: 0.9rem;
@@ -245,8 +245,8 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 .quote-card .btn-primary {
@@ -256,8 +256,8 @@
 
 .btn-ghost {
   background: transparent;
-  color: #f2eee7;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .pagination {
@@ -272,7 +272,7 @@
 }
 
 .page-jump {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--qb-text-muted);
 }
 
 .page-jump label {
@@ -284,11 +284,11 @@
 .page-input {
   width: 4rem;
   margin: 0 0.35rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--qb-border-subtle);
+  border: 1px solid var(--qb-border);
   border-radius: 10px;
   padding: 0.3rem 0.5rem;
-  color: #fff;
+  color: var(--qb-text-primary);
   text-align: center;
 }
 

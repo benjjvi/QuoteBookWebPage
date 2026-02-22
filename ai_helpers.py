@@ -103,6 +103,7 @@ class AI:
                 logger.warning("AI screenplay cache is invalid; regenerating cache.")
 
         # --- Step 3: regenerate cache ---
+        ai_response = None
         try:
             logger.info("Generating new AI screenplay.")
             ai_response = self.generate_screenplay(top_20)
@@ -121,6 +122,8 @@ class AI:
                     raise FileNotFoundError(
                         "Can not lock cache file, and cannot generate new AI response."
                     )  # corrupted cache → cannot use
+            ai_response = self.build_fallback_screenplay(top_20)
+            logger.info("Using local fallback screenplay because AI generation failed.")
 
         # --- Step 4: save ---
         cache_payload = {
@@ -134,6 +137,30 @@ class AI:
         ai_response = ai_response.replace("â", "'")
 
         return ai_response
+
+    def build_fallback_screenplay(self, top_20):
+        quotes = (top_20 or {}).get("data", {}).get("top_20", [])[:8]
+        if not quotes:
+            return (
+                "INT. OFFICE - DAY\n\n"
+                "NARRATOR\n"
+                "The room is suspiciously quiet. No quotes were available.\n"
+            )
+
+        lines = ["INT. BREAK ROOM - DAY", ""]
+        for item in quotes:
+            authors = item.get("authors") or ["Unknown"]
+            author_line = ", ".join(str(author).strip() for author in authors if str(author).strip())
+            quote_line = str(item.get("quote") or "").strip() or "(silence)"
+            lines.append(author_line.upper() or "UNKNOWN")
+            lines.append(quote_line)
+            lines.append("")
+
+        lines.append("NARRATOR")
+        lines.append(
+            "Fallback screenplay generated while the AI provider was unavailable."
+        )
+        return "\n".join(lines)
 
     def generate_screenplay(self, quotes):
         if not self.can_generate:

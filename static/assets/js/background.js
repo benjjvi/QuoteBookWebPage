@@ -10,6 +10,8 @@
   let particles = [];
   const PARTICLE_COUNT = 200;
   const MAX_DISTANCE = 120;
+  let particleFill = "rgba(255, 255, 255, 0.7)";
+  let particleLineRgb = "255, 255, 255";
 
   function getDocumentHeight() {
     const body = document.body;
@@ -33,6 +35,17 @@
   window.addEventListener("resize", resize);
   resize();
 
+  const resolveThemeColors = () => {
+    const styles = getComputedStyle(document.documentElement);
+    const fill = styles.getPropertyValue("--qb-particle-fill").trim();
+    const rgb = styles.getPropertyValue("--qb-particle-rgb").trim();
+    particleFill = fill || "rgba(255, 255, 255, 0.7)";
+    particleLineRgb = rgb || "255, 255, 255";
+  };
+
+  resolveThemeColors();
+  document.addEventListener("qb-theme-change", resolveThemeColors);
+
   class Particle {
     constructor() {
       this.x = Math.random() * width;
@@ -53,7 +66,7 @@
     draw() {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.fillStyle = particleFill;
       ctx.fill();
     }
   }
@@ -73,7 +86,7 @@
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < MAX_DISTANCE) {
-          ctx.strokeStyle = `rgba(255, 255, 255, ${
+          ctx.strokeStyle = `rgba(${particleLineRgb}, ${
             1 - distance / MAX_DISTANCE
           })`;
           ctx.lineWidth = 0.5;

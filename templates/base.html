@@ -13,8 +13,8 @@
     <meta name="author" content="benjjvi" />
 
     <!-- Theme color (mobile UI) -->
-    <meta name="theme-color" content="#0f0f0f" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#eef8ff" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="application-name" content="Quote Book" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -97,6 +97,27 @@
 
     <title>{% block title %}Quote Book{% endblock %}</title>
 
+    <script>
+      (() => {
+        const key = "qb_theme_preference";
+        const isValid = (value) => value === "light" || value === "dark";
+        let stored = null;
+
+        try {
+          stored = localStorage.getItem(key);
+        } catch (_err) {
+          stored = null;
+        }
+
+        const prefersDark =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = isValid(stored) ? stored : prefersDark ? "dark" : "light";
+
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+
     <!-- Base CSS -->
     <link
       rel="stylesheet"
@@ -107,6 +128,10 @@
       href="/static/assets/css/footer.css"
     />
     {% block extra_css %}{% endblock %}
+    <link
+      rel="stylesheet"
+      href="/static/assets/css/design-system.css"
+    />
   </head>
 
   <body>
@@ -137,6 +162,7 @@
     </div>
 
     {% include "footer.html" %}
+    <script src="/static/assets/js/theme.js"></script>
     <script src="/static/assets/js/background.js"></script>
     <script src="/static/assets/js/pwa-sync.js"></script>
     <script>

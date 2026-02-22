@@ -5,16 +5,16 @@
   display: flex;
   justify-content: center;
   padding: 2rem 0 3rem;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
-  color: #f7f4ef;
+  font-family: var(--qb-font-body);
+  color: var(--qb-text-primary);
 }
 
 .ai-card {
   width: min(640px, 100%);
-  background: rgba(15, 15, 18, 0.9);
+  background: var(--qb-surface);
   border-radius: 26px;
   padding: 2.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--qb-border-subtle);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
   position: relative;
   overflow: hidden;
@@ -44,7 +44,7 @@
 }
 
 .ai-header h1 {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(2rem, 3vw, 2.8rem);
   margin: 0 0 0.6rem 0;
 }
@@ -53,20 +53,20 @@
   text-transform: uppercase;
   letter-spacing: 0.2rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--qb-text-faint);
   display: inline-block;
   margin-bottom: 0.8rem;
 }
 
 .lead {
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--qb-text-muted);
   max-width: 60ch;
   margin: 0;
 }
 
 .btn {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
   border-radius: 999px;
   padding: 0.65rem 1.4rem;
   font-size: 0.9rem;
@@ -89,13 +89,13 @@
 
 .btn-ghost {
   background: transparent;
-  color: #f2eee7;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 .ai-loader {
@@ -109,19 +109,19 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  border: 6px solid rgba(255, 255, 255, 0.12);
-  border-top-color: #ffd37a;
+  border: 6px solid var(--qb-border);
+  border-top-color: var(--qb-accent);
   animation: spin 1s linear infinite;
 }
 
 .status {
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--qb-text-muted);
   margin: 0;
 }
 
 .status.error {
-  color: #ff9a62;
+  color: var(--qb-accent-2);
 }
 
 @keyframes spin {

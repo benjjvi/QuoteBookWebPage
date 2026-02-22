@@ -1,3 +1,121 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --qb-font-body: "Space Grotesk", "Segoe UI", sans-serif;
+  --qb-font-display: "Fraunces", "Georgia", serif;
+
+  --qb-theme-color: #eef8ff;
+  --qb-bg-0: #edf8ff;
+  --qb-bg-1: rgba(99, 133, 255, 0.28);
+  --qb-bg-2: rgba(33, 205, 221, 0.24);
+  --qb-bg-canvas: #d5eaff;
+
+  --qb-text-primary: #11263f;
+  --qb-text-muted: rgba(33, 71, 112, 0.74);
+  --qb-text-faint: rgba(33, 71, 112, 0.55);
+
+  --qb-link: #365de6;
+  --qb-link-hover: #2242b4;
+
+  --qb-surface: rgba(245, 251, 255, 0.88);
+  --qb-surface-strong: rgba(232, 244, 255, 0.97);
+  --qb-surface-soft: rgba(56, 112, 192, 0.08);
+
+  --qb-border-subtle: rgba(56, 112, 192, 0.2);
+  --qb-border: rgba(56, 112, 192, 0.28);
+  --qb-border-strong: rgba(56, 112, 192, 0.42);
+
+  --qb-accent: #4f70ff;
+  --qb-accent-2: #1bc8d7;
+  --qb-accent-contrast: #f4fbff;
+
+  --qb-danger: #6e50ff;
+  --qb-danger-2: #3db5de;
+
+  --qb-focus-ring: #2cb6cc;
+  --qb-focus-ring-soft: rgba(44, 182, 204, 0.24);
+
+  --qb-shadow-card: 0 18px 52px rgba(27, 64, 108, 0.22);
+  --qb-shadow-button: 0 10px 24px rgba(27, 64, 108, 0.2);
+  --qb-shadow-footer: 0 -16px 34px rgba(27, 64, 108, 0.18);
+
+  --qb-particle-fill: rgba(39, 78, 136, 0.5);
+  --qb-particle-rgb: 39, 78, 136;
+}
+
+:root[data-theme="dark"] {
+  --qb-theme-color: #21140d;
+  --qb-bg-0: #140e09;
+  --qb-bg-1: rgba(255, 165, 80, 0.2);
+  --qb-bg-2: rgba(255, 99, 60, 0.2);
+  --qb-bg-canvas: #1b120d;
+
+  --qb-text-primary: #fff1e2;
+  --qb-text-muted: rgba(255, 212, 176, 0.74);
+  --qb-text-faint: rgba(255, 212, 176, 0.56);
+
+  --qb-link: #ffbb57;
+  --qb-link-hover: #ffd47f;
+
+  --qb-surface: rgba(27, 17, 12, 0.88);
+  --qb-surface-strong: rgba(31, 19, 13, 0.97);
+  --qb-surface-soft: rgba(255, 201, 145, 0.08);
+
+  --qb-border-subtle: rgba(255, 207, 165, 0.2);
+  --qb-border: rgba(255, 207, 165, 0.3);
+  --qb-border-strong: rgba(255, 207, 165, 0.44);
+
+  --qb-accent: #ffbf53;
+  --qb-accent-2: #ff6f3f;
+  --qb-accent-contrast: #261209;
+
+  --qb-danger: #ff8e52;
+  --qb-danger-2: #f44a3d;
+
+  --qb-focus-ring: #ffbf53;
+  --qb-focus-ring-soft: rgba(255, 191, 83, 0.24);
+
+  --qb-shadow-card: 0 18px 52px rgba(0, 0, 0, 0.45);
+  --qb-shadow-button: 0 10px 24px rgba(0, 0, 0, 0.35);
+  --qb-shadow-footer: 0 -18px 36px rgba(0, 0, 0, 0.42);
+
+  --qb-particle-fill: rgba(255, 223, 182, 0.58);
+  --qb-particle-rgb: 255, 223, 182;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --qb-theme-color: #21140d;
+    --qb-bg-0: #140e09;
+    --qb-bg-1: rgba(255, 165, 80, 0.2);
+    --qb-bg-2: rgba(255, 99, 60, 0.2);
+    --qb-bg-canvas: #1b120d;
+    --qb-text-primary: #fff1e2;
+    --qb-text-muted: rgba(255, 212, 176, 0.74);
+    --qb-text-faint: rgba(255, 212, 176, 0.56);
+    --qb-link: #ffbb57;
+    --qb-link-hover: #ffd47f;
+    --qb-surface: rgba(27, 17, 12, 0.88);
+    --qb-surface-strong: rgba(31, 19, 13, 0.97);
+    --qb-surface-soft: rgba(255, 201, 145, 0.08);
+    --qb-border-subtle: rgba(255, 207, 165, 0.2);
+    --qb-border: rgba(255, 207, 165, 0.3);
+    --qb-border-strong: rgba(255, 207, 165, 0.44);
+    --qb-accent: #ffbf53;
+    --qb-accent-2: #ff6f3f;
+    --qb-accent-contrast: #261209;
+    --qb-danger: #ff8e52;
+    --qb-danger-2: #f44a3d;
+    --qb-focus-ring: #ffbf53;
+    --qb-focus-ring-soft: rgba(255, 191, 83, 0.24);
+    --qb-shadow-card: 0 18px 52px rgba(0, 0, 0, 0.45);
+    --qb-shadow-button: 0 10px 24px rgba(0, 0, 0, 0.35);
+    --qb-shadow-footer: 0 -18px 36px rgba(0, 0, 0, 0.42);
+    --qb-particle-fill: rgba(255, 223, 182, 0.58);
+    --qb-particle-rgb: 255, 223, 182;
+  }
+}
+
 /* =========================
    CSS RESET / BASELINE
    ========================= */
@@ -11,7 +129,7 @@
 html {
   font-size: 16px;
   line-height: 1.5;
-  background: #0f0f0f;
+  background: var(--qb-bg-0);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -19,22 +137,20 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
-  background: transparent;
-  color: #111;
+  font-family: var(--qb-font-body);
+  background:
+    radial-gradient(circle at 8% -8%, var(--qb-bg-1), transparent 36%),
+    radial-gradient(circle at 92% -14%, var(--qb-bg-2), transparent 38%),
+    var(--qb-bg-0);
+  color: var(--qb-text-primary);
   position: relative;
   min-height: 100%;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -46,12 +162,6 @@ body {
   }
 }
 
-html,
-body {
-  min-height: 100%;
-  margin: 0;
-}
-
 /* =========================
    LAYOUT
    ========================= */
@@ -59,7 +169,7 @@ body {
 .site-wrapper {
   min-height: 100vh;
   padding: 2rem 1.5rem;
-  max-width: 900px;
+  max-width: 1120px;
   margin: 0 auto;
 }
 
@@ -81,7 +191,7 @@ p {
 }
 
 small {
-  color: #555;
+  color: var(--qb-text-faint);
 }
 
 /* =========================
@@ -89,13 +199,13 @@ small {
    ========================= */
 
 a {
-  color: inherit;
+  color: var(--qb-link);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 a:hover {
-  opacity: 0.8;
+  color: var(--qb-link-hover);
 }
 
 /* =========================
@@ -107,7 +217,7 @@ a:hover {
 }
 
 .muted {
-  color: #666;
+  color: var(--qb-text-muted);
 }
 
 .spacer {
@@ -129,12 +239,12 @@ body.is-offline .offline-hide {
 .offline-card {
   width: min(720px, 100%);
   margin: 0 auto;
-  background: rgba(15, 15, 18, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--qb-surface);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 24px;
   padding: 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  color: #f7f4ef;
+  box-shadow: var(--qb-shadow-card);
+  color: var(--qb-text-primary);
 }
 
 .offline-card h1 {
@@ -146,7 +256,7 @@ body.is-offline .offline-hide {
    ========================= */
 
 :focus-visible {
-  outline: 2px solid #ffd37a;
+  outline: 2px solid var(--qb-focus-ring);
   outline-offset: 2px;
 }
 
@@ -155,14 +265,13 @@ body.is-offline .offline-hide {
    ========================= */
 
 #bg-canvas {
-  position: absolute; /* cover full document height */
-  inset: 0; /* top/right/bottom/left = 0 */
-  z-index: 0; /* behind content but above page background */
-  background-color: #0f0f0f; /* dark base color */
-  pointer-events: none; /* clicks pass through */
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--qb-bg-canvas);
+  pointer-events: none;
 }
 
-/* Make sure content floats above */
 .site-wrapper,
 .site-footer {
   position: relative;
@@ -189,22 +298,22 @@ body.is-offline .offline-hide {
 
 .cookie-content {
   width: min(820px, 100%);
-  background: rgba(12, 12, 14, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--qb-surface-strong);
+  border: 1px solid var(--qb-border-subtle);
   border-radius: 18px;
   padding: 1.2rem 1.5rem;
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--qb-shadow-card);
 }
 
 .cookie-content p {
   margin: 0.35rem 0 0;
-  color: rgba(247, 244, 239, 0.75);
+  color: var(--qb-text-muted);
 }
 
 .cookie-actions {
@@ -230,18 +339,18 @@ body.is-offline .offline-hide {
 
 .cookie-actions .btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--qb-shadow-button);
 }
 
 .cookie-actions .btn-ghost {
-  background: transparent;
-  color: #f2eee7;
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--qb-surface-soft);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .cookie-actions .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 @media (max-width: 640px) {

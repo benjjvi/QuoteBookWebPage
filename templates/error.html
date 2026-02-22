@@ -1,136 +1,22 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Error {{ code }} · Quote Book</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% extends "base.html" %}
 
-    <meta name="description" content="{{ description }}" />
-    <meta name="theme-color" content="#0d0d0d" />
-    <meta name="color-scheme" content="dark" />
+{% block title %}Error {{ code }} · Quote Book{% endblock %}
 
-    <style>
-      /* =========================
-         BASE
-         ========================= */
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/error.css" />
+{% endblock %}
 
-      * {
-        box-sizing: border-box;
-      }
+{% block content %}
+<section class="error-page">
+  <main class="error-card" role="alert" aria-live="assertive">
+    <h1 class="error-code">{{ code }}</h1>
+    <h2 class="error-name">{{ name }}</h2>
+    <p class="error-desc">{{ description }}</p>
 
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
-        color: #f5f5f5;
-        font-family:
-          system-ui,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          sans-serif;
-      }
-
-      /* =========================
-         CARD
-         ========================= */
-
-      .container {
-        max-width: 480px;
-        padding: 2.5rem;
-        background: #151515;
-        border-radius: 16px;
-        text-align: center;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
-      }
-
-      h1 {
-        margin: 0;
-        font-size: 3rem;
-        letter-spacing: 0.08em;
-      }
-
-      h2 {
-        margin: 0.75rem 0 1.5rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-        opacity: 0.85;
-      }
-
-      p {
-        margin: 0 0 2rem;
-        line-height: 1.5;
-        opacity: 0.75;
-      }
-
-      /* =========================
-         ACTIONS
-         ========================= */
-
-      .button-row {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      .btn {
-        display: inline-block;
-        padding: 0.7rem 1.8rem;
-        border-radius: 999px;
-        font-size: 0.95rem;
-        text-decoration: none;
-        transition:
-          transform 0.1s ease,
-          box-shadow 0.1s ease,
-          opacity 0.1s ease;
-      }
-
-      .btn-primary {
-        background: #f5f5f5;
-        color: #111;
-      }
-
-      .btn-secondary {
-        background: #2a2a2a;
-        color: #f5f5f5;
-      }
-
-      .btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-        opacity: 0.95;
-      }
-
-      .btn:active {
-        transform: translateY(0);
-        box-shadow: none;
-      }
-    </style>
-  </head>
-
-  <body>
-    <main class="container">
-      <h1>{{ code }}</h1>
-      <h2>{{ name }}</h2>
-
-      <p>{{ description }}</p>
-
-      <div class="button-row">
-        <a class="btn btn-primary" href="/">
-          Back home
-        </a>
-
-        <a
-          class="btn btn-secondary"
-          href="{{ request.referrer or '/' }}"
-        >
-          Go back
-        </a>
-      </div>
-    </main>
-  </body>
-</html>
+    <div class="error-actions">
+      <a class="btn btn-primary" href="/">Back home</a>
+      <a class="btn btn-ghost" href="{{ request.referrer or '/' }}">Go back</a>
+    </div>
+  </main>
+</section>
+{% endblock %}

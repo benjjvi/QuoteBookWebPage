@@ -7,21 +7,21 @@
 .monetize-card {
   width: min(760px, 100%);
   margin: 0 auto;
-  background: rgba(15, 15, 18, 0.92);
+  background: var(--qb-surface);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--qb-border-subtle);
   padding: 1.8rem;
-  color: #f7f4ef;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.52);
+  color: var(--qb-text-primary);
+  box-shadow: var(--qb-shadow-card);
 }
 
 .monetize-card h1,
 .monetize-card h2 {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
 }
 
 .monetize-card .lead {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--qb-text-muted);
 }
 
 .monetize-card ul {
@@ -41,7 +41,7 @@
   justify-content: center;
   border-radius: 999px;
   padding: 0.65rem 1.3rem;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
@@ -58,12 +58,12 @@
 }
 
 .monetize-card .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 .monetize-card .btn-ghost {
   background: transparent;
-  color: #f2eee7;
-  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border-strong);
 }

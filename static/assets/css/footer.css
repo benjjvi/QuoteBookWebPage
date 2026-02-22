@@ -5,15 +5,15 @@
 .site-footer {
   margin-top: 4rem;
   padding: 2rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--qb-border-subtle);
   font-size: 0.9rem;
-  color: #e0e0e0;
-  background: rgba(8, 8, 10, 0.9);
-  box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.35);
+  color: var(--qb-text-primary);
+  background: color-mix(in srgb, var(--qb-surface-strong) 90%, transparent);
+  box-shadow: var(--qb-shadow-footer);
 }
 
 .footer-inner {
-  max-width: 900px;
+  max-width: 1120px;
   margin: 0 auto;
 }
 
@@ -23,7 +23,7 @@
 
 .footer-disclosure {
   margin: 0.6rem 0 0;
-  color: rgba(224, 224, 224, 0.85);
+  color: var(--qb-text-muted);
   font-size: 0.82rem;
 }
 
@@ -31,8 +31,8 @@
   margin: 1rem auto;
   padding: 0.9rem 1rem;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: var(--qb-surface-soft);
+  border: 1px solid var(--qb-border-subtle);
   max-width: 640px;
 }
 
@@ -41,13 +41,13 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--qb-text-faint);
 }
 
 .monetize-copy {
   margin: 0;
   font-size: 0.86rem;
-  color: rgba(224, 224, 224, 0.9);
+  color: var(--qb-text-muted);
 }
 
 .monetize-slot .adsbygoogle {
@@ -59,22 +59,11 @@
 }
 
 footer {
-  color: #e0e0e0; /* light grey / near-white for readability */
+  color: var(--qb-text-primary);
   font-size: 0.95rem;
   text-align: center;
 }
 
-footer a.plainlink {
-  color: #ffffff; /* links brighter */
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-footer a.plainlink:hover {
-  color: #00ffff; /* cyan hover for style & accessibility */
-  text-decoration: underline;
-}
-
 footer p {
-  opacity: 0.85; /* slightly muted for less glare */
+  opacity: 0.9;
 }

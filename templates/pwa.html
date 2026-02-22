@@ -2,6 +2,10 @@
 
 {% block title %}PWA Diagnostics{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="/static/assets/css/pwa.css" />
+{% endblock %}
+
 {% block content %}
 <section class="pwa-diag">
   <header>
@@ -64,112 +68,6 @@
 
   </div>
 </section>
-
-<style>
-  .pwa-diag {
-    grid-column: 1 / -1;
-    display: grid;
-    gap: 2rem;
-    color: #f7f4ef;
-    font-family: "Space Grotesk", "Segoe UI", sans-serif;
-  }
-
-  .pwa-diag header {
-    background: rgba(15, 15, 18, 0.9);
-    border-radius: 26px;
-    padding: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .pwa-diag h1 {
-    font-family: "Fraunces", "Georgia", serif;
-    font-size: clamp(2rem, 3vw, 2.6rem);
-    margin: 0 0 0.4rem 0;
-  }
-
-  .diag-grid {
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  }
-
-  .diag-card {
-    background: rgba(15, 15, 18, 0.88);
-    border-radius: 22px;
-    padding: 1.6rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
-  }
-
-  .diag-card h2 {
-    font-family: "Fraunces", "Georgia", serif;
-    margin: 0 0 1rem 0;
-    font-size: 1.2rem;
-  }
-
-  .diag-card ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 0.6rem;
-    font-size: 0.95rem;
-    color: rgba(255, 255, 255, 0.75);
-  }
-
-  .diag-card strong {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .cache-details {
-    margin-top: 1rem;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .btn {
-    font-family: "Space Grotesk", "Segoe UI", sans-serif;
-    border-radius: 999px;
-    padding: 0.65rem 1.4rem;
-    font-size: 0.9rem;
-    border: 1px solid transparent;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
-  }
-
-  .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
-  }
-
-  .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #ffd37a, #ff9a62);
-    color: #1b1308;
-  }
-
-  .notify-status {
-    margin: 0.9rem 0 0;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.7);
-  }
-</style>
 
 <script>
   const setText = (id, value) => {

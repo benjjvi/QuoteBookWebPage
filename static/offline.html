@@ -1,65 +1,123 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0f0f0f" />
+    <meta name="theme-color" content="#eef8ff" />
+    <meta name="color-scheme" content="light dark" />
     <title>Quote Book • Offline</title>
+    <script>
+      (() => {
+        const key = "qb_theme_preference";
+        const isValid = (value) => value === "light" || value === "dark";
+        let stored = null;
+        try {
+          stored = localStorage.getItem(key);
+        } catch (_err) {
+          stored = null;
+        }
+        const prefersDark =
+          window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = isValid(stored) ? stored : prefersDark ? "dark" : "light";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <style>
       :root {
-        color-scheme: dark;
+        --qb-font-body: "Space Grotesk", "Segoe UI", sans-serif;
+        --qb-font-display: "Fraunces", "Georgia", serif;
+
+        --qb-bg-0: #edf8ff;
+        --qb-bg-1: rgba(99, 133, 255, 0.28);
+        --qb-bg-2: rgba(33, 205, 221, 0.24);
+        --qb-text-primary: #11263f;
+        --qb-text-muted: rgba(33, 71, 112, 0.74);
+        --qb-surface: rgba(245, 251, 255, 0.9);
+        --qb-border: rgba(56, 112, 192, 0.28);
+        --qb-accent: #4f70ff;
+        --qb-accent-2: #1bc8d7;
+        --qb-accent-contrast: #f4fbff;
+        --qb-shadow-card: 0 18px 52px rgba(27, 64, 108, 0.22);
       }
+
+      :root[data-theme="dark"] {
+        --qb-bg-0: #140e09;
+        --qb-bg-1: rgba(255, 165, 80, 0.2);
+        --qb-bg-2: rgba(255, 99, 60, 0.2);
+        --qb-text-primary: #fff1e2;
+        --qb-text-muted: rgba(255, 212, 176, 0.74);
+        --qb-surface: rgba(27, 17, 12, 0.9);
+        --qb-border: rgba(255, 207, 165, 0.3);
+        --qb-accent: #ffbf53;
+        --qb-accent-2: #ff6f3f;
+        --qb-accent-contrast: #261209;
+        --qb-shadow-card: 0 18px 52px rgba(0, 0, 0, 0.45);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        font-family: "Space Grotesk", "Segoe UI", sans-serif;
-        background: radial-gradient(circle at top, #1a1a22, #0f0f0f 45%, #09090b 100%);
-        color: #f7f4ef;
+        font-family: var(--qb-font-body);
+        background:
+          radial-gradient(circle at 8% -8%, var(--qb-bg-1), transparent 36%),
+          radial-gradient(circle at 92% -14%, var(--qb-bg-2), transparent 38%),
+          var(--qb-bg-0);
+        color: var(--qb-text-primary);
         min-height: 100vh;
         display: grid;
         place-items: center;
         padding: 2rem;
       }
+
       .card {
-        max-width: 520px;
-        background: rgba(15, 15, 18, 0.92);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        max-width: 560px;
+        background: var(--qb-surface);
+        border: 1px solid var(--qb-border);
         border-radius: 24px;
         padding: 2rem;
         text-align: center;
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        box-shadow: var(--qb-shadow-card);
       }
+
       h1 {
-        font-family: "Fraunces", "Georgia", serif;
+        font-family: var(--qb-font-display);
         font-size: 2rem;
-        margin: 0 0 0.8rem 0;
+        margin: 0 0 0.8rem;
       }
+
       p {
-        margin: 0 0 1.4rem 0;
-        color: rgba(255, 255, 255, 0.72);
+        margin: 0 0 1.4rem;
+        color: var(--qb-text-muted);
         line-height: 1.6;
       }
+
       a {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         padding: 0.65rem 1.4rem;
         border-radius: 999px;
-        background: linear-gradient(135deg, #ffd37a, #ff9a62);
-        color: #1b1308;
+        background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+        color: var(--qb-accent-contrast);
         text-decoration: none;
         font-weight: 600;
       }
+
       .status {
-        margin: 0 0 1.2rem 0;
+        margin: 0 0 1.2rem;
         padding: 0.8rem 1rem;
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: color-mix(in srgb, var(--qb-surface) 80%, transparent);
+        border: 1px solid var(--qb-border);
         text-align: left;
         font-size: 0.9rem;
       }
+
       .status strong {
-        color: #ffd37a;
+        color: var(--qb-text-primary);
       }
     </style>
   </head>

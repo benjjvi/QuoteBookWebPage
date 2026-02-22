@@ -5,16 +5,16 @@
   display: flex;
   justify-content: center;
   padding: 2rem 0 3rem;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
-  color: #f7f4ef;
+  font-family: var(--qb-font-body);
+  color: var(--qb-text-primary);
 }
 
 .edit-card {
   width: min(720px, 100%);
-  background: rgba(15, 15, 18, 0.9);
+  background: var(--qb-surface);
   border-radius: 26px;
   padding: 2.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--qb-border-subtle);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
   position: relative;
   overflow: hidden;
@@ -44,7 +44,7 @@
 }
 
 .edit-header h1 {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(2rem, 3vw, 2.8rem);
   margin: 0 0 0.6rem 0;
 }
@@ -53,14 +53,14 @@
   text-transform: uppercase;
   letter-spacing: 0.2rem;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--qb-text-faint);
   display: inline-block;
   margin-bottom: 0.8rem;
 }
 
 .lead {
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--qb-text-muted);
   margin: 0 0 1.5rem;
 }
 
@@ -76,7 +76,7 @@
 
 .pin-label {
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--qb-text-muted);
 }
 
 .pin-input {
@@ -86,9 +86,9 @@
   font-size: 1.4rem;
   letter-spacing: 0.6rem;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--qb-border);
   background: rgba(0, 0, 0, 0.25);
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
 }
 
 .pin-pad {
@@ -99,9 +99,9 @@
 }
 
 .pin-key {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  color: #f7f4ef;
+  border: 1px solid var(--qb-border);
+  background: var(--qb-surface-soft);
+  color: var(--qb-text-primary);
   font-size: 1.1rem;
   height: 68px;
   border-radius: 50%;
@@ -115,7 +115,7 @@
 .pin-key:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--qb-border);
 }
 
 .pin-key-secondary {
@@ -137,7 +137,7 @@
 
 label {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--qb-text-muted);
 }
 
 input[type="text"],
@@ -146,9 +146,9 @@ textarea {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(0, 0, 0, 0.25);
-  color: #f7f4ef;
+  color: var(--qb-text-primary);
   padding: 0.85rem 1rem;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
   font-size: 0.98rem;
   resize: vertical;
 }
@@ -162,11 +162,11 @@ textarea {
 
 .form-error {
   margin: 0;
-  color: #ff9a62;
+  color: var(--qb-accent-2);
 }
 
 .btn {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
   border-radius: 999px;
   padding: 0.65rem 1.4rem;
   font-size: 0.9rem;
@@ -188,13 +188,13 @@ textarea {
 
 .btn-ghost {
   background: transparent;
-  color: #f2eee7;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #1b1308;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 @media (max-width: 640px) {

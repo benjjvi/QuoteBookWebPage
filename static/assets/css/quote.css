@@ -1,18 +1,18 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap");
 
 .quote-page {
-  --surface: rgba(15, 15, 18, 0.9);
-  --surface-soft: rgba(255, 255, 255, 0.05);
-  --surface-outline: rgba(255, 255, 255, 0.1);
-  --text-main: #f7f4ef;
-  --text-muted: rgba(247, 244, 239, 0.72);
-  --accent: #ffd37a;
+  --surface: var(--qb-surface);
+  --surface-soft: var(--qb-surface-soft);
+  --surface-outline: var(--qb-border-subtle);
+  --text-main: var(--qb-text-primary);
+  --text-muted: var(--qb-text-muted);
+  --accent: var(--qb-accent);
 
   display: flex;
   justify-content: center;
   padding: clamp(0.4rem, 1.2vw, 1.1rem) 0;
   color: var(--text-main);
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: var(--qb-font-body);
 }
 
 .quote-card {
@@ -20,7 +20,7 @@
   background:
     radial-gradient(
       circle at 84% 12%,
-      rgba(255, 211, 122, 0.08),
+      var(--qb-focus-ring-soft),
       transparent 34%
     ),
     var(--surface);
@@ -42,18 +42,18 @@
   font-size: 0.72rem;
   letter-spacing: 0.1rem;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--qb-text-muted);
+  border: 1px solid var(--qb-border);
   border-radius: 999px;
   padding: 0.22rem 0.62rem;
 }
 
 .quote-text {
   margin: 0;
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: var(--qb-font-display);
   font-size: clamp(1.34rem, 2.9vw, 2.05rem);
   line-height: 1.46;
-  color: #fff8ec;
+  color: var(--qb-text-primary);
   white-space: pre-line;
   text-wrap: pretty;
 }
@@ -62,7 +62,7 @@
   margin-top: 0.15rem;
   font-size: 1rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--qb-text-primary);
   align-self: flex-end;
 }
 
@@ -71,14 +71,14 @@
   font-size: 0.94rem;
   color: var(--text-muted);
   background: var(--surface-soft);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--qb-border-subtle);
   padding: 0.9rem 1rem;
   border-radius: 14px;
   line-height: 1.55;
 }
 
 .quote-context strong {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--qb-text-primary);
 }
 
 .quote-meta {
@@ -87,7 +87,7 @@
   align-items: center;
   gap: 0.3rem 0.5rem;
   font-size: 0.84rem;
-  color: rgba(255, 255, 255, 0.66);
+  color: var(--qb-text-muted);
   align-self: flex-end;
 }
 
@@ -132,14 +132,14 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ffd37a, #ff9a62);
-  color: #231503;
+  background: linear-gradient(135deg, var(--qb-accent), var(--qb-accent-2));
+  color: var(--qb-accent-contrast);
 }
 
 .btn-secondary {
   background: transparent;
-  color: #f7f4ef;
-  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--qb-text-primary);
+  border-color: var(--qb-border-strong);
 }
 
 .quote-card .monetize-slot {
