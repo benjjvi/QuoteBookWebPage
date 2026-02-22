@@ -92,6 +92,7 @@ SMTP_USER="smtp_username"
 SMTP_PASS="smtp_password"
 SMTP_USE_TLS=true
 SMTP_USE_SSL=false
+SMTP_SEND_DELAY_SECONDS=0.25            # optional pacing between recipients
 ```
 
 Recipients are now stored in SQLite (`qb.db`) table `weekly_email_recipients`.
@@ -113,6 +114,7 @@ Notes:
   `python scripts/run_weekly_digest_once.py`
 - In `external` mode, the app also performs a throttled due-check during normal requests, so Monday sends still trigger on active sites even without cron.
 - On PythonAnywhere, prefer `external` mode and configure a Scheduled Task.
+- `SMTP_SEND_DELAY_SECONDS` can reduce provider throttling/rate-limit issues for bulk sends.
 - The app deduplicates the weekly run per Monday date in SQLite to avoid duplicate sends.
 - If `OPENROUTER_KEY` is set, the digest body/subject are generated via the AI helper (API-style JSON output).
 

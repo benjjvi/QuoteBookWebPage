@@ -83,6 +83,10 @@ SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").strip().lower() in {
     "yes",
     "on",
 }
+try:
+    SMTP_SEND_DELAY_SECONDS = float(os.getenv("SMTP_SEND_DELAY_SECONDS", "0"))
+except ValueError:
+    SMTP_SEND_DELAY_SECONDS = 0.0
 WEEKLY_SCHEDULER_MODE = os.getenv("WEEKLY_SCHEDULER_MODE", "auto").strip().lower()
 PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
 
@@ -115,6 +119,7 @@ services = AppServices(
         is_prod=IS_PROD,
         weekly_scheduler_mode=WEEKLY_SCHEDULER_MODE,
         weekly_digest_sponsor_line=WEEKLY_DIGEST_SPONSOR_LINE,
+        smtp_send_delay_seconds=SMTP_SEND_DELAY_SECONDS,
     ),
 )
 

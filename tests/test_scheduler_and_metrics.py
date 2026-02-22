@@ -1,4 +1,5 @@
 from datetime import datetime
+from dataclasses import replace
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -158,3 +159,135 @@ def test_opportunistic_scheduler_runs_in_external_mode(services, monkeypatch):
     now["value"] += services.opportunistic_scheduler_interval_seconds + 1
     services.maybe_run_scheduled_jobs_opportunistically()
     assert checks == ["run", "run"]
+
+
+@pytest.mark.usefixtures("services")
+def test_send_email_sends_individual_messages_with_delay(services, monkeypatch):
+    services.add_weekly_email_recipient("alpha@example.com")
+    services.add_weekly_email_recipient("beta@example.com")
+    services.config = replace(
+        services.config,
+        smtp_send_delay_seconds=0.25,
+        smtp_use_tls=True,
+        smtp_use_ssl=False,
+        smtp_user="",
+        smtp_pass="",
+    )
+
+    sent_to = []
+    sleep_calls = []
+
+    class DummySMTP:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def ehlo(self):
+            return None
+
+        def starttls(self):
+            return None
+
+        def login(self, *_args, **_kwargs):
+            return None
+
+        def send_message(self, message):
+            sent_to.append(message["To"])
+
+    monkeypatch.setattr("app_services.smtplib.SMTP", DummySMTP)
+    monkeypatch.setattr("app_services.timelib.sleep", lambda seconds: sleep_calls.append(seconds))
+
+    services.send_email("Digest", "Body")
+
+    metrics = services.get_runtime_metrics()
+    assert sent_to == ["alpha@example.com", "beta@example.com"]
+    assert metrics["email_attempted"] == 2
+    assert metrics["email_sent"] == 2
+    assert metrics["email_failed"] == 0
+    assert sleep_calls == [0.25]
+
+
+@pytest.mark.usefixtures("services")
+def test_send_email_partial_failure_records_metrics_without_raising(services, monkeypatch):
+    services.add_weekly_email_recipient("alpha@example.com")
+    services.add_weekly_email_recipient("beta@example.com")
+    services.config = replace(
+        services.config,
+        smtp_send_delay_seconds=0.0,
+        smtp_use_tls=False,
+        smtp_use_ssl=False,
+        smtp_user="",
+        smtp_pass="",
+    )
+
+    class DummySMTP:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def ehlo(self):
+            return None
+
+        def send_message(self, message):
+            if message["To"] == "beta@example.com":
+                raise RuntimeError("recipient rejected")
+            return None
+
+    monkeypatch.setattr("app_services.smtplib.SMTP", DummySMTP)
+
+    services.send_email("Digest", "Body")
+
+    metrics = services.get_runtime_metrics()
+    assert metrics["email_attempted"] == 2
+    assert metrics["email_sent"] == 1
+    assert metrics["email_failed"] == 1
+    assert "Partial delivery" in metrics["email_last_error"]
+
+
+@pytest.mark.usefixtures("services")
+def test_send_email_all_fail_raises(services, monkeypatch):
+    services.add_weekly_email_recipient("alpha@example.com")
+    services.config = replace(
+        services.config,
+        smtp_send_delay_seconds=0.0,
+        smtp_use_tls=False,
+        smtp_use_ssl=False,
+        smtp_user="",
+        smtp_pass="",
+    )
+
+    class DummySMTP:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def ehlo(self):
+            return None
+
+        def send_message(self, _message):
+            raise RuntimeError("recipient rejected")
+
+    monkeypatch.setattr("app_services.smtplib.SMTP", DummySMTP)
+
+    with pytest.raises(RuntimeError, match="failed for all recipients"):
+        services.send_email("Digest", "Body")
+
+    metrics = services.get_runtime_metrics()
+    assert metrics["email_attempted"] == 1
+    assert metrics["email_sent"] == 0
+    assert metrics["email_failed"] == 1

@@ -55,6 +55,7 @@ class AppServiceConfig:
     is_prod: bool
     weekly_scheduler_mode: str = "auto"
     weekly_digest_sponsor_line: str = ""
+    smtp_send_delay_seconds: float = 0.0
 
 
 class AppServices:
@@ -139,6 +140,11 @@ class AppServices:
         if self.config.smtp_use_ssl and self.config.smtp_use_tls:
             warnings.append(
                 "SMTP_USE_SSL and SMTP_USE_TLS are both enabled; SSL takes precedence."
+            )
+
+        if self.config.smtp_send_delay_seconds < 0:
+            warnings.append(
+                "SMTP_SEND_DELAY_SECONDS should be 0 or greater."
             )
 
         mode = (self.config.weekly_scheduler_mode or "auto").strip().lower()
@@ -1105,12 +1111,10 @@ class AppServices:
             raise RuntimeError("No weekly email recipients configured in database.")
         recipient_count = len(recipients)
         self._increment_metric("email_attempted", recipient_count)
+        send_delay_seconds = max(float(self.config.smtp_send_delay_seconds or 0.0), 0.0)
+        sent_count = 0
+        failures: list[tuple[str, Exception]] = []
 
-        message = EmailMessage()
-        message["Subject"] = subject
-        message["From"] = sender
-        message["To"] = ", ".join(recipients)
-        message.set_content(body)
         try:
             if self.config.smtp_use_ssl:
                 with smtplib.SMTP_SSL(
@@ -1118,7 +1122,25 @@ class AppServices:
                 ) as server:
                     if self.config.smtp_user and self.config.smtp_pass:
                         server.login(self.config.smtp_user, self.config.smtp_pass)
-                    server.send_message(message)
+                    for index, recipient in enumerate(recipients):
+                        message = EmailMessage()
+                        message["Subject"] = subject
+                        message["From"] = sender
+                        message["To"] = recipient
+                        message.set_content(body)
+                        try:
+                            server.send_message(message)
+                            sent_count += 1
+                        except Exception as exc:
+                            failures.append((recipient, exc))
+                            self.app.logger.warning(
+                                "Email send failed for %s: %s", recipient, exc
+                            )
+                        if (
+                            send_delay_seconds > 0
+                            and index < recipient_count - 1
+                        ):
+                            timelib.sleep(send_delay_seconds)
             else:
                 with smtplib.SMTP(
                     self.config.smtp_host, self.config.smtp_port, timeout=30
@@ -1129,15 +1151,59 @@ class AppServices:
                         server.ehlo()
                     if self.config.smtp_user and self.config.smtp_pass:
                         server.login(self.config.smtp_user, self.config.smtp_pass)
-                    server.send_message(message)
+                    for index, recipient in enumerate(recipients):
+                        message = EmailMessage()
+                        message["Subject"] = subject
+                        message["From"] = sender
+                        message["To"] = recipient
+                        message.set_content(body)
+                        try:
+                            server.send_message(message)
+                            sent_count += 1
+                        except Exception as exc:
+                            failures.append((recipient, exc))
+                            self.app.logger.warning(
+                                "Email send failed for %s: %s", recipient, exc
+                            )
+                        if (
+                            send_delay_seconds > 0
+                            and index < recipient_count - 1
+                        ):
+                            timelib.sleep(send_delay_seconds)
         except Exception as exc:
-            self._increment_metric("email_failed", recipient_count)
+            failed_count = max(recipient_count - sent_count, 0)
+            self._increment_metric("email_failed", failed_count or recipient_count)
+            if sent_count:
+                self._increment_metric("email_sent", sent_count)
             self._set_runtime_status(
                 "email_last_error", f"{type(exc).__name__}: {exc}"
             )
             raise
+
+        if failures:
+            failed_count = len(failures)
+            first_recipient, first_exc = failures[0]
+            if sent_count:
+                self._increment_metric("email_sent", sent_count)
+            self._increment_metric("email_failed", failed_count)
+            self._set_runtime_status(
+                "email_last_error",
+                (
+                    f"Partial delivery ({sent_count}/{recipient_count}) "
+                    f"first failure {first_recipient}: {type(first_exc).__name__}: {first_exc}"
+                ),
+            )
+            self.app.logger.warning(
+                "Partial email delivery: sent=%s failed=%s",
+                sent_count,
+                failed_count,
+            )
+            if sent_count == 0:
+                raise RuntimeError("Email delivery failed for all recipients.")
+            return
+
         self._set_runtime_status("email_last_error", "")
-        self._increment_metric("email_sent", recipient_count)
+        self._increment_metric("email_sent", sent_count)
 
     def maybe_send_weekly_email_digest(self, now_uk: datetime | None = None) -> bool:
         if not self.weekly_email_is_configured():
