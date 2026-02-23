@@ -110,6 +110,22 @@ def test_search_supports_get_query(client):
     assert b"results for" in response.data
 
 
+def test_timeline_rejects_invalid_params(client):
+    assert client.get("/timeline/2024/13").status_code == 404
+    assert client.get("/timeline/0/1").status_code == 404
+    assert client.get("/timeline/day/999999999999").status_code == 404
+
+
+def test_battle_post_invalid_ids_redirects_safely(client):
+    bad_type = client.post("/battle", data={"winner": "abc", "loser": "1"})
+    assert bad_type.status_code == 302
+    assert bad_type.headers["Location"].endswith("/battle")
+
+    duplicate = client.post("/battle", data={"winner": "1", "loser": "1"})
+    assert duplicate.status_code == 302
+    assert duplicate.headers["Location"].endswith("/battle")
+
+
 def test_home_offline_flags_match_offline_ready_pages(client):
     response = client.get("/")
     assert response.status_code == 200

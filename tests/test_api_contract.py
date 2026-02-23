@@ -69,3 +69,27 @@ def test_api_add_update_and_battle(client, services):
     assert anarchy_payload["updated_count"] == 1
     assert anarchy_payload["quotes"][0]["id"] == new_id
     assert anarchy_payload["quotes"][0]["stats"]["anarchy_points"] == 1
+
+
+def test_api_add_quote_rejects_invalid_timestamp(client):
+    response = client.post(
+        "/api/quotes",
+        json={
+            "quote": "Bad timestamp",
+            "authors": ["Alice"],
+            "timestamp": "not-an-int",
+        },
+    )
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["error"] == "timestamp must be an integer"
+
+
+def test_api_battle_rejects_invalid_or_duplicate_ids(client):
+    bad_type = client.post("/api/battles", json={"winner_id": "abc", "loser_id": 2})
+    assert bad_type.status_code == 400
+    assert bad_type.get_json()["error"] == "winner_id and loser_id must be integers"
+
+    duplicate = client.post("/api/battles", json={"winner_id": 1, "loser_id": 1})
+    assert duplicate.status_code == 400
+    assert duplicate.get_json()["error"] == "winner_id and loser_id must be different"

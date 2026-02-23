@@ -145,15 +145,20 @@ def register_quote_api_routes(bp, context):
         else:
             authors = quote_store.parse_authors(str(authors_raw or "Unknown"))
 
-        timestamp = data.get("timestamp")
-        if timestamp is None:
+        timestamp_raw = data.get("timestamp")
+        if timestamp_raw is None:
             timestamp = datetime_handler.get_current_uk_timestamp()
+        else:
+            try:
+                timestamp = int(timestamp_raw)
+            except (TypeError, ValueError):
+                return jsonify({"error": "timestamp must be an integer"}), 400
 
         new_quote = quote_store.add_quote(
             quote_text=quote_text,
             authors=authors,
             context=context,
-            timestamp=int(timestamp),
+            timestamp=timestamp,
         )
 
         services.refresh_stats_cache("quote-added-api")
@@ -179,7 +184,19 @@ def register_quote_api_routes(bp, context):
         if winner_id is None or loser_id is None:
             return jsonify({"error": "winner_id and loser_id are required"}), 400
 
-        winner, loser = quote_store.record_battle(int(winner_id), int(loser_id))
+        try:
+            winner_id = int(winner_id)
+            loser_id = int(loser_id)
+        except (TypeError, ValueError):
+            return jsonify({"error": "winner_id and loser_id must be integers"}), 400
+
+        if winner_id <= 0 or loser_id <= 0:
+            return jsonify({"error": "winner_id and loser_id must be positive"}), 400
+
+        if winner_id == loser_id:
+            return jsonify({"error": "winner_id and loser_id must be different"}), 400
+
+        winner, loser = quote_store.record_battle(winner_id, loser_id)
         if not winner or not loser:
             return jsonify({"error": "Quote not found"}), 404
 

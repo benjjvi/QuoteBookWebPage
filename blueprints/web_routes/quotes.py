@@ -84,8 +84,26 @@ def register_quote_routes(bp, context):
     @bp.route("/battle", methods=["GET", "POST"], endpoint="battle")
     def battle():
         if request.method == "POST":
-            winner_id = int(request.form["winner"])
-            loser_id = int(request.form["loser"])
+            winner_raw = (request.form.get("winner") or "").strip()
+            loser_raw = (request.form.get("loser") or "").strip()
+            try:
+                winner_id = int(winner_raw)
+                loser_id = int(loser_raw)
+            except (TypeError, ValueError):
+                current_app.logger.warning(
+                    "Battle POST with invalid IDs: winner=%r loser=%r",
+                    winner_raw,
+                    loser_raw,
+                )
+                return redirect(url_for("battle"))
+
+            if winner_id <= 0 or loser_id <= 0 or winner_id == loser_id:
+                current_app.logger.warning(
+                    "Battle POST rejected: winner=%s loser=%s",
+                    winner_id,
+                    loser_id,
+                )
+                return redirect(url_for("battle"))
 
             winner, loser = quote_store.record_battle(winner_id, loser_id)
             if winner and loser:
@@ -449,6 +467,9 @@ def register_quote_routes(bp, context):
 
     @bp.route("/timeline/<int:year>/<int:month>", endpoint="timeline")
     def timeline(year, month):
+        if year < 1 or year > 9999 or month < 1 or month > 12:
+            abort(404)
+
         cal = pycalendar.Calendar(firstweekday=0)
         month_days = cal.monthdatescalendar(year, month)
 
@@ -493,7 +514,10 @@ def register_quote_routes(bp, context):
 
     @bp.route("/timeline/day/<int:timestamp>", endpoint="quotes_by_day")
     def quotes_by_day(timestamp):
-        day_dt = datetime.fromtimestamp(timestamp, tz=uk_tz)
+        try:
+            day_dt = datetime.fromtimestamp(timestamp, tz=uk_tz)
+        except (OverflowError, OSError, ValueError):
+            abort(404)
 
         start_of_day = datetime.combine(
             day_dt.date(),
