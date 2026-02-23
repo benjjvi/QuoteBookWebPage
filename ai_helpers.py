@@ -342,6 +342,111 @@ Digest data:
     def normalise(self, raw):
         return max(1.0, min(10.0, raw + 5))
 
+    @staticmethod
+    def normalize_tags(tags, *, limit: int = 8):
+        normalized = []
+        seen = set()
+        for raw in tags or []:
+            value = str(raw or "").strip().lower()
+            if not value:
+                continue
+            value = re.sub(r"[^a-z0-9\s-]", "", value)
+            value = re.sub(r"\s+", "-", value)
+            value = re.sub(r"-{2,}", "-", value).strip("-")
+            if not value or value in seen:
+                continue
+            seen.add(value)
+            normalized.append(value)
+            if len(normalized) >= max(1, int(limit)):
+                break
+        return normalized
+
+    def _heuristic_tags(self, quote: str, context: str, authors):
+        combined = f"{quote or ''} {context or ''}".lower()
+        tags = []
+
+        keyword_map = {
+            "work": {"meeting", "office", "deadline", "manager", "spreadsheet", "jira"},
+            "food": {"coffee", "tea", "pizza", "lunch", "dinner", "snack", "beer"},
+            "tech": {"api", "bug", "deploy", "server", "python", "code", "sql"},
+            "sleep": {"sleep", "tired", "2am", "midnight", "nap"},
+            "money": {"budget", "expensive", "cheap", "rent", "salary"},
+            "chaos": {"chaos", "panic", "disaster", "unhinged", "feral"},
+            "friendship": {"mate", "friend", "bro", "sis", "team"},
+            "weather": {"rain", "sun", "storm", "wind", "cold", "hot"},
+        }
+
+        for tag, keywords in keyword_map.items():
+            if any(word in combined for word in keywords):
+                tags.append(tag)
+
+        if "?" in (quote or ""):
+            tags.append("question")
+        if "!" in (quote or ""):
+            tags.append("shouting")
+        if isinstance(authors, list) and len(authors) > 1:
+            tags.append("group-chat")
+
+        # Reuse humor-signal logic as a lightweight AI-adjacent feature.
+        try:
+            score = self.classify_funny_score(quote or "", authors or [], {})
+            if score >= 7.5:
+                tags.append("chaotic-funny")
+        except Exception:
+            pass
+
+        return self.normalize_tags(tags, limit=8)
+
+    def suggest_tags(self, quote: str, context: str = "", authors=None, limit: int = 6):
+        heuristic = self._heuristic_tags(quote, context, authors)
+        if not self.can_generate:
+            return heuristic[:limit]
+
+        prompt = (
+            "Generate concise topical tags for this quote. "
+            "Return STRICT JSON only in the shape {\"tags\":[\"tag-one\",\"tag-two\"]}. "
+            "Rules: lowercase, short, no punctuation, no duplicates, max 6 tags.\n\n"
+            f"Quote: {quote}\n"
+            f"Context: {context}\n"
+            f"Authors: {', '.join(authors or [])}"
+        )
+
+        headers = {
+            "Authorization": f"Bearer {self.OPENROUTER_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://benjjvi.pythonanywhere.com",
+            "X-Title": "QuoteBook Tag Generator",
+        }
+        payload = {
+            "model": "mistralai/mistral-7b-instruct",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You output strict JSON for backend APIs.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 220,
+            "response_format": {"type": "json_object"},
+        }
+
+        try:
+            response = requests.post(
+                self.OPENROUTER_URL, headers=headers, json=payload, timeout=20
+            )
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"]
+            parsed = self.extract_json_from_response(content)
+            ai_tags = parsed.get("tags", [])
+            merged = self.normalize_tags([*ai_tags, *heuristic], limit=limit)
+            if merged:
+                return merged
+        except Exception as exc:
+            logger.warning("AI tag generation failed; using heuristic tags: %s", exc)
+
+        return heuristic[:limit]
+
     def classify_funny_score(self, quote, authors, stats):
         # Score quotes based on amount of profanities, general humor, and absurdity.
         score = -0.5

@@ -32,7 +32,11 @@
     </div>
   </header>
 
-  <form method="get" action="/social" class="social-search">
+  <form
+    method="get"
+    action="{% if social_mode == 'author' %}{{ url_for('web.social_author', author_name=active_author) }}{% else %}/social{% endif %}"
+    class="social-search"
+  >
     <label for="socialSearchInput">Search people or quotes</label>
     <div class="search-row">
       <input
@@ -43,6 +47,16 @@
         placeholder="Type a person name, phrase, or context"
       />
       <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+    <div class="search-row">
+      <select id="socialTagFilter" name="tag">
+        <option value="">All tags</option>
+        {% for item in tag_directory %}
+          <option value="{{ item.tag }}" {% if selected_tag == item.tag %}selected{% endif %}>
+            #{{ item.tag }} ({{ item.count }})
+          </option>
+        {% endfor %}
+      </select>
     </div>
     <p class="search-note">
       Searches author names, quote text, and quote context.
@@ -106,17 +120,23 @@
         </section>
       {% endif %}
 
-      {% if query %}
+      {% if query or selected_tag %}
         <section class="query-summary">
           <h2>Search results</h2>
           <p>
             {{ feed_quote_count }} quote{% if feed_quote_count != 1 %}s{% endif %}
-            found for "{{ query }}".
+            {% if query and selected_tag %}
+              found for "{{ query }}" tagged #{{ selected_tag }}.
+            {% elif query %}
+              found for "{{ query }}".
+            {% else %}
+              tagged #{{ selected_tag }}.
+            {% endif %}
           </p>
         </section>
       {% endif %}
 
-      <div class="feed-list">
+      <div class="feed-list" id="socialFeedList">
         {% for item in feed_items %}
           {% if item.kind == "quote" %}
             <article
@@ -152,6 +172,13 @@
               {% if item.quote.context %}
                 <p class="quote-context">{{ item.quote.context }}</p>
               {% endif %}
+              {% if item.quote.tags %}
+                <div class="tag-row">
+                  {% for topic in item.quote.tags %}
+                    <a href="{% if social_mode == 'author' %}{{ url_for('web.social_author', author_name=active_author) }}{% else %}/social{% endif %}?tag={{ topic | urlencode }}" class="tag-chip">#{{ topic }}</a>
+                  {% endfor %}
+                </div>
+              {% endif %}
 
               <footer class="post-foot">
                 <a href="{{ url_for('web.social_quote_post', quote_id=item.quote.id) }}">
@@ -174,6 +201,14 @@
           </article>
         {% endfor %}
       </div>
+      <div id="socialFeedStatus" class="feed-status" {% if not social_feed_meta.has_more %}data-complete="true"{% endif %}>
+        {% if social_feed_meta.has_more %}
+          Loading more posts...
+        {% else %}
+          End of stream.
+        {% endif %}
+      </div>
+      <div id="socialFeedSentinel" aria-hidden="true"></div>
     </main>
 
     <aside class="social-panel panel-side">
@@ -220,6 +255,7 @@
     {
       "avatarUrls": avatar_urls,
       "allAuthors": all_authors,
+      "feed": social_feed_meta,
     } | tojson
   }}
 </script>

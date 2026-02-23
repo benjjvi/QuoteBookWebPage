@@ -80,6 +80,7 @@
 
     <div class="mailbox-forms">
       <form method="post" class="mailbox-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="action" value="subscribe" />
         <label for="mailboxSubscribeEmail">Subscribe email</label>
         <input
@@ -95,6 +96,7 @@
       </form>
 
       <form method="post" class="mailbox-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="action" value="unsubscribe" />
         <label for="mailboxUnsubscribeEmail">Unsubscribe email</label>
         <input

@@ -31,6 +31,7 @@
 
     {% if not is_authed %}
       <form method="post" class="pin-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="action" value="pin" />
         <label for="pin" class="pin-label">Enter 4-digit PIN</label>
         <input
@@ -71,6 +72,7 @@
       </form>
     {% else %}
       <form method="post" class="edit-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="action" value="edit" />
 
         <label for="quote_text">Quote</label>
@@ -91,6 +93,15 @@
 
         <label for="context">Context (optional)</label>
         <textarea id="context" name="context" rows="3">{{ quote.context }}</textarea>
+
+        <label for="tags">Tags (optional)</label>
+        <input
+          id="tags"
+          name="tags"
+          type="text"
+          value="{{ quote.tags | join(', ') }}"
+          placeholder="e.g. work, chaos, coffee"
+        />
 
         {% if edit_error %}
           <p class="form-error">{{ edit_error }}</p>

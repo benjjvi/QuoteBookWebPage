@@ -60,7 +60,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.14rem;
   font-size: 0.67rem;
-  color: rgba(241, 247, 248, 0.7);
+  color: var(--qb-text-muted);
 }
 
 .topbar-actions {
@@ -83,7 +83,7 @@ body {
   font-size: 0.79rem;
   text-transform: uppercase;
   letter-spacing: 0.11rem;
-  color: rgba(241, 247, 248, 0.66);
+  color: var(--qb-text-muted);
 }
 
 .search-row {
@@ -96,11 +96,23 @@ body {
   flex: 1 1 340px;
   min-width: 180px;
   border-radius: 14px;
-  border: 1px solid rgba(151, 189, 198, 0.35);
-  background: rgba(7, 17, 24, 0.92);
+  border: 1px solid var(--qb-border);
+  background: var(--qb-surface-soft);
   color: var(--social-text);
   padding: 0.72rem 0.9rem;
   font-size: 0.95rem;
+}
+
+.search-row select {
+  flex: 1 1 240px;
+  min-width: 160px;
+  border-radius: 14px;
+  border: 1px solid var(--qb-border);
+  background: var(--qb-surface-soft);
+  color: var(--social-text);
+  padding: 0.72rem 0.9rem;
+  font-size: 0.92rem;
+  font-family: var(--qb-font-body);
 }
 
 .search-row input::placeholder {
@@ -189,7 +201,7 @@ body {
 
 .people-count,
 .match-list strong {
-  color: rgba(241, 247, 248, 0.72);
+  color: var(--qb-text-muted);
   font-size: 0.82rem;
 }
 
@@ -225,7 +237,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.1rem;
   font-size: 0.67rem;
-  color: rgba(241, 247, 248, 0.67);
+  color: var(--qb-text-muted);
 }
 
 .profile-card h2 {
@@ -305,7 +317,7 @@ body {
 }
 
 .author-links a:hover {
-  color: #b6f2e7;
+  color: var(--qb-link-hover);
 }
 
 .post-meta {
@@ -362,6 +374,43 @@ body {
 .post-generic p {
   margin: 0;
   color: var(--qb-text-primary);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  margin-top: 0.65rem;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--qb-border);
+  background: var(--qb-surface);
+  color: var(--qb-text-primary);
+  text-decoration: none;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.23rem 0.57rem;
+}
+
+.tag-chip:hover {
+  border-color: var(--qb-focus-ring);
+  color: var(--qb-link);
+}
+
+.feed-status {
+  text-align: center;
+  color: var(--qb-text-muted);
+  font-size: 0.88rem;
+  padding: 0.45rem 0;
+}
+
+#socialFeedSentinel {
+  width: 100%;
+  height: 1px;
 }
 
 .panel-callout {

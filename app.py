@@ -4,11 +4,12 @@ from datetime import timedelta
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, render_template, request
 from flask.sessions import SecureCookieSessionInterface
 from werkzeug.exceptions import HTTPException
 
 import ai_helpers
+from api_errors import error_response
 from app_services import AppServiceConfig, AppServices
 from blueprints.api import create_api_blueprint
 from blueprints.web import create_web_blueprint
@@ -200,6 +201,7 @@ app.register_blueprint(
 app.register_blueprint(
     create_api_blueprint(
         quote_store=quote_store,
+        ai_worker=ai_worker,
         services=services,
         quote_anarchy_service=quote_anarchy_service,
         quote_blackline_service=quote_blackline_service,
@@ -247,9 +249,144 @@ def wants_json_response() -> bool:
     )
 
 
+CSRF_PROTECTED_ENDPOINTS = {
+    "web.add_quote",
+    "add_quote",
+    "web.battle",
+    "battle",
+    "web.mailbox",
+    "mailbox",
+    "web.unsubscribe_page",
+    "unsubscribe_page",
+    "web.edit_index",
+    "edit_index",
+    "web.edit_quote",
+    "edit_quote",
+    "web.social_quote_react",
+    "social_quote_react",
+    "web.social_quote_comment",
+    "social_quote_comment",
+    "web.ai_screenplay_render",
+    "ai_screenplay_render",
+}
+
+RATE_LIMIT_RULES = {
+    "POST:api.api_add_quote": {"limit": 20, "window_seconds": 60},
+    "POST:api_add_quote": {"limit": 20, "window_seconds": 60},
+    "POST:api.api_battle": {"limit": 120, "window_seconds": 60},
+    "POST:api_battle": {"limit": 120, "window_seconds": 60},
+    "GET:api.api_quotes": {"limit": 600, "window_seconds": 60},
+    "GET:api_quotes": {"limit": 600, "window_seconds": 60},
+    "GET:api.api_social_feed": {"limit": 360, "window_seconds": 60},
+    "GET:api_social_feed": {"limit": 360, "window_seconds": 60},
+    "GET:web.social_quote_post": {"limit": 240, "window_seconds": 60},
+    "GET:social_quote_post": {"limit": 240, "window_seconds": 60},
+    "POST:web.social_quote_react": {"limit": 180, "window_seconds": 60},
+    "POST:social_quote_react": {"limit": 180, "window_seconds": 60},
+    "POST:web.social_quote_comment": {"limit": 24, "window_seconds": 60},
+    "POST:social_quote_comment": {"limit": 24, "window_seconds": 60},
+}
+
+
+@app.context_processor
+def inject_security_tokens():
+    return {
+        "csrf_token": services.get_csrf_token,
+    }
+
+
 @app.before_request
 def start_timer():
     services.start_timer()
+
+
+@app.before_request
+def enforce_form_csrf():
+    if request.method != "POST":
+        return None
+    if request.endpoint not in CSRF_PROTECTED_ENDPOINTS:
+        return None
+
+    candidate = (
+        (request.form.get("csrf_token") or "").strip()
+        or (request.headers.get("X-CSRF-Token") or "").strip()
+    )
+    if services.validate_csrf_token(candidate):
+        return None
+
+    if wants_json_response():
+        return error_response(
+            status=403,
+            code="csrf_invalid",
+            message="CSRF token is missing or invalid.",
+            details={"endpoint": request.endpoint},
+        )
+
+    return (
+        render_template(
+            "error.html",
+            code=403,
+            name="Forbidden",
+            description="Your session token was missing or invalid. Refresh and try again.",
+        ),
+        403,
+    )
+
+
+@app.before_request
+def enforce_rate_limits():
+    method_endpoint = f"{request.method}:{request.endpoint}"
+    rule = RATE_LIMIT_RULES.get(method_endpoint)
+    if not rule:
+        return None
+
+    client_ip = services.get_request_client_ip()
+    device_key = (
+        (request.cookies.get("qb_social_device_id") or "").strip()
+        if (
+            request.endpoint.startswith("web.social_quote_")
+            or request.endpoint.startswith("social_quote_")
+        )
+        else ""
+    )
+    actor = device_key or client_ip
+    limiter_key = f"{request.endpoint}:{actor}"
+    allowed, retry_after = services.consume_rate_limit(
+        key=limiter_key,
+        limit=int(rule["limit"]),
+        window_seconds=int(rule["window_seconds"]),
+    )
+    if allowed:
+        return None
+
+    if wants_json_response():
+        response, status = error_response(
+            status=429,
+            code="rate_limited",
+            message="Too many requests. Please slow down and try again shortly.",
+            details={
+            "endpoint": request.endpoint,
+            "method": request.method,
+            "retry_after_seconds": retry_after,
+            "limit": int(rule["limit"]),
+            "window_seconds": int(rule["window_seconds"]),
+            },
+        )
+        response.headers["Retry-After"] = str(retry_after)
+        return response, status
+
+    return (
+        render_template(
+            "error.html",
+            code=429,
+            name="Too Many Requests",
+            description=(
+                "That action is being performed too quickly. "
+                f"Please wait {retry_after} seconds and try again."
+            ),
+        ),
+        429,
+    )
 
 
 @app.after_request
@@ -272,7 +409,12 @@ def refresh_qb():
 def handle_unexpected_error(e):
     if isinstance(e, HTTPException):
         if wants_json_response():
-            return jsonify(error=e.name, description=e.description), e.code
+            return error_response(
+                status=e.code or 500,
+                code=f"http_{(e.name or 'error').lower().replace(' ', '_')}",
+                message=e.name or "HTTP error",
+                details={"description": e.description or ""},
+            )
         return (
             render_template(
                 "error.html",
@@ -293,7 +435,12 @@ def handle_unexpected_error(e):
     )
 
     if wants_json_response():
-        return jsonify(error="Internal Server Error", description=description), 500
+        return error_response(
+            status=500,
+            code="internal_server_error",
+            message="Internal Server Error",
+            details={"description": description},
+        )
 
     return (
         render_template(

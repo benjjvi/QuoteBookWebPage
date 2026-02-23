@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import re
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -59,12 +60,14 @@ def app_ctx(tmp_path):
         authors=["Alice"],
         timestamp=base_ts,
         context="Context 1",
+        tags=["work", "chaos"],
     )
     quote_store.add_quote(
         quote_text="Second test quote.",
         authors=["Bob", "Alice"],
         timestamp=base_ts + 60,
         context="Context 2",
+        tags=["social"],
     )
 
     app = Flask(
@@ -102,6 +105,12 @@ def app_ctx(tmp_path):
     app.jinja_env.filters["to_uk_datetime"] = services.to_uk_datetime
     app.jinja_env.filters["uk_time"] = services.uk_time
     app.jinja_env.filters["uk_date"] = services.uk_date
+
+    @app.context_processor
+    def inject_security_tokens():
+        return {
+            "csrf_token": services.get_csrf_token,
+        }
 
     quote_anarchy_service = QuoteAnarchyService(
         db_path=str(db_path),
@@ -146,6 +155,7 @@ def app_ctx(tmp_path):
     app.register_blueprint(
         create_api_blueprint(
             quote_store=quote_store,
+            ai_worker=DummyAI(),
             services=services,
             quote_anarchy_service=quote_anarchy_service,
             quote_blackline_service=quote_blackline_service,
@@ -178,3 +188,16 @@ def services(app_ctx):
 @pytest.fixture
 def quote_store(app_ctx):
     return app_ctx["quote_store"]
+
+
+@pytest.fixture
+def csrf_token_for(client):
+    def _csrf_token_for(path: str) -> str:
+        response = client.get(path)
+        assert response.status_code == 200
+        html = response.data.decode("utf-8")
+        match = re.search(r'name="csrf_token"\s+value="([^"]+)"', html)
+        assert match, f"Missing csrf token on {path}"
+        return match.group(1)
+
+    return _csrf_token_for

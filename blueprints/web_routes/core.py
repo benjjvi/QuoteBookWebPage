@@ -14,6 +14,8 @@ from flask import (
     url_for,
 )
 
+from api_errors import error_response
+
 
 def register_core_routes(bp, context):
     quote_store = context["quote_store"]
@@ -197,19 +199,22 @@ def register_core_routes(bp, context):
     @bp.route("/ai_screenplay", methods=["POST"], endpoint="ai_screenplay")
     def ai_screenplay():
         if not ai_worker.can_generate:
-            return (
-                jsonify(
-                    error=(
-                        "AI screenplay generation is disabled. "
-                        "Set OPENROUTER_KEY to enable."
-                    )
+            return error_response(
+                status=503,
+                code="ai_unavailable",
+                message=(
+                    "AI screenplay generation is disabled. "
+                    "Set OPENROUTER_KEY to enable."
                 ),
-                503,
             )
         data = request.get_json(silent=True) or {}
         token = data.get("token")
         if not token or token != session.get("ai_request_token"):
-            return jsonify(error="Invalid AI request token."), 403
+            return error_response(
+                status=403,
+                code="ai_token_invalid",
+                message="Invalid AI request token.",
+            )
         current_app.logger.info("AI screenplay requested.")
         quotes = quote_store.get_all_quotes()
         scored_quotes = [

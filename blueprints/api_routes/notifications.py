@@ -2,6 +2,8 @@ import secrets
 
 from flask import jsonify, make_response, request, session
 
+from api_errors import error_response
+
 
 def register_notification_api_routes(bp, context):
     services = context["services"]
@@ -15,17 +17,29 @@ def register_notification_api_routes(bp, context):
     @bp.route("/api/push/subscribe", methods=["POST"], endpoint="api_push_subscribe")
     def api_push_subscribe():
         if not vapid_public_key or not vapid_private_key:
-            return jsonify(error="Push notifications are not configured."), 503
+            return error_response(
+                status=503,
+                code="push_not_configured",
+                message="Push notifications are not configured.",
+            )
 
         data = request.get_json(silent=True) or {}
         token = data.get("token")
         if not token or token != session.get("push_subscribe_token"):
-            return jsonify(error="Invalid subscription token."), 403
+            return error_response(
+                status=403,
+                code="invalid_subscription_token",
+                message="Invalid subscription token.",
+            )
         subscription = data.get("subscription") or data
         user_agent = data.get("userAgent") or request.headers.get("User-Agent", "")
 
         if not isinstance(subscription, dict) or not subscription.get("endpoint"):
-            return jsonify(error="Invalid subscription payload."), 400
+            return error_response(
+                status=400,
+                code="invalid_subscription_payload",
+                message="Invalid subscription payload.",
+            )
 
         saved = services.save_push_subscription(subscription, user_agent)
         return jsonify(ok=bool(saved))
@@ -33,7 +47,11 @@ def register_notification_api_routes(bp, context):
     @bp.route("/api/push/token", methods=["GET"], endpoint="api_push_token")
     def api_push_token():
         if not vapid_public_key or not vapid_private_key:
-            return jsonify(error="Push notifications are not configured."), 503
+            return error_response(
+                status=503,
+                code="push_not_configured",
+                message="Push notifications are not configured.",
+            )
         return jsonify(token=services.get_push_subscribe_token())
 
     @bp.route("/api/email/token", methods=["GET"], endpoint="api_email_token")
@@ -43,16 +61,28 @@ def register_notification_api_routes(bp, context):
     @bp.route("/api/email/subscribe", methods=["POST"], endpoint="api_email_subscribe")
     def api_email_subscribe():
         if not services.ensure_weekly_email_recipients_table():
-            return jsonify(error="Email subscriptions are unavailable right now."), 503
+            return error_response(
+                status=503,
+                code="email_unavailable",
+                message="Email subscriptions are unavailable right now.",
+            )
 
         data = request.get_json(silent=True) or {}
         token = data.get("token")
         if not token or token != session.get("email_subscribe_token"):
-            return jsonify(error="Invalid subscription token."), 403
+            return error_response(
+                status=403,
+                code="invalid_subscription_token",
+                message="Invalid subscription token.",
+            )
 
         email = (data.get("email") or "").strip().lower()
         if not services.is_valid_email_address(email):
-            return jsonify(error="Please enter a valid email address."), 400
+            return error_response(
+                status=400,
+                code="email_invalid",
+                message="Please enter a valid email address.",
+            )
 
         created = services.add_weekly_email_recipient(email)
         session["email_subscribe_token"] = secrets.token_urlsafe(24)
@@ -83,16 +113,28 @@ def register_notification_api_routes(bp, context):
     )
     def api_email_unsubscribe():
         if not services.ensure_weekly_email_recipients_table():
-            return jsonify(error="Email subscriptions are unavailable right now."), 503
+            return error_response(
+                status=503,
+                code="email_unavailable",
+                message="Email subscriptions are unavailable right now.",
+            )
 
         data = request.get_json(silent=True) or {}
         token = data.get("token")
         if not token or token != session.get("email_subscribe_token"):
-            return jsonify(error="Invalid subscription token."), 403
+            return error_response(
+                status=403,
+                code="invalid_subscription_token",
+                message="Invalid subscription token.",
+            )
 
         email = (data.get("email") or "").strip().lower()
         if not services.is_valid_email_address(email):
-            return jsonify(error="Please enter a valid email address."), 400
+            return error_response(
+                status=400,
+                code="email_invalid",
+                message="Please enter a valid email address.",
+            )
 
         removed = services.remove_weekly_email_recipient(email)
         session["email_subscribe_token"] = secrets.token_urlsafe(24)
@@ -108,6 +150,10 @@ def register_notification_api_routes(bp, context):
         data = request.get_json(silent=True) or {}
         endpoint = data.get("endpoint")
         if not endpoint:
-            return jsonify(error="Missing endpoint."), 400
+            return error_response(
+                status=400,
+                code="endpoint_missing",
+                message="Missing endpoint.",
+            )
         services.delete_push_subscription(endpoint)
         return jsonify(ok=True)

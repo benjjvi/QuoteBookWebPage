@@ -20,6 +20,20 @@
   overflow: hidden;
 }
 
+.ai-card,
+.ai-card h1,
+.ai-card p,
+.ai-card .lead,
+.ai-card .status,
+.ai-card code {
+  color: var(--qb-text-primary);
+}
+
+.ai-card .lead,
+.ai-card .status {
+  color: var(--qb-text-muted);
+}
+
 .ai-card::before {
   content: "";
   position: absolute;

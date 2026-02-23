@@ -14,6 +14,7 @@ def test_api_contract_endpoints(client):
     metrics = client.get("/api/ops/metrics")
     assert metrics.status_code == 200
     assert "metrics" in metrics.get_json()
+    assert client.get("/api/tags").status_code == 200
 
 
 def test_api_quotes_order_and_pagination(client):
@@ -29,6 +30,10 @@ def test_api_quotes_order_and_pagination(client):
     assert paged["page"] == 2
     assert paged["total_pages"] == 2
     assert len(paged["quotes"]) == 1
+
+    by_tag = client.get("/api/quotes", query_string={"tag": "work"}).get_json()
+    assert by_tag["total"] >= 1
+    assert all("work" in (item.get("tags") or []) for item in by_tag["quotes"])
 
 
 def test_api_add_update_and_battle(client, services):
@@ -69,6 +74,7 @@ def test_api_add_update_and_battle(client, services):
     assert anarchy_payload["updated_count"] == 1
     assert anarchy_payload["quotes"][0]["id"] == new_id
     assert anarchy_payload["quotes"][0]["stats"]["anarchy_points"] == 1
+    assert "tags" in anarchy_payload["quotes"][0]
 
 
 def test_api_add_quote_rejects_invalid_timestamp(client):
@@ -93,3 +99,22 @@ def test_api_battle_rejects_invalid_or_duplicate_ids(client):
     duplicate = client.post("/api/battles", json={"winner_id": 1, "loser_id": 1})
     assert duplicate.status_code == 400
     assert duplicate.get_json()["error"] == "winner_id and loser_id must be different"
+
+
+def test_api_error_payload_shape(client):
+    response = client.post("/api/battles", json={"winner_id": "abc", "loser_id": 2})
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["code"] == "battle_ids_invalid"
+    assert payload["message"] == "winner_id and loser_id must be integers"
+    assert "details" in payload
+    assert payload["error"] == payload["message"]
+
+
+def test_api_social_feed_pagination(client):
+    first = client.get("/api/social/feed", query_string={"page": 1, "per_page": 1})
+    assert first.status_code == 200
+    payload = first.get_json()
+    assert "items" in payload
+    assert payload["page"] == 1
+    assert "has_more" in payload

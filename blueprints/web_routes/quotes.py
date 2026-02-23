@@ -18,6 +18,7 @@ import datetime_handler
 
 def register_quote_routes(bp, context):
     quote_store = context["quote_store"]
+    ai_worker = context["ai_worker"]
     services = context["services"]
     uk_tz = context["uk_tz"]
     edit_pin = context["edit_pin"]
@@ -27,6 +28,18 @@ def register_quote_routes(bp, context):
     def _normalise_email(raw_email: str) -> str:
         return (raw_email or "").strip().lower()
 
+    def _suggest_tags_if_needed(quote_text: str, context_text: str, authors, tags):
+        if tags:
+            return tags
+        suggest_fn = getattr(ai_worker, "suggest_tags", None)
+        if not callable(suggest_fn):
+            return []
+        try:
+            return suggest_fn(quote_text, context_text, authors)
+        except Exception as exc:
+            current_app.logger.warning("AI tag suggestion failed: %s", exc)
+            return []
+
     @bp.route("/add_quote", methods=["GET", "POST"], endpoint="add_quote")
     def add_quote():
         if request.method == "POST":
@@ -34,9 +47,12 @@ def register_quote_routes(bp, context):
             context = request.form.get("context", "").strip()
             author_raw = request.form.get("author_info", "Unknown").strip()
             quote_datetime_raw = request.form.get("quote_datetime", "").strip()
+            tags_raw = request.form.get("tags", "")
 
             if quote_text:
                 authors = quote_store.parse_authors(author_raw)
+                tags = quote_store.parse_tags(tags_raw)
+                tags = _suggest_tags_if_needed(quote_text, context, authors, tags)
 
                 timestamp = datetime_handler.get_current_uk_timestamp()
                 if quote_datetime_raw:
@@ -57,12 +73,14 @@ def register_quote_routes(bp, context):
                     authors=authors,
                     context=context,
                     timestamp=timestamp,
+                    tags=tags,
                 )
                 services.refresh_stats_cache("quote-added")
                 current_app.logger.info(
-                    "Added quote %s by %s",
+                    "Added quote %s by %s tags=%s",
                     new_quote.id,
                     ", ".join(new_quote.authors),
+                    ",".join(new_quote.tags),
                 )
                 try:
                     author_name = ", ".join(new_quote.authors) or "Unknown"
@@ -275,6 +293,7 @@ def register_quote_routes(bp, context):
             time=time_str,
             id=str(q.id),
             context=q.context,
+            tags=q.tags,
             reroll_button=True,
             quote_id=q.id,
             permalink=services.build_public_url(url_for("quote_by_id", quote_id=q.id)),
@@ -302,6 +321,7 @@ def register_quote_routes(bp, context):
             date=date_str,
             time=time_str,
             context=q.context,
+            tags=q.tags,
             reroll_button=False,
             quote_id=quote_id,
             permalink=services.build_public_url(url_for("quote_by_id", quote_id=quote_id)),
@@ -348,6 +368,8 @@ def register_quote_routes(bp, context):
                     quote_text = request.form.get("quote_text", "").strip()
                     context = request.form.get("context", "").strip()
                     author_raw = request.form.get("author_info", "Unknown").strip()
+                    tags_raw = request.form.get("tags", "")
+                    tags = quote_store.parse_tags(tags_raw)
 
                     if not quote_text:
                         edit_error = "Quote text cannot be empty."
@@ -358,6 +380,7 @@ def register_quote_routes(bp, context):
                             quote_text=quote_text,
                             authors=authors,
                             context=context,
+                            tags=tags,
                         )
                         if not updated:
                             abort(404)
@@ -414,6 +437,7 @@ def register_quote_routes(bp, context):
     @bp.route("/all_quotes", endpoint="all_quotes")
     def all_quotes():
         speaker_filter = request.args.get("speaker", None)
+        tag_filter = request.args.get("tag", "")
         sort_order = (request.args.get("order") or "oldest").strip().lower()
         if sort_order not in ("oldest", "newest"):
             sort_order = "oldest"
@@ -424,15 +448,19 @@ def register_quote_routes(bp, context):
             page,
             per_page_quote_limit,
             sort_order,
+            tag_filter,
         )
         sorted_speakers = quote_store.get_speaker_counts()
+        sorted_tags = quote_store.get_tag_counts()
 
         return render_template(
             "all_quotes.html",
             quotes=paginated_quotes,
             selected_speaker=speaker_filter,
+            selected_tag=(quote_store.parse_tags(tag_filter) or [""])[0],
             sort_order=sort_order,
             speakers=sorted_speakers,
+            tags=sorted_tags,
             page=page,
             total_pages=total_pages,
             per_page=per_page_quote_limit,
@@ -441,23 +469,39 @@ def register_quote_routes(bp, context):
     @bp.route("/search", methods=["GET", "POST"], endpoint="search")
     def search():
         results = []
+        tag_filter = ""
 
         if request.method == "POST":
             query = request.form.get("query", "").strip()
+            tag_filter = request.form.get("tag", "").strip()
         else:
             query = request.args.get("q", "").strip()
+            tag_filter = request.args.get("tag", "").strip()
+
+        normalized_tag = (quote_store.parse_tags(tag_filter) or [""])[0]
 
         if query:
-            results = quote_store.search_quotes(query)
+            results = quote_store.search_quotes(query, tag=normalized_tag)
             current_app.logger.info(
                 "Search query: '%s' (%s results)", query, len(results)
             )
+        elif normalized_tag:
+            filtered, _, _ = quote_store.get_quote_page(
+                speaker=None,
+                page=1,
+                per_page=500,
+                order="newest",
+                tag=normalized_tag,
+            )
+            results = filtered
 
         return render_template(
             "search.html",
             results=results,
             len_results=len(results),
             query=query,
+            selected_tag=normalized_tag,
+            tags=quote_store.get_tag_counts(),
         )
 
     @bp.route("/stats", endpoint="stats")

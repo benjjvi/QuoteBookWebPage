@@ -76,7 +76,13 @@
         input.name = "data";
         input.value = payload;
 
+        const csrf = document.createElement("input");
+        csrf.type = "hidden";
+        csrf.name = "csrf_token";
+        csrf.value = "{{ csrf_token() }}";
+
         form.appendChild(input);
+        form.appendChild(csrf);
         document.body.appendChild(form);
         form.submit();
       })

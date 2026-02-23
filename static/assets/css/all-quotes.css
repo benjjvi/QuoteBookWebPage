@@ -74,7 +74,7 @@
 
 .filter-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem 1rem;
   min-width: min(520px, 100%);
   width: min(100%, 700px);
@@ -206,6 +206,30 @@
   background: var(--qb-surface-soft);
   color: var(--qb-text-muted);
   font-size: 0.9rem;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--qb-border);
+  background: var(--qb-surface-soft);
+  color: var(--qb-text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.25rem 0.6rem;
+}
+
+.tag-chip:hover {
+  border-color: var(--qb-focus-ring);
+  color: var(--qb-link);
 }
 
 .empty-state {

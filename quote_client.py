@@ -50,6 +50,7 @@ class QuoteClient:
         page: int,
         per_page: int,
         order: str = "oldest",
+        tag: Optional[str] = None,
     ):
         """Return a paginated slice of quotes plus page metadata."""
         normalized_order = (order or "oldest").strip().lower()
@@ -65,6 +66,15 @@ class QuoteClient:
                     for q in quotes
                     if any(speaker_lower == author.lower() for author in q.authors)
                 ]
+            if tag:
+                normalized_tags = self._local.normalize_tags([tag])
+                normalized_tag = normalized_tags[0] if normalized_tags else ""
+                if normalized_tag:
+                    quotes = [
+                        q
+                        for q in quotes
+                        if normalized_tag in self._local.normalize_tags(q.tags)
+                    ]
             quotes = sorted(
                 quotes, key=lambda q: (q.timestamp, q.id), reverse=reverse_sort
             )
@@ -78,6 +88,8 @@ class QuoteClient:
         params = {"page": page, "per_page": per_page}
         if speaker:
             params["speaker"] = speaker
+        if tag:
+            params["tag"] = tag
         if normalized_order:
             params["order"] = normalized_order
         payload = self._get_json("/api/quotes", params=params)
@@ -113,11 +125,14 @@ class QuoteClient:
             return None
         return self._quote_from_dict(payload)
 
-    def search_quotes(self, query: str) -> List[qb_formats.Quote]:
+    def search_quotes(self, query: str, tag: Optional[str] = None) -> List[qb_formats.Quote]:
         if self._local:
-            return self._local.search_quotes(query)
+            return self._local.search_quotes(query, tag=tag)
 
-        payload = self._get_json("/api/search", params={"query": query})
+        params = {"query": query}
+        if tag:
+            params["tag"] = tag
+        payload = self._get_json("/api/search", params=params)
         return [self._quote_from_dict(q) for q in payload.get("quotes", [])]
 
     def get_quotes_between(self, start_ts: int, end_ts: int) -> List[qb_formats.Quote]:
@@ -138,7 +153,16 @@ class QuoteClient:
             (item["speaker"], item["count"]) for item in payload.get("speakers", [])
         ]
 
-    def add_quote(self, quote_text: str, authors, context: str, timestamp: int):
+    def get_tag_counts(self):
+        if self._local:
+            return self._local.get_tag_counts()
+
+        payload = self._get_json("/api/tags")
+        return [(item["tag"], item["count"]) for item in payload.get("tags", [])]
+
+    def add_quote(
+        self, quote_text: str, authors, context: str, timestamp: int, tags=None
+    ):
         """Insert a quote via local DB or remote API."""
         if self._local:
             new_quote = qb_formats.Quote(
@@ -147,6 +171,7 @@ class QuoteClient:
                 authors=authors,
                 timestamp=timestamp,
                 context=context,
+                tags=self._local.normalize_tags(tags or []),
             )
             self._local.add_quote(new_quote)
             return new_quote
@@ -158,11 +183,14 @@ class QuoteClient:
                 "authors": authors,
                 "context": context,
                 "timestamp": timestamp,
+                "tags": tags or [],
             },
         )
         return self._quote_from_dict(payload)
 
-    def update_quote(self, quote_id: int, quote_text: str, authors, context: str):
+    def update_quote(
+        self, quote_id: int, quote_text: str, authors, context: str, tags=None
+    ):
         """Update a quote via local DB or remote API."""
         if self._local:
             return self._local.update_quote(
@@ -170,6 +198,7 @@ class QuoteClient:
                 quote_text=quote_text,
                 authors=authors,
                 context=context,
+                tags=tags,
             )
 
         payload = self._put_json(
@@ -178,6 +207,7 @@ class QuoteClient:
                 "quote": quote_text,
                 "authors": authors,
                 "context": context,
+                "tags": tags,
             },
         )
         if not payload:
@@ -239,6 +269,27 @@ class QuoteClient:
         cleaned = re.sub(r"(?:,\s*)?\band\b\s*", ", ", raw, flags=re.IGNORECASE)
         return [a.strip() for a in cleaned.split(",") if a.strip()]
 
+    def parse_tags(self, raw):
+        if self._local:
+            return self._local.parse_tags(raw)
+        raw_text = str(raw or "").strip()
+        if not raw_text:
+            return []
+        parts = re.split(r"[,#;\n]", raw_text)
+        tags = []
+        seen = set()
+        for part in parts:
+            value = re.sub(r"[^a-z0-9\\s-]", "", str(part).strip().lower())
+            value = re.sub(r"\s+", "-", value)
+            value = re.sub(r"-{2,}", "-", value).strip("-")
+            if not value or value in seen:
+                continue
+            seen.add(value)
+            tags.append(value)
+            if len(tags) >= 12:
+                break
+        return tags
+
     @staticmethod
     def _quote_from_dict(payload: dict) -> qb_formats.Quote:
         return qb_formats.Quote(
@@ -247,6 +298,7 @@ class QuoteClient:
             authors=payload.get("authors", []),
             timestamp=payload.get("timestamp", 0),
             context=payload.get("context", ""),
+            tags=qb_formats.QuoteBook.normalize_tags(payload.get("tags", [])),
             stats=qb_formats.QuoteBook.normalize_stats(payload.get("stats")),
         )
 

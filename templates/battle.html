@@ -31,6 +31,7 @@
 
   <div class="battle-grid offline-hide">
     <form method="post" class="battle-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="winner" value="{{ quote_a.id }}" />
       <input type="hidden" name="loser" value="{{ quote_b.id }}" />
 
@@ -46,6 +47,7 @@
     <div class="versus">VS</div>
 
     <form method="post" class="battle-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="winner" value="{{ quote_b.id }}" />
       <input type="hidden" name="loser" value="{{ quote_a.id }}" />
 

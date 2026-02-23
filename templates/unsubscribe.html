@@ -26,6 +26,7 @@
     {% endif %}
 
     <form method="post" class="mailbox-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <label for="unsubscribeEmail">Email address</label>
       <input
         id="unsubscribeEmail"

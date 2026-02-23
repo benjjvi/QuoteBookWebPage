@@ -36,6 +36,7 @@
 
     <div class="add-quote-body">
       <form class="quote-form" method="POST" action="/add_quote">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="field">
           <label for="quote_text">Quote</label>
           <textarea
@@ -71,6 +72,20 @@
             placeholder="Optional: where, when, or what was happening"
           ></textarea>
           <p class="field-hint">Optional. Helps future-you remember.</p>
+        </div>
+
+        <div class="field">
+          <label for="tags">Tags</label>
+          <input
+            id="tags"
+            name="tags"
+            type="text"
+            placeholder="e.g. work, chaos, coffee"
+            autocomplete="off"
+          />
+          <p class="field-hint">
+            Optional. Comma-separated topics. If blank, AI can suggest tags.
+          </p>
         </div>
 
         <div class="field">
@@ -123,16 +138,18 @@
     const quoteTextInput = document.getElementById("quote_text");
     const authorInput = document.getElementById("author_info");
     const contextInput = document.getElementById("context");
+    const tagsInput = document.getElementById("tags");
     const dateInput = document.getElementById("quote_datetime");
     const draftKey = "qb_add_quote_draft_v1";
 
-    if (!form || !quoteTextInput || !authorInput || !contextInput || !dateInput) return;
+    if (!form || !quoteTextInput || !authorInput || !contextInput || !tagsInput || !dateInput) return;
 
     const saveDraft = () => {
       const payload = {
         quote_text: quoteTextInput.value || "",
         author_info: authorInput.value || "",
         context: contextInput.value || "",
+        tags: tagsInput.value || "",
         quote_datetime: dateInput.value || "",
       };
       localStorage.setItem(draftKey, JSON.stringify(payload));
@@ -146,6 +163,7 @@
         if (!quoteTextInput.value && data.quote_text) quoteTextInput.value = data.quote_text;
         if (!authorInput.value && data.author_info) authorInput.value = data.author_info;
         if (!contextInput.value && data.context) contextInput.value = data.context;
+        if (!tagsInput.value && data.tags) tagsInput.value = data.tags;
         if (!dateInput.value && data.quote_datetime) dateInput.value = data.quote_datetime;
       } catch (_err) {
         localStorage.removeItem(draftKey);
@@ -167,6 +185,7 @@
     quoteTextInput.addEventListener("input", saveDraft);
     authorInput.addEventListener("input", saveDraft);
     contextInput.addEventListener("input", saveDraft);
+    tagsInput.addEventListener("input", saveDraft);
     dateInput.addEventListener("change", saveDraft);
 
     form.addEventListener("submit", () => {

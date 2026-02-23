@@ -81,6 +81,30 @@
   color: var(--qb-text-primary);
 }
 
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.26rem 0.64rem;
+  border-radius: 999px;
+  border: 1px solid var(--qb-border);
+  background: var(--qb-surface-soft);
+  color: var(--qb-text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tag-chip:hover {
+  color: var(--qb-link);
+  border-color: var(--qb-focus-ring);
+}
+
 .quote-meta {
   display: inline-flex;
   flex-wrap: wrap;

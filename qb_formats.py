@@ -4,7 +4,7 @@ import os
 import random
 import re
 import sqlite3
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List
 
@@ -26,6 +26,7 @@ class Quote:
     authors: List[str]
     timestamp: int
     context: str
+    tags: List[str] = field(default_factory=list)
     stats: Dict[str, int] = field(default_factory=lambda: DEFAULT_STATS.copy())
 
 
@@ -73,10 +74,19 @@ class QuoteBook:
                     authors TEXT NOT NULL,
                     timestamp INTEGER NOT NULL,
                     context TEXT NOT NULL,
+                    tags TEXT NOT NULL DEFAULT '[]',
                     stats TEXT NOT NULL
                 )
                 """
             )
+            columns = {
+                row[1]
+                for row in conn.execute("PRAGMA table_info(quotes)").fetchall()
+            }
+            if "tags" not in columns:
+                conn.execute(
+                    "ALTER TABLE quotes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'"
+                )
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_quotes_timestamp ON quotes (timestamp)"
             )
@@ -117,8 +127,8 @@ class QuoteBook:
             conn.executemany(
                 """
                 INSERT OR REPLACE INTO quotes
-                (id, quote, authors, timestamp, context, stats)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (id, quote, authors, timestamp, context, tags, stats)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     (
@@ -127,6 +137,9 @@ class QuoteBook:
                         json.dumps(q.get("authors", []), ensure_ascii=False),
                         q.get("timestamp", 0),
                         q.get("context", ""),
+                        json.dumps(
+                            self.normalize_tags(q.get("tags", [])), ensure_ascii=False
+                        ),
                         json.dumps(
                             self.normalize_stats(q.get("stats")), ensure_ascii=False
                         ),
@@ -145,7 +158,7 @@ class QuoteBook:
     def _load(self) -> None:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, quote, authors, timestamp, context, stats FROM quotes ORDER BY id"
+                "SELECT id, quote, authors, timestamp, context, tags, stats FROM quotes ORDER BY id"
             ).fetchall()
 
         self.quotes = [
@@ -155,6 +168,7 @@ class QuoteBook:
                 authors=self._parse_json_list(row["authors"]),
                 timestamp=row["timestamp"],
                 context=row["context"],
+                tags=self.normalize_tags(self._parse_json_list(row["tags"])),
                 stats=self._parse_json_dict(row["stats"]),
             )
             for row in rows
@@ -196,6 +210,37 @@ class QuoteBook:
                 continue
         return normalized
 
+    @staticmethod
+    def normalize_tags(tags: List[str] | None) -> List[str]:
+        if not isinstance(tags, list):
+            return []
+
+        normalized: List[str] = []
+        seen = set()
+        for raw in tags:
+            text = str(raw or "").strip().lower()
+            if not text:
+                continue
+            text = re.sub(r"[^a-z0-9\s-]", "", text)
+            text = re.sub(r"\s+", "-", text)
+            text = re.sub(r"-{2,}", "-", text).strip("-")
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            normalized.append(text)
+            if len(normalized) >= 12:
+                break
+        return normalized
+
+    def parse_tags(self, raw) -> List[str]:
+        if isinstance(raw, list):
+            return self.normalize_tags(raw)
+        raw_text = str(raw or "").strip()
+        if not raw_text:
+            return []
+        parts = re.split(r"[,#;\n]", raw_text)
+        return self.normalize_tags([part.strip() for part in parts if part.strip()])
+
     # ------------------------
     # Quote access
     # ------------------------
@@ -212,8 +257,10 @@ class QuoteBook:
     # Searching
     # ------------------------
 
-    def search_quotes(self, query: str):
+    def search_quotes(self, query: str, tag: str | None = None):
         query = (query or "").strip()
+        tag_filter = self.normalize_tags([tag])[0] if tag else ""
+
         if not query:
             return []
 
@@ -223,9 +270,12 @@ class QuoteBook:
 
         scored_results = []
         for q in self.quotes:
+            if tag_filter and tag_filter not in self.normalize_tags(q.tags):
+                continue
             quote_text = q.quote.lower()
             authors_text = " ".join(q.authors).lower()
             context_text = (q.context or "").lower()
+            tags_text = " ".join(self.normalize_tags(q.tags)).replace("-", " ")
 
             score = 0.0
 
@@ -236,11 +286,14 @@ class QuoteBook:
                 score += 10.0
             if query_lower in context_text:
                 score += 5.0
+            if query_lower in tags_text:
+                score += 6.0
 
             # Token-level boosts
             quote_tokens = set(re.findall(r"\b\w+\b", quote_text))
             author_tokens = set(re.findall(r"\b\w+\b", authors_text))
             context_tokens = set(re.findall(r"\b\w+\b", context_text))
+            tag_tokens = set(re.findall(r"\b\w+\b", tags_text))
 
             for token in query_tokens:
                 if token in quote_tokens:
@@ -249,11 +302,14 @@ class QuoteBook:
                     score += 3.0
                 if token in context_tokens:
                     score += 1.0
+                if token in tag_tokens:
+                    score += 2.0
 
             if query_token_set and all(
                 token in quote_tokens
                 or token in author_tokens
                 or token in context_tokens
+                or token in tag_tokens
                 for token in query_token_set
             ):
                 score += 3.0
@@ -266,6 +322,13 @@ class QuoteBook:
 
     def get_quotes_between(self, start_ts, end_ts):
         return [q for q in self.quotes if start_ts <= q.timestamp <= end_ts]
+
+    def get_tag_counts(self):
+        counts = Counter()
+        for quote in self.quotes:
+            for tag in self.normalize_tags(quote.tags):
+                counts[tag] += 1
+        return sorted(counts.items(), key=lambda item: (-item[1], item[0]))
 
     # ------------------------
     # Stats
@@ -304,17 +367,22 @@ class QuoteBook:
 
     def add_quote(self, quote: Quote):
         quote.quote = self._ensure_terminal_punctuation(quote.quote)
+        quote.tags = self.normalize_tags(quote.tags)
         self.quotes.append(quote)
         self._upsert_quote(quote)
         self._recalculate_stats()
 
-    def update_quote(self, quote_id: int, quote_text: str, authors, context: str):
+    def update_quote(self, quote_id: int, quote_text: str, authors, context: str, tags=None):
         quote = self.get_quote_by_id(quote_id)
         if not quote:
             return None
         quote.quote = self._ensure_terminal_punctuation(quote_text)
         quote.authors = authors
         quote.context = context
+        if tags is not None:
+            quote.tags = self.normalize_tags(tags)
+        else:
+            quote.tags = self.normalize_tags(quote.tags)
         self._upsert_quote(quote)
         self._recalculate_stats()
         return quote
@@ -376,8 +444,8 @@ class QuoteBook:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO quotes
-                (id, quote, authors, timestamp, context, stats)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (id, quote, authors, timestamp, context, tags, stats)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     quote.id,
@@ -385,6 +453,7 @@ class QuoteBook:
                     json.dumps(quote.authors, ensure_ascii=False),
                     quote.timestamp,
                     quote.context,
+                    json.dumps(self.normalize_tags(quote.tags), ensure_ascii=False),
                     json.dumps(self.normalize_stats(quote.stats), ensure_ascii=False),
                 ),
             )
@@ -396,8 +465,8 @@ class QuoteBook:
             conn.executemany(
                 """
                 INSERT OR REPLACE INTO quotes
-                (id, quote, authors, timestamp, context, stats)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (id, quote, authors, timestamp, context, tags, stats)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     (
@@ -406,6 +475,7 @@ class QuoteBook:
                         json.dumps(q.authors, ensure_ascii=False),
                         q.timestamp,
                         q.context,
+                        json.dumps(self.normalize_tags(q.tags), ensure_ascii=False),
                         json.dumps(self.normalize_stats(q.stats), ensure_ascii=False),
                     )
                     for q in self.quotes

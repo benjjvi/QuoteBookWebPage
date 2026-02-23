@@ -110,18 +110,36 @@ def test_search_supports_get_query(client):
     assert b"results for" in response.data
 
 
+def test_quote_pages_support_tag_filters(client):
+    all_quotes = client.get("/all_quotes", query_string={"tag": "work"})
+    assert all_quotes.status_code == 200
+    assert b"#work" in all_quotes.data
+
+    search = client.get("/search", query_string={"tag": "work"})
+    assert search.status_code == 200
+    assert b"tagged #work" in search.data
+
+
 def test_timeline_rejects_invalid_params(client):
     assert client.get("/timeline/2024/13").status_code == 404
     assert client.get("/timeline/0/1").status_code == 404
     assert client.get("/timeline/day/999999999999").status_code == 404
 
 
-def test_battle_post_invalid_ids_redirects_safely(client):
-    bad_type = client.post("/battle", data={"winner": "abc", "loser": "1"})
+def test_battle_post_invalid_ids_redirects_safely(client, csrf_token_for):
+    csrf = csrf_token_for("/battle")
+    bad_type = client.post(
+        "/battle",
+        data={"winner": "abc", "loser": "1", "csrf_token": csrf},
+    )
     assert bad_type.status_code == 302
     assert bad_type.headers["Location"].endswith("/battle")
 
-    duplicate = client.post("/battle", data={"winner": "1", "loser": "1"})
+    csrf = csrf_token_for("/battle")
+    duplicate = client.post(
+        "/battle",
+        data={"winner": "1", "loser": "1", "csrf_token": csrf},
+    )
     assert duplicate.status_code == 302
     assert duplicate.headers["Location"].endswith("/battle")
 

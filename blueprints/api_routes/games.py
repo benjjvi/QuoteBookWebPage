@@ -1,11 +1,16 @@
 from flask import current_app, jsonify, request
 
+from api_errors import error_response
+
 
 def register_game_api_routes(bp, context):
     quote_anarchy_service = context["quote_anarchy_service"]
     quote_blackline_service = context["quote_blackline_service"]
     quote_who_said_service = context["quote_who_said_service"]
     services = context["services"]
+
+    def _api_error(status: int, code: str, message: str, details=None):
+        return error_response(status=status, code=code, message=message, details=details)
 
     def _quote_anarchy_response(fn):
         try:
@@ -15,8 +20,16 @@ def register_game_api_routes(bp, context):
             status_code = getattr(exc, "status_code", 500)
             if status_code >= 500:
                 current_app.logger.error("Quote Anarchy API failure: %s", exc)
-                return jsonify(error="Quote Anarchy is temporarily unavailable."), 500
-            return jsonify(error=str(exc)), status_code
+                return _api_error(
+                    500,
+                    "quote_anarchy_unavailable",
+                    "Quote Anarchy is temporarily unavailable.",
+                )
+            return _api_error(
+                int(status_code),
+                "quote_anarchy_error",
+                str(exc),
+            )
 
     def _blackline_response(fn):
         try:
@@ -26,11 +39,16 @@ def register_game_api_routes(bp, context):
             status_code = getattr(exc, "status_code", 500)
             if status_code >= 500:
                 current_app.logger.error("Redacted Black Line Rush API failure: %s", exc)
-                return (
-                    jsonify(error="Redacted: Black Line Rush is temporarily unavailable."),
+                return _api_error(
                     500,
+                    "blackline_unavailable",
+                    "Redacted: Black Line Rush is temporarily unavailable.",
                 )
-            return jsonify(error=str(exc)), status_code
+            return _api_error(
+                int(status_code),
+                "blackline_error",
+                str(exc),
+            )
 
     def _who_said_response(fn):
         try:
@@ -40,8 +58,16 @@ def register_game_api_routes(bp, context):
             status_code = getattr(exc, "status_code", 500)
             if status_code >= 500:
                 current_app.logger.error("Who Said It API failure: %s", exc)
-                return jsonify(error="Who Even Said That? is temporarily unavailable."), 500
-            return jsonify(error=str(exc)), status_code
+                return _api_error(
+                    500,
+                    "who_said_it_unavailable",
+                    "Who Even Said That? is temporarily unavailable.",
+                )
+            return _api_error(
+                int(status_code),
+                "who_said_it_error",
+                str(exc),
+            )
 
     @bp.route(
         "/api/quote-anarchy/bootstrap",

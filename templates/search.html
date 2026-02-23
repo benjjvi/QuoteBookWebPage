@@ -33,6 +33,17 @@
       />
       <button type="submit" class="btn btn-primary">Search</button>
     </div>
+    <label for="searchTag">Tag filter</label>
+    <div class="search-input">
+      <select id="searchTag" name="tag">
+        <option value="">All tags</option>
+        {% for topic, count in tags %}
+          <option value="{{ topic }}" {% if topic == selected_tag %}selected{% endif %}>
+            #{{ topic }} ({{ count }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
     <p class="hint offline-hide">Tip: searching a speaker name will also match their quotes.</p>
     <p class="hint offline-only">
       Offline mode searches the quotes currently cached on this device.
@@ -42,11 +53,15 @@
   <div
     class="results-header"
     id="resultsHeader"
-    {% if not query %}hidden{% endif %}
+    {% if not (query or selected_tag) %}hidden{% endif %}
   >
     <h2 id="resultsTitle">
-      {% if query %}
+      {% if query and selected_tag %}
+        {{ results|length }} results for “{{ query }}” tagged #{{ selected_tag }}
+      {% elif query %}
         {{ results|length }} results for “{{ query }}”
+      {% elif selected_tag %}
+        {{ results|length }} results tagged #{{ selected_tag }}
       {% endif %}
     </h2>
   </div>
@@ -65,6 +80,13 @@
         {% if q.context %}
           <p class="quote-context">{{ q.context }}</p>
         {% endif %}
+        {% if q.tags %}
+          <div class="tag-row">
+            {% for topic in q.tags %}
+              <a href="/search?tag={{ topic | urlencode }}" class="tag-chip">#{{ topic }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
         <a href="/quote/{{ q.id }}" class="btn btn-primary">
           View
         </a>
@@ -75,7 +97,7 @@
   <div
     class="empty-state"
     id="resultsEmpty"
-    {% if not (query and not results) %}hidden{% endif %}
+    {% if not ((query or selected_tag) and not results) %}hidden{% endif %}
   >
     <h2>No quotes found</h2>
     <p>Try a different phrase or a speaker name.</p>
@@ -85,6 +107,7 @@
 <script>
   const searchForm = document.getElementById("searchForm");
   const queryInput = document.getElementById("q");
+  const tagInput = document.getElementById("searchTag");
   const resultsHeader = document.getElementById("resultsHeader");
   const resultsTitle = document.getElementById("resultsTitle");
   const resultsGrid = document.getElementById("resultsGrid");
@@ -116,11 +139,12 @@
     }).format(date);
   };
 
-  const renderResults = (query, results) => {
+  const renderResults = (query, results, tag) => {
     if (!resultsHeader || !resultsTitle || !resultsGrid || !resultsEmpty) return;
 
     const normalizedQuery = String(query || "").trim();
-    if (!normalizedQuery) {
+    const normalizedTag = String(tag || "").trim();
+    if (!normalizedQuery && !normalizedTag) {
       resultsHeader.hidden = true;
       resultsTitle.textContent = "";
       resultsGrid.innerHTML = "";
@@ -130,7 +154,13 @@
 
     const count = Array.isArray(results) ? results.length : 0;
     const resultWord = count === 1 ? "result" : "results";
-    resultsTitle.textContent = `${count} ${resultWord} for “${normalizedQuery}”`;
+    if (normalizedQuery && normalizedTag) {
+      resultsTitle.textContent = `${count} ${resultWord} for “${normalizedQuery}” tagged #${normalizedTag}`;
+    } else if (normalizedQuery) {
+      resultsTitle.textContent = `${count} ${resultWord} for “${normalizedQuery}”`;
+    } else {
+      resultsTitle.textContent = `${count} ${resultWord} tagged #${normalizedTag}`;
+    }
     resultsHeader.hidden = false;
 
     if (!count) {
@@ -148,6 +178,17 @@
         const contextHtml = quote.context
           ? `<p class="quote-context">${escapeHtml(quote.context)}</p>`
           : "";
+        const tagsHtml =
+          Array.isArray(quote.tags) && quote.tags.length
+            ? `<div class="tag-row">${quote.tags
+                .map(
+                  (topic) =>
+                    `<a class="tag-chip" href="/search?tag=${encodeURIComponent(
+                      String(topic),
+                    )}">#${escapeHtml(topic)}</a>`,
+                )
+                .join("")}</div>`
+            : "";
         return `
           <article class="result-card">
             <div class="quote-text">“${quoteText}”</div>
@@ -159,6 +200,7 @@
               <span>${formatTime(quote.timestamp)}</span>
             </div>
             ${contextHtml}
+            ${tagsHtml}
             <a href="/quote/${encodeURIComponent(quote.id)}" class="btn btn-primary">View</a>
           </article>
         `;
@@ -167,12 +209,17 @@
     resultsEmpty.hidden = true;
   };
 
-  const updateQueryInUrl = (query) => {
+  const updateQueryInUrl = (query, tag) => {
     const params = new URLSearchParams(window.location.search);
     if (query) {
       params.set("q", query);
     } else {
       params.delete("q");
+    }
+    if (tag) {
+      params.set("tag", tag);
+    } else {
+      params.delete("tag");
     }
     const queryString = params.toString();
     const nextUrl = queryString
@@ -181,14 +228,15 @@
     window.history.replaceState({}, "", nextUrl);
   };
 
-  const runOfflineSearch = async (query) => {
+  const runOfflineSearch = async (query, tag) => {
     if (!window.qbPwa?.searchOfflineQuotes) return false;
     const normalizedQuery = String(query || "").trim();
-    const results = normalizedQuery
-      ? await window.qbPwa.searchOfflineQuotes(normalizedQuery)
+    const normalizedTag = String(tag || "").trim();
+    const results = normalizedQuery || normalizedTag
+      ? await window.qbPwa.searchOfflineQuotes(normalizedQuery, { tag: normalizedTag })
       : [];
-    renderResults(normalizedQuery, results);
-    updateQueryInUrl(normalizedQuery);
+    renderResults(normalizedQuery, results, normalizedTag);
+    updateQueryInUrl(normalizedQuery, normalizedTag);
     return true;
   };
 
@@ -196,7 +244,7 @@
     if (navigator.onLine) return;
 
     if (window.qbPwa?.searchOfflineQuotes) {
-      runOfflineSearch(queryInput?.value || "");
+      runOfflineSearch(queryInput?.value || "", tagInput?.value || "");
       return;
     }
 
@@ -208,7 +256,7 @@
   searchForm?.addEventListener("submit", (event) => {
     if (navigator.onLine) return;
     event.preventDefault();
-    runOfflineSearch(queryInput?.value || "");
+    runOfflineSearch(queryInput?.value || "", tagInput?.value || "");
   });
 
   window.addEventListener("offline", () => scheduleOfflineSearch());

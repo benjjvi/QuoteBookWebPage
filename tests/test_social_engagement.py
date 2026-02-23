@@ -71,10 +71,11 @@ def test_social_comment_service_round_trip(services):
     assert comments[-1]["comment_text"] == "This is elite nonsense."
 
 
-def test_social_reaction_and_comment_routes(client, services):
+def test_social_reaction_and_comment_routes(client, services, csrf_token_for):
+    csrf = csrf_token_for("/social/quote/1")
     reaction_resp = client.post(
         "/social/quote/1/react",
-        data={"reaction": "heart"},
+        data={"reaction": "heart", "csrf_token": csrf},
         follow_redirects=False,
     )
     assert reaction_resp.status_code == 302
@@ -89,9 +90,11 @@ def test_social_reaction_and_comment_routes(client, services):
     assert snapshot["counts"]["heart"] == 1
     assert snapshot["user_reaction"] == "heart"
 
+    csrf = csrf_token_for("/social/quote/1")
     comment_resp = client.post(
         "/social/quote/1/comment",
         data={
+            "csrf_token": csrf,
             "commenter_name": "Jordan",
             "comment_text": "This one needs framing.",
         },

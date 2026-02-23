@@ -64,13 +64,37 @@
           <span class="select-icon">▾</span>
         </div>
       </div>
+      <div class="filter-group">
+        <label for="tag">Filter by tag</label>
+        <div class="select-wrap">
+          <select
+            name="tag"
+            id="tag"
+            class="speaker-select"
+            onchange="this.form.submit()"
+          >
+            <option value="">All tags</option>
+            {% for topic, count in tags %}
+              <option value="{{ topic }}" {% if topic == selected_tag %}selected{% endif %}>
+                #{{ topic }} ({{ count }})
+              </option>
+            {% endfor %}
+          </select>
+          <span class="select-icon">▾</span>
+        </div>
+      </div>
       <noscript><button type="submit" class="btn btn-primary">Filter</button></noscript>
     </form>
 
-    {% if selected_speaker %}
+    {% if selected_speaker or selected_tag %}
       <div class="filter-pill">
         <span>Showing:</span>
-        <strong>{{ selected_speaker }}</strong>
+        {% if selected_speaker %}
+          <strong>{{ selected_speaker }}</strong>
+        {% endif %}
+        {% if selected_tag %}
+          <strong>#{{ selected_tag }}</strong>
+        {% endif %}
         <a href="/all_quotes?order={{ sort_order }}" class="pill-clear">Clear</a>
       </div>
     {% endif %}
@@ -90,6 +114,13 @@
         {% if q.context %}
           <p class="quote-context">{{ q.context }}</p>
         {% endif %}
+        {% if q.tags %}
+          <div class="tag-row">
+            {% for topic in q.tags %}
+              <a href="/all_quotes?order={{ sort_order }}&tag={{ topic | urlencode }}" class="tag-chip">#{{ topic }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
         <a href="/quote/{{ q.id }}" class="btn btn-primary">
           View
         </a>
@@ -106,7 +137,7 @@
     <div class="pagination">
       {% if page > 1 %}
         <a
-          href="/all_quotes?order={{ sort_order }}&page={{ page-1 }}{% if selected_speaker %}&speaker={{ selected_speaker | urlencode }}{% endif %}"
+          href="/all_quotes?order={{ sort_order }}&page={{ page-1 }}{% if selected_speaker %}&speaker={{ selected_speaker | urlencode }}{% endif %}{% if selected_tag %}&tag={{ selected_tag | urlencode }}{% endif %}"
           class="btn btn-ghost"
         >
           ← Prev
@@ -119,6 +150,9 @@
         {% endif %}
         {% if sort_order %}
           <input type="hidden" name="order" value="{{ sort_order }}" />
+        {% endif %}
+        {% if selected_tag %}
+          <input type="hidden" name="tag" value="{{ selected_tag }}" />
         {% endif %}
         <label>
           Page
@@ -138,7 +172,7 @@
 
       {% if page < total_pages %}
         <a
-          href="/all_quotes?order={{ sort_order }}&page={{ page+1 }}{% if selected_speaker %}&speaker={{ selected_speaker | urlencode }}{% endif %}"
+          href="/all_quotes?order={{ sort_order }}&page={{ page+1 }}{% if selected_speaker %}&speaker={{ selected_speaker | urlencode }}{% endif %}{% if selected_tag %}&tag={{ selected_tag | urlencode }}{% endif %}"
           class="btn btn-ghost"
         >
           Next →
@@ -216,6 +250,16 @@
       .map((q) => {
         const authorList = Array.isArray(q.authors) ? q.authors.join(", ") : "";
         const context = q.context ? `<p class="quote-context">${escapeHtml(q.context)}</p>` : "";
+        const tags = Array.isArray(q.tags) && q.tags.length
+          ? `<div class="tag-row">${q.tags
+              .map(
+                (tag) =>
+                  `<a class="tag-chip" href="/all_quotes?order=${encodeURIComponent(
+                    (document.getElementById("order")?.value || "oldest")
+                  )}&tag=${encodeURIComponent(String(tag))}">#${escapeHtml(tag)}</a>`,
+              )
+              .join("")}</div>`
+          : "";
         return `
           <article class="quote-card">
             <div class="quote-text">“${escapeHtml(q.quote)}”</div>
@@ -227,6 +271,7 @@
               <span>${formatTime(q.timestamp)}</span>
             </div>
             ${context}
+            ${tags}
             <a href="/quote/${encodeURIComponent(q.id)}" class="btn btn-primary">
               View
             </a>
@@ -236,7 +281,7 @@
       .join("");
   };
 
-  const renderPagination = (page, totalPages, speaker, order) => {
+  const renderPagination = (page, totalPages, speaker, order, tag) => {
     const container = document.querySelector(".pagination");
     if (!container) return;
 
@@ -248,6 +293,7 @@
     const buildUrl = (targetPage) => {
       const params = new URLSearchParams();
       if (speaker) params.set("speaker", speaker);
+      if (tag) params.set("tag", tag);
       if (order) params.set("order", order);
       params.set("page", String(targetPage));
       return `${window.location.pathname}?${params.toString()}`;
@@ -268,12 +314,16 @@
     const orderField = order
       ? `<input type="hidden" name="order" value="${escapeHtml(order)}" />`
       : "";
+    const tagField = tag
+      ? `<input type="hidden" name="tag" value="${escapeHtml(tag)}" />`
+      : "";
 
     container.innerHTML = `
       ${prevLink}
       <form method="get" class="page-jump">
         ${speakerField}
         ${orderField}
+        ${tagField}
         <label>
           Page
           <input
@@ -301,21 +351,23 @@
   const getOfflineParams = () => {
     const params = new URLSearchParams(window.location.search);
     const speaker = params.get("speaker") || "";
+    const tag = params.get("tag") || "";
     const order = params.get("order") || "oldest";
     const page = Number(params.get("page") || "1");
     const perPageAttr =
       document.querySelector(".all-quotes-page")?.dataset?.perPage || "9";
     const perPage = Number(perPageAttr) || 9;
-    return { speaker, order, page, perPage, params };
+    return { speaker, tag, order, page, perPage, params };
   };
 
   const loadOfflineQuotes = async (paramsOverride) => {
     if (!window.qbPwa?.getOfflineQuotePage) return false;
-    const { speaker, order, page, perPage, params } =
+    const { speaker, tag, order, page, perPage, params } =
       paramsOverride || getOfflineParams();
 
     const data = await window.qbPwa.getOfflineQuotePage({
       speaker,
+      tag,
       order,
       page,
       perPage,
@@ -323,7 +375,7 @@
     if (!data) return false;
 
     renderQuotes(data.quotes);
-    renderPagination(data.page, data.totalPages, speaker, order);
+    renderPagination(data.page, data.totalPages, speaker, order, tag);
 
     if (params) {
       params.set("page", String(data.page));
@@ -331,6 +383,11 @@
         params.set("speaker", speaker);
       } else {
         params.delete("speaker");
+      }
+      if (tag) {
+        params.set("tag", tag);
+      } else {
+        params.delete("tag");
       }
       if (order) {
         params.set("order", order);
@@ -366,14 +423,23 @@
       if (navigator.onLine) return;
       event.preventDefault();
       const speaker = form?.querySelector("#speaker")?.value || "";
+      const tag = form?.querySelector("#tag")?.value || "";
       const order = form?.querySelector("#order")?.value || "oldest";
       const pageInput = document.querySelector(".page-input");
       const page = Number(pageInput?.value || "1");
       const params = new URLSearchParams();
       if (speaker) params.set("speaker", speaker);
+      if (tag) params.set("tag", tag);
       if (order) params.set("order", order);
       params.set("page", String(page));
-      loadOfflineQuotes({ speaker, order, page, perPage: getOfflineParams().perPage, params });
+      loadOfflineQuotes({
+        speaker,
+        tag,
+        order,
+        page,
+        perPage: getOfflineParams().perPage,
+        params,
+      });
     };
 
     form?.addEventListener("submit", handleSubmit);

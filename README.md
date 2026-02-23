@@ -1,6 +1,12 @@
 # QuoteBookWebPage
 
-**Codebase size:** 16,771 lines across all `.py`, `.html`, `.css`, and `.js` files (as of 14th Feb 2026).
+[![](https://img.shields.io/badge/quality-trust%20me%20bro-3C1)](https://github.com/sebmestrallet/absurd-badges)
+[![](https://img.shields.io/badge/coverage-not%20much-F73)](https://github.com/sebmestrallet/absurd-badges)
+[![](https://img.shields.io/badge/test-passing%20if%20you%20try%20a%20second%20time-3C1)](https://github.com/sebmestrallet/absurd-badges)
+[![](https://img.shields.io/badge/code%20style-mix%20of%20tabs%20and%20spaces-F73)](https://github.com/sebmestrallet/absurd-badges)
+[![](https://img.shields.io/badge/encoding-ÛT�--€™-08C)](https://github.com/sebmestrallet/absurd-badges)
+[![](https://img.shields.io/badge/created%20an%20AGI%20by%20mistake-maybe-3C1)](https://github.com/sebmestrallet/absurd-badges)
+[![Project line count](https://img.shields.io/badge/project%20lines-31330-0A84FF?style=flat-square)](#code-line-counts)
 
 A simple **Flask‑powered web application** that lets you browse and share your Quote Book as a neat, user‑friendly web page.
 
@@ -247,6 +253,138 @@ You can deploy this app easily:
 
 ---
 
+<!-- LINE_COUNT_START -->
+## Code Line Counts
+
+Snapshot date: `2026-02-23`
+
+- Total tracked lines (`.py`, `.js`, `.html`, `.css`): **31330**
+- Python (`.py`): **14993**
+- JavaScript (`.js`): **4315**
+- HTML (`.html`): **4748**
+- CSS (`.css`): **7274**
+- Files counted: **109**
+
+<details>
+<summary>Per-file line counts</summary>
+
+| File | Lines |
+| --- | ---: |
+| `PATTERNS.py` | 166 |
+| `ai_helpers.py` | 614 |
+| `api_errors.py` | 33 |
+| `api_server.py` | 284 |
+| `app.py` | 461 |
+| `app_services.py` | 1918 |
+| `blueprints/__init__.py` | 1 |
+| `blueprints/api.py` | 36 |
+| `blueprints/api_routes/__init__.py` | 1 |
+| `blueprints/api_routes/games.py` | 564 |
+| `blueprints/api_routes/notifications.py` | 159 |
+| `blueprints/api_routes/quotes.py` | 501 |
+| `blueprints/web.py` | 60 |
+| `blueprints/web_routes/__init__.py` | 1 |
+| `blueprints/web_routes/core.py` | 302 |
+| `blueprints/web_routes/quotes.py` | 589 |
+| `blueprints/web_routes/social.py` | 467 |
+| `datetime_handler.py` | 134 |
+| `ops.py` | 8 |
+| `ops_control_gui.py` | 1652 |
+| `pythonanywhere_wsgi.py` | 42 |
+| `qb_formats.py` | 514 |
+| `quote_anarchy.py` | 1575 |
+| `quote_blackline.py` | 1314 |
+| `quote_client.py` | 358 |
+| `quote_who_said_it.py` | 1064 |
+| `run.py` | 134 |
+| `scripts/run_weekly_digest_once.py` | 67 |
+| `static/assets/css/add-quote.css` | 260 |
+| `static/assets/css/advertise.css` | 136 |
+| `static/assets/css/ai-screenplay.css` | 115 |
+| `static/assets/css/ai.css` | 151 |
+| `static/assets/css/all-quotes.css` | 414 |
+| `static/assets/css/battle.css` | 146 |
+| `static/assets/css/blackline-rush.css` | 541 |
+| `static/assets/css/calendar.css` | 200 |
+| `static/assets/css/credits.css` | 137 |
+| `static/assets/css/design-system.css` | 334 |
+| `static/assets/css/edit-quote.css` | 216 |
+| `static/assets/css/error.css` | 42 |
+| `static/assets/css/footer.css` | 69 |
+| `static/assets/css/games.css` | 170 |
+| `static/assets/css/index.css` | 492 |
+| `static/assets/css/mailbox.css` | 193 |
+| `static/assets/css/main.css` | 362 |
+| `static/assets/css/monetize.css` | 69 |
+| `static/assets/css/privacy.css` | 184 |
+| `static/assets/css/pwa.css` | 74 |
+| `static/assets/css/quote-anarchy.css` | 703 |
+| `static/assets/css/quote.css` | 229 |
+| `static/assets/css/quotes-by-day.css` | 158 |
+| `static/assets/css/search.css` | 248 |
+| `static/assets/css/social.css` | 780 |
+| `static/assets/css/stats.css` | 325 |
+| `static/assets/css/support.css` | 96 |
+| `static/assets/css/who-said-it.css` | 430 |
+| `static/assets/js/background.js` | 133 |
+| `static/assets/js/blackline-rush.js` | 760 |
+| `static/assets/js/index.js` | 562 |
+| `static/assets/js/pwa-sync.js` | 506 |
+| `static/assets/js/quote-anarchy.js` | 898 |
+| `static/assets/js/social.js` | 358 |
+| `static/assets/js/theme.js` | 155 |
+| `static/assets/js/who-said-it.js` | 646 |
+| `static/offline.html` | 193 |
+| `static/sw.js` | 297 |
+| `stats_stopwords.py` | 59 |
+| `templates/ad_slot.html` | 27 |
+| `templates/add_quote.html` | 196 |
+| `templates/advertise.html` | 88 |
+| `templates/ai.html` | 97 |
+| `templates/ai_screenplay.html` | 50 |
+| `templates/all_quotes.html` | 455 |
+| `templates/base.html` | 225 |
+| `templates/battle.html` | 64 |
+| `templates/blackline_rush.html` | 161 |
+| `templates/calendar.html` | 76 |
+| `templates/credits.html` | 118 |
+| `templates/edit_index.html` | 167 |
+| `templates/edit_quote.html` | 149 |
+| `templates/error.html` | 22 |
+| `templates/footer.html` | 53 |
+| `templates/games.html` | 94 |
+| `templates/index.html` | 241 |
+| `templates/mailbox.html` | 116 |
+| `templates/privacy.html` | 98 |
+| `templates/pwa.html` | 224 |
+| `templates/quote.html` | 259 |
+| `templates/quote_anarchy.html` | 199 |
+| `templates/quotes_by_day.html` | 57 |
+| `templates/search.html` | 265 |
+| `templates/social.html` | 263 |
+| `templates/social_post.html` | 189 |
+| `templates/stats.html` | 346 |
+| `templates/support.html` | 63 |
+| `templates/unsubscribe.html` | 44 |
+| `templates/who_said_it.html` | 149 |
+| `tests/conftest.py` | 203 |
+| `tests/test_api_contract.py` | 120 |
+| `tests/test_auth_and_tokens.py` | 87 |
+| `tests/test_blackline_rush.py` | 162 |
+| `tests/test_config_validation.py` | 42 |
+| `tests/test_mailbox.py` | 76 |
+| `tests/test_quote_anarchy.py` | 273 |
+| `tests/test_quote_client.py` | 160 |
+| `tests/test_scheduler_and_metrics.py` | 293 |
+| `tests/test_smoke_routes.py` | 180 |
+| `tests/test_social_engagement.py` | 105 |
+| `tests/test_who_said_it.py` | 214 |
+
+</details>
+
+---
+
+<!-- LINE_COUNT_END -->
 ## Contributing
 
 1. Fork it!

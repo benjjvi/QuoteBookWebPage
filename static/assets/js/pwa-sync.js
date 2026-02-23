@@ -304,6 +304,7 @@
 
   const getOfflineQuotePage = async ({
     speaker,
+    tag,
     order,
     page,
     perPage,
@@ -312,6 +313,7 @@
       const normalizedOrder = (order || "oldest").trim().toLowerCase();
       const reverseSort = normalizedOrder === "newest";
       const normalizedSpeaker = (speaker || "").trim().toLowerCase();
+      const normalizedTag = (tag || "").trim().toLowerCase();
       const pageSize = Number(perPage) > 0 ? Number(perPage) : 9;
 
       let quotes = await getAllQuotes();
@@ -321,6 +323,15 @@
             ? q.authors.some(
                 (author) =>
                   String(author).trim().toLowerCase() === normalizedSpeaker,
+              )
+            : false,
+        );
+      }
+      if (normalizedTag) {
+        quotes = quotes.filter((q) =>
+          Array.isArray(q.tags)
+            ? q.tags.some(
+                (item) => String(item).trim().toLowerCase() === normalizedTag,
               )
             : false,
         );
@@ -376,10 +387,11 @@
     }
   };
 
-  const searchOfflineQuotes = async (query, { limit } = {}) => {
+  const searchOfflineQuotes = async (query, { limit, tag } = {}) => {
     try {
       const normalizedQuery = String(query || "").trim().toLowerCase();
-      if (!normalizedQuery) return [];
+      const normalizedTag = String(tag || "").trim().toLowerCase();
+      if (!normalizedQuery && !normalizedTag) return [];
 
       const queryTokens = tokenize(normalizedQuery);
       const queryTokenSet = new Set(queryTokens);
@@ -387,27 +399,47 @@
       const scoredResults = [];
 
       quotes.forEach((quote) => {
+        if (
+          normalizedTag &&
+          (!Array.isArray(quote.tags) ||
+            !quote.tags.some(
+              (item) => String(item).trim().toLowerCase() === normalizedTag,
+            ))
+        ) {
+          return;
+        }
+
         const quoteText = String(quote.quote || "").toLowerCase();
         const authorsText = Array.isArray(quote.authors)
           ? quote.authors.join(" ").toLowerCase()
           : "";
         const contextText = String(quote.context || "").toLowerCase();
+        const tagsText = Array.isArray(quote.tags)
+          ? quote.tags.join(" ").toLowerCase()
+          : "";
 
         let score = 0;
 
-        if (quoteText.includes(normalizedQuery)) score += 8;
-        if (authorsText.includes(normalizedQuery)) score += 10;
-        if (contextText.includes(normalizedQuery)) score += 5;
+        if (normalizedQuery) {
+          if (quoteText.includes(normalizedQuery)) score += 8;
+          if (authorsText.includes(normalizedQuery)) score += 10;
+          if (contextText.includes(normalizedQuery)) score += 5;
+          if (tagsText.includes(normalizedQuery)) score += 6;
+        }
 
         const quoteTokens = new Set(tokenize(quoteText));
         const authorTokens = new Set(tokenize(authorsText));
         const contextTokens = new Set(tokenize(contextText));
+        const tagTokens = new Set(tokenize(tagsText));
 
-        queryTokens.forEach((token) => {
-          if (quoteTokens.has(token)) score += 2;
-          if (authorTokens.has(token)) score += 3;
-          if (contextTokens.has(token)) score += 1;
-        });
+        if (queryTokens.length) {
+          queryTokens.forEach((token) => {
+            if (quoteTokens.has(token)) score += 2;
+            if (authorTokens.has(token)) score += 3;
+            if (contextTokens.has(token)) score += 1;
+            if (tagTokens.has(token)) score += 2;
+          });
+        }
 
         if (
           queryTokenSet.size &&
@@ -415,10 +447,15 @@
             (token) =>
               quoteTokens.has(token) ||
               authorTokens.has(token) ||
-              contextTokens.has(token),
+              contextTokens.has(token) ||
+              tagTokens.has(token),
           )
         ) {
           score += 3;
+        }
+
+        if (!normalizedQuery && normalizedTag) {
+          score += 1;
         }
 
         if (score > 0) scoredResults.push([score, quote]);

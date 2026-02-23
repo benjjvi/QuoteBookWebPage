@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import secrets
 
@@ -12,33 +14,36 @@ from flask import (
     url_for,
 )
 
+SOCIAL_GENERIC_POSTS = [
+    {
+        "title": "Hallway Bulletin",
+        "body": "Reminder: coffee machine diplomacy is still the fastest path to peace.",
+    },
+    {
+        "title": "Studio Update",
+        "body": "Today's vibe report says everyone is one spreadsheet away from poetry.",
+    },
+    {
+        "title": "Community Note",
+        "body": "If a quote starts with 'technically', brace for impact.",
+    },
+    {
+        "title": "Signal Boost",
+        "body": "Context lines are climbing. Future-you is grateful already.",
+    },
+    {
+        "title": "Mood Index",
+        "body": "Peak posting window remains late evening and lightly unhinged.",
+    },
+]
+
 
 def register_social_routes(bp, context):
     quote_store = context["quote_store"]
     services = context["services"]
-
-    social_generic_posts = [
-        {
-            "title": "Hallway Bulletin",
-            "body": "Reminder: coffee machine diplomacy is still the fastest path to peace.",
-        },
-        {
-            "title": "Studio Update",
-            "body": "Today's vibe report says everyone is one spreadsheet away from poetry.",
-        },
-        {
-            "title": "Community Note",
-            "body": "If a quote starts with 'technically', brace for impact.",
-        },
-        {
-            "title": "Signal Boost",
-            "body": "Context lines are climbing. Future-you is grateful already.",
-        },
-        {
-            "title": "Mood Index",
-            "body": "Peak posting window remains late evening and lightly unhinged.",
-        },
-    ]
+    social_reactions = services.get_social_reaction_catalog()
+    social_device_cookie_key = "qb_social_device_id"
+    per_page = 12
 
     def _sorted_quotes_newest_first():
         return sorted(
@@ -53,6 +58,16 @@ def register_social_routes(bp, context):
             for author, count in quote_store.get_speaker_counts()
         ]
 
+    def _social_tag_directory():
+        return [
+            {"tag": tag, "count": count}
+            for tag, count in quote_store.get_tag_counts()
+        ]
+
+    def _normalized_tag(raw_tag: str) -> str:
+        tags = quote_store.parse_tags(raw_tag or "")
+        return tags[0] if tags else ""
+
     def _social_match_authors(author_directory, query: str):
         query = (query or "").strip()
         if not query:
@@ -62,28 +77,48 @@ def register_social_routes(bp, context):
             item for item in author_directory if query_lower in item["name"].lower()
         ]
 
-    def _social_quote_matches(quote, query: str) -> bool:
+    def _social_quote_matches_author(quote, author_name: str) -> bool:
+        author_name = (author_name or "").strip()
+        if not author_name:
+            return True
+        author_lower = author_name.casefold()
+        return any(author_lower == author.casefold() for author in quote.authors)
+
+    def _social_quote_matches_tag(quote, tag_value: str) -> bool:
+        if not tag_value:
+            return True
+        tags = [str(tag or "").strip().lower() for tag in (quote.tags or [])]
+        return tag_value in tags
+
+    def _collect_social_quotes(*, query: str, author_name: str, tag: str):
         query = (query or "").strip()
-        if not query:
-            return True
+        if query:
+            quotes = quote_store.search_quotes(query, tag=tag)
+        else:
+            quotes = _sorted_quotes_newest_first()
+            if tag:
+                quotes = [quote for quote in quotes if _social_quote_matches_tag(quote, tag)]
 
-        query_lower = query.lower()
-        if query_lower in quote.quote.lower():
-            return True
-        if query_lower in (quote.context or "").lower():
-            return True
-        return any(query_lower in author.lower() for author in quote.authors)
+        if author_name:
+            quotes = [
+                quote
+                for quote in quotes
+                if _social_quote_matches_author(quote, author_name)
+            ]
+        return quotes
 
-    def _filter_social_quotes(quotes, query: str):
-        if not query:
-            return list(quotes)
-        return [quote for quote in quotes if _social_quote_matches(quote, query)]
+    def _paginate_quotes(quotes, page_number: int):
+        total = len(quotes)
+        total_pages = max(1, (total + per_page - 1) // per_page)
+        page = max(1, min(page_number, total_pages))
+        start = (page - 1) * per_page
+        end = start + per_page
+        return quotes[start:end], page, total_pages, total
 
-    def _build_social_feed_items(quotes):
+    def _build_social_feed_items(quotes, *, offset: int, total_quotes: int):
         feed_items = []
-        generic_index = 0
-
         for quote_index, quote in enumerate(quotes):
+            absolute_index = offset + quote_index
             primary_author = quote.authors[0] if quote.authors else "Unknown"
             feed_items.append(
                 {
@@ -94,16 +129,15 @@ def register_social_routes(bp, context):
             )
 
             should_insert_generic = (
-                social_generic_posts
-                and (quote_index + 1) % 4 == 0
-                and quote_index < len(quotes) - 1
+                SOCIAL_GENERIC_POSTS
+                and (absolute_index + 1) % 4 == 0
+                and absolute_index < total_quotes - 1
             )
             if should_insert_generic:
-                generic_post = social_generic_posts[
-                    generic_index % len(social_generic_posts)
-                ]
-                feed_items.append({"kind": "generic", "post": generic_post})
-                generic_index += 1
+                generic_index = ((absolute_index + 1) // 4 - 1) % len(SOCIAL_GENERIC_POSTS)
+                feed_items.append(
+                    {"kind": "generic", "post": SOCIAL_GENERIC_POSTS[generic_index]}
+                )
 
         return feed_items
 
@@ -144,9 +178,6 @@ def register_social_routes(bp, context):
             if entry["name"].casefold() == raw_name.casefold():
                 return entry["name"]
         return None
-
-    social_reactions = services.get_social_reaction_catalog()
-    social_device_cookie_key = "qb_social_device_id"
 
     def _social_notice_pop():
         notice = session.pop("social_notice", None)
@@ -191,24 +222,49 @@ def register_social_routes(bp, context):
     def social_feed():
         device_id, _ = _social_get_device_id()
         query = (request.args.get("q") or "").strip()
-        quotes = _sorted_quotes_newest_first()
+        selected_tag = _normalized_tag(request.args.get("tag", ""))
+        page = request.args.get("page", 1, type=int)
+
         author_directory = _social_author_directory()
-        filtered_quotes = _filter_social_quotes(quotes, query)
+        tag_directory = _social_tag_directory()
+        all_quotes = _collect_social_quotes(
+            query=query,
+            author_name="",
+            tag=selected_tag,
+        )
+        paginated_quotes, page, total_pages, total_quotes = _paginate_quotes(all_quotes, page)
         matched_authors = _social_match_authors(author_directory, query)
+        feed_items = _build_social_feed_items(
+            paginated_quotes,
+            offset=(page - 1) * per_page,
+            total_quotes=total_quotes,
+        )
 
         response = make_response(
             render_template(
                 "social.html",
                 social_mode="feed",
                 query=query,
+                selected_tag=selected_tag,
                 active_author="",
-                feed_items=_build_social_feed_items(filtered_quotes),
-                feed_quote_count=len(filtered_quotes),
+                feed_items=feed_items,
+                feed_quote_count=total_quotes,
                 matched_authors=matched_authors,
                 author_directory=author_directory[:32],
+                tag_directory=tag_directory[:32],
                 all_authors=[entry["name"] for entry in author_directory],
                 avatar_urls=_social_avatar_urls(),
                 profile_meta={},
+                social_feed_meta={
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": total_pages,
+                    "has_more": page < total_pages,
+                    "next_page": page + 1 if page < total_pages else None,
+                    "query": query,
+                    "author": "",
+                    "tag": selected_tag,
+                },
             )
         )
         return _social_apply_device_cookie(response, device_id)
@@ -217,21 +273,27 @@ def register_social_routes(bp, context):
     def social_author(author_name):
         device_id, _ = _social_get_device_id()
         query = (request.args.get("q") or "").strip()
+        selected_tag = _normalized_tag(request.args.get("tag", ""))
+        page = request.args.get("page", 1, type=int)
         author_directory = _social_author_directory()
+        tag_directory = _social_tag_directory()
         canonical_author = _resolve_author_name(author_directory, author_name)
         if not canonical_author:
             abort(404)
 
-        quotes = _sorted_quotes_newest_first()
-        author_quotes = [
-            quote
-            for quote in quotes
-            if any(
-                canonical_author.casefold() == author.casefold()
-                for author in quote.authors
-            )
-        ]
-        filtered_author_quotes = _filter_social_quotes(author_quotes, query)
+        author_quotes = _collect_social_quotes(
+            query="",
+            author_name=canonical_author,
+            tag="",
+        )
+        filtered_quotes = _collect_social_quotes(
+            query=query,
+            author_name=canonical_author,
+            tag=selected_tag,
+        )
+        paginated_quotes, page, total_pages, total_quotes = _paginate_quotes(
+            filtered_quotes, page
+        )
         matched_authors = _social_match_authors(author_directory, query)
 
         co_author_counts = {}
@@ -246,27 +308,41 @@ def register_social_routes(bp, context):
             key=lambda item: (-item[1], item[0].casefold()),
         )[:3]
 
+        feed_items = _build_social_feed_items(
+            paginated_quotes,
+            offset=(page - 1) * per_page,
+            total_quotes=total_quotes,
+        )
+
         response = make_response(
             render_template(
                 "social.html",
                 social_mode="author",
                 query=query,
+                selected_tag=selected_tag,
                 active_author=canonical_author,
-                feed_items=_build_social_feed_items(filtered_author_quotes),
-                feed_quote_count=len(filtered_author_quotes),
+                feed_items=feed_items,
+                feed_quote_count=total_quotes,
                 matched_authors=matched_authors,
                 author_directory=author_directory[:32],
+                tag_directory=tag_directory[:32],
                 all_authors=[entry["name"] for entry in author_directory],
                 avatar_urls=_social_avatar_urls(),
                 profile_meta={
                     "quote_count": len(author_quotes),
-                    "latest_timestamp": (
-                        author_quotes[0].timestamp if author_quotes else 0
-                    ),
-                    "oldest_timestamp": (
-                        author_quotes[-1].timestamp if author_quotes else 0
-                    ),
+                    "latest_timestamp": (author_quotes[0].timestamp if author_quotes else 0),
+                    "oldest_timestamp": (author_quotes[-1].timestamp if author_quotes else 0),
                     "top_coauthors": top_coauthors,
+                },
+                social_feed_meta={
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": total_pages,
+                    "has_more": page < total_pages,
+                    "next_page": page + 1 if page < total_pages else None,
+                    "query": query,
+                    "author": canonical_author,
+                    "tag": selected_tag,
                 },
             )
         )

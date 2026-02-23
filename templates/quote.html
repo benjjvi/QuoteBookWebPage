@@ -37,6 +37,14 @@
       </div>
     {% endif %}
 
+    {% if tags %}
+      <div class="tag-row">
+        {% for topic in tags %}
+          <a href="/search?tag={{ topic | urlencode }}" class="tag-chip">#{{ topic }}</a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     <div class="quote-meta">
       <span>{{ date }}</span>
       <span class="quote-meta-sep">•</span>
@@ -152,6 +160,29 @@
           }
         } else if (contextEl) {
           contextEl.remove();
+        }
+
+        const existingTagRow = document.querySelector(".tag-row");
+        if (Array.isArray(quote.tags) && quote.tags.length) {
+          const tagsHtml = quote.tags
+            .map(
+              (topic) =>
+                `<a href="/search?tag=${encodeURIComponent(String(topic))}" class="tag-chip">#${escapeHtml(topic)}</a>`,
+            )
+            .join("");
+          if (existingTagRow) {
+            existingTagRow.innerHTML = tagsHtml;
+          } else {
+            const contextOrMeta = document.querySelector(".quote-context") || document.querySelector(".quote-meta");
+            if (contextOrMeta) {
+              const newRow = document.createElement("div");
+              newRow.className = "tag-row";
+              newRow.innerHTML = tagsHtml;
+              contextOrMeta.before(newRow);
+            }
+          }
+        } else if (existingTagRow) {
+          existingTagRow.remove();
         }
 
         const metaEl = document.querySelector(".quote-meta");

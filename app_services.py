@@ -9,7 +9,7 @@ import smtplib
 import sqlite3
 import threading
 import time as timelib
-from collections import Counter
+from collections import Counter, deque
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from email.message import EmailMessage
@@ -102,12 +102,15 @@ class AppServices:
             "weekly_digest_skipped_not_due": 0,
             "weekly_digest_claim_conflict": 0,
             "weekly_scheduler_loop_errors": 0,
+            "rate_limited": 0,
         }
         self.runtime_status: dict[str, str] = {
             "push_last_error": "",
             "email_last_error": "",
         }
         self.opportunistic_scheduler_interval_seconds = 300
+        self._rate_limit_lock = threading.Lock()
+        self._rate_limit_hits: dict[str, deque[float]] = {}
 
     # ------------------------
     # Runtime validation + metrics
@@ -272,6 +275,7 @@ class AppServices:
             "authors": quote.authors,
             "timestamp": quote.timestamp,
             "context": quote.context,
+            "tags": list(getattr(quote, "tags", []) or []),
             "stats": getattr(quote, "stats", {}),
         }
 
@@ -295,6 +299,61 @@ class AppServices:
 
     def get_ai_request_token(self) -> str:
         return self._session_token("ai_request_token")
+
+    def get_csrf_token(self) -> str:
+        return self._session_token("csrf_token")
+
+    def validate_csrf_token(self, token: str) -> bool:
+        candidate = (token or "").strip()
+        expected = (session.get("csrf_token") or "").strip()
+        if not candidate or not expected:
+            return False
+        return secrets.compare_digest(candidate, expected)
+
+    @staticmethod
+    def get_request_client_ip() -> str:
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        if forwarded:
+            first = forwarded.split(",", 1)[0].strip()
+            if first:
+                return first
+        real_ip = (request.headers.get("X-Real-IP") or "").strip()
+        if real_ip:
+            return real_ip
+        return (request.remote_addr or "unknown").strip() or "unknown"
+
+    def consume_rate_limit(
+        self,
+        *,
+        key: str,
+        limit: int,
+        window_seconds: int,
+        now_ts: float | None = None,
+    ) -> tuple[bool, int]:
+        if limit <= 0 or window_seconds <= 0:
+            return True, 0
+
+        now = float(now_ts if now_ts is not None else timelib.time())
+        min_allowed = now - float(window_seconds)
+
+        with self._rate_limit_lock:
+            bucket = self._rate_limit_hits.setdefault(key, deque())
+            while bucket and bucket[0] < min_allowed:
+                bucket.popleft()
+
+            if len(bucket) >= int(limit):
+                retry_after = max(1, int(bucket[0] + float(window_seconds) - now))
+                self._increment_metric("rate_limited", 1)
+                return False, retry_after
+
+            bucket.append(now)
+
+            if len(self._rate_limit_hits) > 5000:
+                stale_keys = [name for name, values in self._rate_limit_hits.items() if not values]
+                for stale_key in stale_keys:
+                    self._rate_limit_hits.pop(stale_key, None)
+
+        return True, 0
 
     # ------------------------
     # DB helpers

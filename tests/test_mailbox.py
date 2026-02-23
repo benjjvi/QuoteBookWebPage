@@ -57,7 +57,7 @@ def test_mailbox_subscribed_cookie_shows_full_previous_archive(client, services)
     assert "Signed in as reader@example.com via subscription cookie." in body
 
 
-def test_unsubscribe_page_removes_email_and_clears_cookie(client):
+def test_unsubscribe_page_removes_email_and_clears_cookie(client, csrf_token_for):
     token_resp = client.get("/api/email/token")
     token = token_resp.get_json()["token"]
     subscribe_resp = client.post(
@@ -66,9 +66,10 @@ def test_unsubscribe_page_removes_email_and_clears_cookie(client):
     )
     assert subscribe_resp.status_code == 200
 
+    csrf = csrf_token_for("/unsubscribe")
     unsubscribe_resp = client.post(
         "/unsubscribe",
-        data={"email": "reader@example.com"},
+        data={"email": "reader@example.com", "csrf_token": csrf},
         follow_redirects=True,
     )
     assert unsubscribe_resp.status_code == 200

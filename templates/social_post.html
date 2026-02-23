@@ -65,6 +65,14 @@
         <p class="quote-context quote-context-large">{{ quote.context }}</p>
       {% endif %}
 
+      {% if quote.tags %}
+        <div class="tag-row">
+          {% for topic in quote.tags %}
+            <a href="/social?tag={{ topic | urlencode }}" class="tag-chip">#{{ topic }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
       <p class="post-quote-link">
         <a href="/quote/{{ quote.id }}">Open original quote page</a>
       </p>
@@ -82,6 +90,7 @@
         </div>
 
         <form method="post" action="{{ url_for('web.social_quote_react', quote_id=quote.id) }}" class="reaction-grid">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           {% for reaction in reaction_catalog %}
             <button
               type="submit"
@@ -104,6 +113,7 @@
         </div>
 
         <form method="post" action="{{ url_for('web.social_quote_comment', quote_id=quote.id) }}" class="comment-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <label for="commenter_name">Name</label>
           <input
             id="commenter_name"

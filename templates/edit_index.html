@@ -38,6 +38,7 @@
 
     {% if not is_authed %}
       <form method="post" class="pin-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="action" value="pin" />
         <label for="pin" class="pin-label">Enter 4-digit PIN</label>
         <input

@@ -8,6 +8,7 @@ from .api_routes.quotes import register_quote_api_routes
 def create_api_blueprint(
     *,
     quote_store,
+    ai_worker,
     services,
     quote_anarchy_service,
     quote_blackline_service,
@@ -19,6 +20,7 @@ def create_api_blueprint(
 
     context = {
         "quote_store": quote_store,
+        "ai_worker": ai_worker,
         "services": services,
         "quote_anarchy_service": quote_anarchy_service,
         "quote_blackline_service": quote_blackline_service,

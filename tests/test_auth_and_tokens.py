@@ -52,26 +52,30 @@ def test_email_subscription_token_flow(client):
     assert unsubscribe.get_json()["ok"] is True
 
 
-def test_edit_pin_auth_flow(client, quote_store):
+def test_edit_pin_auth_flow(client, quote_store, csrf_token_for):
+    csrf = csrf_token_for("/quote/1/edit")
     wrong_pin = client.post(
         "/quote/1/edit",
-        data={"action": "pin", "pin": "0000"},
+        data={"action": "pin", "pin": "0000", "csrf_token": csrf},
         follow_redirects=True,
     )
     assert wrong_pin.status_code == 200
     assert b"Incorrect PIN" in wrong_pin.data
 
+    csrf = csrf_token_for("/quote/1/edit")
     pin_ok = client.post(
         "/quote/1/edit",
-        data={"action": "pin", "pin": "1234"},
+        data={"action": "pin", "pin": "1234", "csrf_token": csrf},
         follow_redirects=True,
     )
     assert pin_ok.status_code == 200
 
+    csrf = csrf_token_for("/quote/1/edit")
     updated = client.post(
         "/quote/1/edit",
         data={
             "action": "edit",
+            "csrf_token": csrf,
             "quote_text": "Edited through test",
             "author_info": "Alice",
             "context": "Changed",
