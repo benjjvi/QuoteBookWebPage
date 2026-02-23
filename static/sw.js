@@ -1,9 +1,9 @@
-const CACHE_VERSION = "v22";
+const CACHE_VERSION = "v23";
 const PRECACHE = `qb-precache-${CACHE_VERSION}`;
 const RUNTIME = `qb-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
 
-const PRECACHE_URLS = [
+const PRECACHE_ROUTES = [
   "/",
   "/all_quotes",
   "/random",
@@ -11,7 +11,24 @@ const PRECACHE_URLS = [
   "/stats",
   "/mailbox",
   "/unsubscribe",
+  "/support",
+  "/advertise",
+  "/credits",
+  "/privacy",
+  "/ai",
+  "/add_quote",
+  "/edit",
+  "/games",
+  "/battle",
+  "/quote-anarchy",
+  "/games/blackline-rush",
+  "/games/who-said-it",
+  "/social",
+  "/pwa",
   OFFLINE_URL,
+];
+
+const PRECACHE_ASSETS = [
   "/manifest.webmanifest",
   "/static/favicon.ico",
   "/static/favicon.png",
@@ -20,21 +37,56 @@ const PRECACHE_URLS = [
   "/static/icons/icon-512.png",
   "/static/assets/css/main.css",
   "/static/assets/css/footer.css",
+  "/static/assets/css/design-system.css",
   "/static/assets/css/index.css",
   "/static/assets/css/all-quotes.css",
   "/static/assets/css/quote.css",
   "/static/assets/css/search.css",
   "/static/assets/css/stats.css",
   "/static/assets/css/mailbox.css",
+  "/static/assets/css/calendar.css",
+  "/static/assets/css/quotes-by-day.css",
+  "/static/assets/css/add-quote.css",
+  "/static/assets/css/ai.css",
+  "/static/assets/css/ai-screenplay.css",
+  "/static/assets/css/battle.css",
+  "/static/assets/css/games.css",
+  "/static/assets/css/quote-anarchy.css",
+  "/static/assets/css/blackline-rush.css",
+  "/static/assets/css/who-said-it.css",
+  "/static/assets/css/edit-quote.css",
+  "/static/assets/css/social.css",
+  "/static/assets/css/support.css",
+  "/static/assets/css/advertise.css",
+  "/static/assets/css/monetize.css",
+  "/static/assets/css/credits.css",
+  "/static/assets/css/privacy.css",
+  "/static/assets/css/pwa.css",
+  "/static/assets/css/error.css",
   "/static/assets/js/background.js",
+  "/static/assets/js/theme.js",
   "/static/assets/js/index.js",
   "/static/assets/js/pwa-sync.js",
+  "/static/assets/js/social.js",
+  "/static/assets/js/quote-anarchy.js",
+  "/static/assets/js/blackline-rush.js",
+  "/static/assets/js/who-said-it.js",
   "/static/assets/img/book.svg",
   "/static/assets/img/dice.svg",
   "/static/assets/img/search.svg",
   "/static/assets/img/mailbox.svg",
   "/static/assets/img/stats.svg",
+  "/static/assets/img/calendar.svg",
+  "/static/assets/img/robot.svg",
+  "/static/assets/img/add.svg",
+  "/static/assets/img/edit.svg",
+  "/static/assets/img/battle.svg",
+  "/static/assets/img/games.svg",
+  "/static/assets/img/support.svg",
+  "/static/assets/img/loading.svg",
 ];
+
+const PRECACHE_URLS = [...PRECACHE_ROUTES, ...PRECACHE_ASSETS];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -68,7 +120,9 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request, RUNTIME, OFFLINE_URL));
+    event.respondWith(
+      networkFirst(request, RUNTIME, OFFLINE_URL, { navigation: true }),
+    );
     return;
   }
 
@@ -138,35 +192,68 @@ async function cacheFirst(request, cacheName) {
 
   const response = await fetch(request);
   if (response && response.status === 200) {
-    cache.put(request, response.clone());
+    await safePut(cache, request, response);
   }
   return response;
 }
 
-async function getFallbackResponse(fallbackUrl) {
-  if (!fallbackUrl) return null;
+async function safePut(cache, request, response) {
+  try {
+    await cache.put(request, response.clone());
+  } catch (_err) {
+    return;
+  }
+}
 
+function getNavigationCandidates(request) {
+  const url = new URL(request.url);
+  const candidates = [request, url.pathname];
+
+  if (url.pathname !== "/" && url.pathname.endsWith("/")) {
+    candidates.push(url.pathname.slice(0, -1));
+  } else if (url.pathname !== "/") {
+    candidates.push(`${url.pathname}/`);
+  }
+
+  return candidates;
+}
+
+async function getCachedResponse(request, options = {}) {
+  const { navigation = false } = options;
   const runtimeCache = await caches.open(RUNTIME);
-  let fallback = await runtimeCache.match(fallbackUrl);
-  if (fallback) return fallback;
-
   const precache = await caches.open(PRECACHE);
-  fallback = await precache.match(fallbackUrl);
-  if (fallback) return fallback;
+  const candidates = navigation ? getNavigationCandidates(request) : [request];
+  const matchOptions = navigation ? { ignoreSearch: true } : undefined;
+
+  for (const candidate of candidates) {
+    let cached = await runtimeCache.match(candidate, matchOptions);
+    if (cached) return cached;
+    cached = await precache.match(candidate, matchOptions);
+    if (cached) return cached;
+  }
 
   return null;
 }
 
-async function networkFirst(request, cacheName, fallbackUrl) {
+async function getFallbackResponse(fallbackUrl) {
+  if (!fallbackUrl) return null;
+  const fallbackRequest = new Request(
+    new URL(fallbackUrl, self.location.origin).toString(),
+  );
+  return getCachedResponse(fallbackRequest, { navigation: true });
+}
+
+async function networkFirst(request, cacheName, fallbackUrl, options = {}) {
+  const { navigation = false } = options;
   const cache = await caches.open(cacheName);
   try {
     const response = await fetch(request);
     if (response && response.status === 200) {
-      cache.put(request, response.clone());
+      await safePut(cache, request, response);
     }
     return response;
   } catch (err) {
-    const cached = await cache.match(request);
+    const cached = await getCachedResponse(request, { navigation });
     if (cached) return cached;
 
     const fallback = await getFallbackResponse(fallbackUrl);
@@ -181,12 +268,12 @@ async function networkFirst(request, cacheName, fallbackUrl) {
 
 async function staleWhileRevalidate(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
+  const cached = await getCachedResponse(request);
 
   const fetchPromise = fetch(request)
     .then((response) => {
       if (response && response.status === 200) {
-        cache.put(request, response.clone());
+        safePut(cache, request, response);
       }
       return response;
     })
