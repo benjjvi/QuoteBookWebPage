@@ -1,13 +1,5 @@
 (() => {
-  const bootstrapEl = document.getElementById("wsiBootstrapData");
-  let bootstrap = {};
-  if (bootstrapEl?.textContent) {
-    try {
-      bootstrap = JSON.parse(bootstrapEl.textContent);
-    } catch (_err) {
-      bootstrap = {};
-    }
-  }
+  const bootstrap = window.GameRoomCore.parseBootstrapData("wsiBootstrapData");
 
   const STORAGE_KEYS = {
     sessionCode: "wsi_session_code",
@@ -60,11 +52,6 @@
   };
 
   const state = {
-    sessionCode: "",
-    playerId: "",
-    playerName: "",
-    pending: false,
-    pollingTimer: null,
     selectedAuthor: "",
     selectedTurn: 0,
     lastNotice: "",
@@ -79,23 +66,7 @@
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
-  const api = async (path, { method = "GET", body } = {}) => {
-    const options = {
-      method,
-      credentials: "same-origin",
-      headers: {},
-    };
-    if (body !== undefined) {
-      options.headers["Content-Type"] = "application/json";
-      options.body = JSON.stringify(body);
-    }
-    const response = await fetch(path, options);
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload?.error || "Request failed.");
-    }
-    return payload;
-  };
+  const api = window.GameRoomCore.api;
 
   const setLobbyMessage = (message) => {
     if (!els.lobbyMessage) return;
@@ -107,18 +78,6 @@
     if (els.sessionNotice) {
       els.sessionNotice.textContent = state.lastNotice;
     }
-  };
-
-  const saveSessionIdentity = () => {
-    localStorage.setItem(STORAGE_KEYS.sessionCode, state.sessionCode);
-    localStorage.setItem(STORAGE_KEYS.playerId, state.playerId);
-    localStorage.setItem(STORAGE_KEYS.playerName, state.playerName);
-  };
-
-  const clearSessionIdentity = () => {
-    localStorage.removeItem(STORAGE_KEYS.sessionCode);
-    localStorage.removeItem(STORAGE_KEYS.playerId);
-    localStorage.removeItem(STORAGE_KEYS.playerName);
   };
 
   const renderReadyState = () => {
@@ -136,34 +95,6 @@
   const renderLobbyOrSession = (inSession) => {
     if (els.lobbyView) els.lobbyView.hidden = inSession;
     if (els.sessionView) els.sessionView.hidden = !inSession;
-  };
-
-  const stopPolling = () => {
-    if (state.pollingTimer) {
-      window.clearInterval(state.pollingTimer);
-      state.pollingTimer = null;
-    }
-  };
-
-  const startPolling = () => {
-    stopPolling();
-    state.pollingTimer = window.setInterval(() => {
-      refreshSessionState();
-    }, 2500);
-  };
-
-  const resetSessionState = (message) => {
-    stopPolling();
-    state.sessionCode = "";
-    state.playerId = "";
-    state.playerName = "";
-    state.selectedAuthor = "";
-    state.selectedTurn = 0;
-    state.lastState = null;
-    setSessionNotice("");
-    clearSessionIdentity();
-    renderLobbyOrSession(false);
-    if (message) setLobbyMessage(message);
   };
 
   const statusLabel = (status) => {
@@ -397,42 +328,55 @@
     renderTurn(payload);
   };
 
-  const refreshSessionState = async () => {
-    if (!state.sessionCode || !state.playerId) return;
-    try {
-      const payload = await api(
-        `/api/who-said-it/sessions/${encodeURIComponent(state.sessionCode)}?player_id=${encodeURIComponent(state.playerId)}`,
-      );
-      renderLobbyOrSession(true);
-      renderSessionState(payload);
-    } catch (err) {
-      resetSessionState(err.message || "Session unavailable.");
-    }
-  };
+  const room = window.GameRoomCore.createRoomController({
+    storageKeys: STORAGE_KEYS,
+    fetchState: ({ sessionCode, playerId }) =>
+      api(
+        `/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}?player_id=${encodeURIComponent(playerId)}`,
+      ),
+    requestCreate: ({ playerName }) =>
+      api("/api/who-said-it/sessions", {
+        method: "POST",
+        body: { player_name: playerName },
+      }),
+    requestJoin: ({ playerName, sessionCode, playerId }) =>
+      api(`/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/join`, {
+        method: "POST",
+        body: { player_name: playerName, player_id: playerId || undefined },
+      }),
+    requestLeave: ({ sessionCode, playerId }) =>
+      api(`/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/leave`, {
+        method: "POST",
+        body: { player_id: playerId },
+      }),
+    renderLobbyOrSession,
+    renderSession: renderSessionState,
+    onIdentityLoaded: ({ sessionCode, playerName }) => {
+      if (els.createName && playerName) els.createName.value = playerName;
+      if (els.joinName && playerName) els.joinName.value = playerName;
+      if (els.joinCode) els.joinCode.value = sessionCode;
+    },
+    onReset: (message) => {
+      state.selectedAuthor = "";
+      state.selectedTurn = 0;
+      state.lastState = null;
+      setSessionNotice("");
+      if (message) setLobbyMessage(message);
+    },
+  });
 
-  const joinSession = (payload) => {
-    state.sessionCode = payload.session_code || "";
-    state.playerId = payload.player_id || "";
-    state.playerName = payload.display_name || "";
+  const refreshSessionState = async () => room.refresh();
+
+  const afterJoin = () => {
     state.selectedAuthor = "";
     state.selectedTurn = 0;
-    saveSessionIdentity();
     renderLobbyOrSession(true);
     setLobbyMessage("");
     setSessionNotice("");
-    refreshSessionState();
-    startPolling();
   };
 
-  const withPending = async (fn) => {
-    if (state.pending) return;
-    state.pending = true;
-    try {
-      await fn();
-    } finally {
-      state.pending = false;
-    }
-  };
+  const withPending = room.withPending;
+  const currentIdentity = () => room.getState();
 
   const handleCreate = () => {
     if (!els.createForm || !els.createName) return;
@@ -444,11 +388,9 @@
           setLobbyMessage("Enter your name first.");
           return;
         }
-        const payload = await api("/api/who-said-it/sessions", {
-          method: "POST",
-          body: { player_name: playerName },
-        });
-        joinSession(payload);
+        setLobbyMessage("");
+        await room.create({ playerName });
+        afterJoin();
       }).catch((err) => {
         setLobbyMessage(err.message || "Unable to create room.");
       });
@@ -466,14 +408,9 @@
           setLobbyMessage("Enter your name and room code.");
           return;
         }
-        const payload = await api(
-          `/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/join`,
-          {
-            method: "POST",
-            body: { player_name: playerName },
-          },
-        );
-        joinSession(payload);
+        setLobbyMessage("");
+        await room.join({ playerName, sessionCode });
+        afterJoin();
       }).catch((err) => {
         setLobbyMessage(err.message || "Unable to join room.");
       });
@@ -484,11 +421,13 @@
     if (els.startBtn) {
       els.startBtn.addEventListener("click", () => {
         withPending(async () => {
+          const { sessionCode, playerId } = currentIdentity();
+          if (!sessionCode || !playerId) return;
           await api(
-            `/api/who-said-it/sessions/${encodeURIComponent(state.sessionCode)}/start`,
+            `/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/start`,
             {
               method: "POST",
-              body: { player_id: state.playerId },
+              body: { player_id: playerId },
             },
           );
           setSessionNotice("");
@@ -500,11 +439,13 @@
     if (els.endTurnBtn) {
       els.endTurnBtn.addEventListener("click", () => {
         withPending(async () => {
+          const { sessionCode, playerId } = currentIdentity();
+          if (!sessionCode || !playerId) return;
           await api(
-            `/api/who-said-it/sessions/${encodeURIComponent(state.sessionCode)}/end-turn`,
+            `/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/end-turn`,
             {
               method: "POST",
-              body: { player_id: state.playerId },
+              body: { player_id: playerId },
             },
           );
           await refreshSessionState();
@@ -515,11 +456,13 @@
     if (els.nextTurnBtn) {
       els.nextTurnBtn.addEventListener("click", () => {
         withPending(async () => {
+          const { sessionCode, playerId } = currentIdentity();
+          if (!sessionCode || !playerId) return;
           await api(
-            `/api/who-said-it/sessions/${encodeURIComponent(state.sessionCode)}/next-turn`,
+            `/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/next-turn`,
             {
               method: "POST",
-              body: { player_id: state.playerId },
+              body: { player_id: playerId },
             },
           );
           state.selectedAuthor = "";
@@ -531,11 +474,13 @@
     if (els.endBtn) {
       els.endBtn.addEventListener("click", () => {
         withPending(async () => {
+          const { sessionCode, playerId } = currentIdentity();
+          if (!sessionCode || !playerId) return;
           await api(
-            `/api/who-said-it/sessions/${encodeURIComponent(state.sessionCode)}/end`,
+            `/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/end`,
             {
               method: "POST",
-              body: { player_id: state.playerId },
+              body: { player_id: playerId },
             },
           );
           await refreshSessionState();
@@ -546,30 +491,22 @@
     if (els.leaveBtn) {
       els.leaveBtn.addEventListener("click", () => {
         withPending(async () => {
-          if (state.sessionCode && state.playerId) {
-            await api(
-              `/api/who-said-it/sessions/${encodeURIComponent(state.sessionCode)}/leave`,
-              {
-                method: "POST",
-                body: { player_id: state.playerId },
-              },
-            );
-          }
-          resetSessionState("You left the room.");
+          await room.leave({ message: "You left the room.", swallowErrors: false });
         }).catch((err) => {
-          resetSessionState(err.message || "You left the room.");
+          room.reset(err.message || "You left the room.");
         });
       });
     }
 
     if (els.copyCodeBtn) {
       els.copyCodeBtn.addEventListener("click", async () => {
-        const code = state.sessionCode || "";
+        const { sessionCode } = currentIdentity();
+        const code = sessionCode || "";
         if (!code) return;
-        try {
-          await navigator.clipboard.writeText(code);
+        const copied = await window.GameRoomCore.copyText(code);
+        if (copied) {
           setSessionNotice(`Copied room code ${code}.`);
-        } catch (_err) {
+        } else {
           setSessionNotice(`Room code: ${code}`);
         }
       });
@@ -579,16 +516,18 @@
       els.answerForm.addEventListener("submit", (event) => {
         event.preventDefault();
         withPending(async () => {
+          const { sessionCode, playerId } = currentIdentity();
+          if (!sessionCode || !playerId) return;
           if (!state.selectedAuthor) {
             setSessionNotice("Pick an author first.");
             return;
           }
           const payload = await api(
-            `/api/who-said-it/sessions/${encodeURIComponent(state.sessionCode)}/answer`,
+            `/api/who-said-it/sessions/${encodeURIComponent(sessionCode)}/answer`,
             {
               method: "POST",
               body: {
-                player_id: state.playerId,
+                player_id: playerId,
                 selected_author: state.selectedAuthor,
               },
             },
@@ -608,38 +547,14 @@
     }
   };
 
-  const attemptReconnect = () => {
-    const savedCode = (localStorage.getItem(STORAGE_KEYS.sessionCode) || "").trim();
-    const savedPlayerId = (
-      localStorage.getItem(STORAGE_KEYS.playerId) || ""
-    ).trim();
-    const savedPlayerName = (
-      localStorage.getItem(STORAGE_KEYS.playerName) || ""
-    ).trim();
-
-    if (!savedCode || !savedPlayerId) {
-      return;
-    }
-
-    state.sessionCode = savedCode;
-    state.playerId = savedPlayerId;
-    state.playerName = savedPlayerName;
-    if (els.createName && savedPlayerName) els.createName.value = savedPlayerName;
-    if (els.joinName && savedPlayerName) els.joinName.value = savedPlayerName;
-    if (els.joinCode) els.joinCode.value = savedCode;
-
-    renderLobbyOrSession(true);
-    refreshSessionState();
-    startPolling();
-  };
-
-  const init = () => {
+  const init = async () => {
     renderReadyState();
     renderLobbyOrSession(false);
+    window.GameRoomCore.bindSessionCodeInput(els.joinCode);
     handleCreate();
     handleJoin();
     wireButtons();
-    attemptReconnect();
+    await room.tryResume();
   };
 
   init();

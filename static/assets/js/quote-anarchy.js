@@ -1,13 +1,5 @@
 (() => {
-  const bootstrapEl = document.getElementById("qaBootstrapData");
-  let bootstrap = {};
-  if (bootstrapEl?.textContent) {
-    try {
-      bootstrap = JSON.parse(bootstrapEl.textContent);
-    } catch (_err) {
-      bootstrap = {};
-    }
-  }
+  const bootstrap = window.GameRoomCore.parseBootstrapData("qaBootstrapData");
 
   const STORAGE_KEYS = {
     sessionCode: "qa_session_code",
@@ -85,8 +77,6 @@
       sessionCode: "",
       playerId: "",
       playerName: "",
-      pollingTimer: null,
-      pending: false,
       lastState: null,
       selectedQuoteId: null,
       selectionRound: 0,
@@ -135,36 +125,7 @@
     });
   };
 
-  const api = async (path, { method = "GET", body } = {}) => {
-    const options = {
-      method,
-      credentials: "same-origin",
-      headers: {},
-    };
-    if (body !== undefined) {
-      options.headers["Content-Type"] = "application/json";
-      options.body = JSON.stringify(body);
-    }
-
-    const response = await fetch(path, options);
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload?.error || "Request failed.");
-    }
-    return payload;
-  };
-
-  const saveSessionIdentity = () => {
-    localStorage.setItem(STORAGE_KEYS.sessionCode, state.multi.sessionCode);
-    localStorage.setItem(STORAGE_KEYS.playerId, state.multi.playerId);
-    localStorage.setItem(STORAGE_KEYS.playerName, state.multi.playerName);
-  };
-
-  const clearSessionIdentity = () => {
-    localStorage.removeItem(STORAGE_KEYS.sessionCode);
-    localStorage.removeItem(STORAGE_KEYS.playerId);
-    localStorage.removeItem(STORAGE_KEYS.playerName);
-  };
+  const api = window.GameRoomCore.api;
 
   const switchMode = (mode) => {
     state.mode = mode === "multi" ? "multi" : "solo";
@@ -281,32 +242,6 @@
   const renderLobbyOrSession = (inSession) => {
     if (els.lobbyView) els.lobbyView.hidden = inSession;
     if (els.sessionView) els.sessionView.hidden = !inSession;
-  };
-
-  const stopPolling = () => {
-    if (state.multi.pollingTimer) {
-      window.clearInterval(state.multi.pollingTimer);
-      state.multi.pollingTimer = null;
-    }
-  };
-
-  const startPolling = () => {
-    stopPolling();
-    state.multi.pollingTimer = window.setInterval(() => {
-      refreshSessionState();
-    }, 2500);
-  };
-
-  const resetSessionState = (message) => {
-    stopPolling();
-    state.multi.sessionCode = "";
-    state.multi.playerId = "";
-    state.multi.lastState = null;
-    state.multi.selectedQuoteId = null;
-    state.multi.selectionRound = 0;
-    clearSessionIdentity();
-    renderLobbyOrSession(false);
-    if (message) setLobbyMessage(message);
   };
 
   const renderPlayers = (payload) => {
@@ -625,66 +560,61 @@
     renderLobbyOrSession(true);
     renderPlayers(payload);
     renderRound(payload);
-
-    if (!payload.session.is_active) {
-      stopPolling();
-    }
   };
 
-  const refreshSessionState = async () => {
-    if (state.multi.pending) return;
-    if (!state.multi.sessionCode || !state.multi.playerId) return;
-
-    state.multi.pending = true;
-    try {
-      const payload = await api(
-        `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}?player_id=${encodeURIComponent(state.multi.playerId)}`,
-      );
-      renderSession(payload);
-    } catch (err) {
-      resetSessionState(String(err.message || "Session disconnected."));
-    } finally {
-      state.multi.pending = false;
-    }
-  };
-
-  const createSession = async (playerName, judgingMode, maxRounds) => {
-    const payload = await api("/api/quote-anarchy/sessions", {
-      method: "POST",
-      body: {
-        player_name: playerName,
-        judging_mode: judgingMode,
-        max_rounds: maxRounds,
-      },
-    });
-
-    state.multi.sessionCode = payload.session_code;
-    state.multi.playerId = payload.player_id;
-    state.multi.playerName = payload.display_name;
-    saveSessionIdentity();
-    setLobbyMessage("");
-    await refreshSessionState();
-    startPolling();
-  };
-
-  const joinSession = async ({ playerName, sessionCode, playerId }) => {
-    const payload = await api(
-      `/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}/join`,
-      {
+  const room = window.GameRoomCore.createRoomController({
+    storageKeys: STORAGE_KEYS,
+    fetchState: ({ sessionCode, playerId }) =>
+      api(
+        `/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}?player_id=${encodeURIComponent(playerId)}`,
+      ),
+    requestCreate: ({ playerName, judgingMode, maxRounds }) =>
+      api("/api/quote-anarchy/sessions", {
+        method: "POST",
+        body: {
+          player_name: playerName,
+          judging_mode: judgingMode,
+          max_rounds: maxRounds,
+        },
+      }),
+    requestJoin: ({ playerName, sessionCode, playerId }) =>
+      api(`/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}/join`, {
         method: "POST",
         body: {
           player_name: playerName,
           player_id: playerId || undefined,
         },
-      },
-    );
-    state.multi.sessionCode = payload.session_code;
-    state.multi.playerId = payload.player_id;
-    state.multi.playerName = payload.display_name;
-    saveSessionIdentity();
+      }),
+    requestLeave: ({ sessionCode, playerId }) =>
+      api(`/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}/leave`, {
+        method: "POST",
+        body: { player_id: playerId },
+      }),
+    renderLobbyOrSession,
+    renderSession,
+    onIdentityChange: ({ sessionCode, playerId, playerName }) => {
+      state.multi.sessionCode = sessionCode;
+      state.multi.playerId = playerId;
+      state.multi.playerName = playerName;
+    },
+    onReset: (message) => {
+      state.multi.lastState = null;
+      state.multi.selectedQuoteId = null;
+      state.multi.selectionRound = 0;
+      if (message) setLobbyMessage(message);
+    },
+  });
+
+  const refreshSessionState = async () => room.refresh();
+
+  const createSession = async (playerName, judgingMode, maxRounds) => {
     setLobbyMessage("");
-    await refreshSessionState();
-    startPolling();
+    await room.create({ playerName, judgingMode, maxRounds });
+  };
+
+  const joinSession = async ({ playerName, sessionCode, playerId }) => {
+    setLobbyMessage("");
+    await room.join({ playerName, sessionCode, playerId });
   };
 
   const handleCreateSubmit = async (event) => {
@@ -729,29 +659,8 @@
     }
   };
 
-  const tryResumeSession = async () => {
-    const storedCode = localStorage.getItem(STORAGE_KEYS.sessionCode) || "";
-    const storedPlayerId = localStorage.getItem(STORAGE_KEYS.playerId) || "";
-    const storedPlayerName =
-      localStorage.getItem(STORAGE_KEYS.playerName) || "";
-    if (!storedCode || !storedPlayerId) {
-      renderLobbyOrSession(false);
-      return;
-    }
-
-    state.multi.sessionCode = storedCode;
-    state.multi.playerId = storedPlayerId;
-    state.multi.playerName = storedPlayerName;
-
-    try {
-      await refreshSessionState();
-      if (state.multi.lastState?.session?.is_active) {
-        startPolling();
-      }
-    } catch (_err) {
-      resetSessionState();
-    }
-  };
+  const tryResumeSession = async () => room.tryResume();
+  const currentIdentity = () => room.getState();
 
   const bindEvents = () => {
     els.modeSoloBtn?.addEventListener("click", () => switchMode("solo"));
@@ -760,12 +669,12 @@
     els.soloDealBtn?.addEventListener("click", dealSoloRound);
     els.soloCopyBtn?.addEventListener("click", async () => {
       if (!state.solo.shareText) return;
-      try {
-        await navigator.clipboard.writeText(state.solo.shareText);
+      const copied = await window.GameRoomCore.copyText(state.solo.shareText);
+      if (copied) {
         if (els.soloHint) {
           els.soloHint.textContent = "Match copied. Send it to your friends.";
         }
-      } catch (_err) {
+      } else {
         if (els.soloHint) {
           els.soloHint.textContent =
             "Clipboard blocked. Copy manually from the result card.";
@@ -775,21 +684,17 @@
 
     els.createForm?.addEventListener("submit", handleCreateSubmit);
     els.joinForm?.addEventListener("submit", handleJoinSubmit);
-    els.joinCode?.addEventListener("input", () => {
-      if (!els.joinCode) return;
-      els.joinCode.value = els.joinCode.value
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "")
-        .slice(0, 6);
-    });
+    window.GameRoomCore.bindSessionCodeInput(els.joinCode);
 
     els.startBtn?.addEventListener("click", async () => {
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/start`,
+          `/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}/start`,
           {
             method: "POST",
-            body: { player_id: state.multi.playerId },
+            body: { player_id: playerId },
           },
         );
         await refreshSessionState();
@@ -800,13 +705,15 @@
 
     els.submitBtn?.addEventListener("click", async () => {
       if (!state.multi.selectedQuoteId) return;
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/submit`,
+          `/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}/submit`,
           {
             method: "POST",
             body: {
-              player_id: state.multi.playerId,
+              player_id: playerId,
               quote_id: state.multi.selectedQuoteId,
             },
           },
@@ -818,30 +725,31 @@
     });
 
     els.nextRoundBtn?.addEventListener("click", async () => {
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/next-round`,
+          `/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}/next-round`,
           {
             method: "POST",
-            body: { player_id: state.multi.playerId },
+            body: { player_id: playerId },
           },
         );
         await refreshSessionState();
-        if (state.multi.lastState?.session?.is_active) {
-          startPolling();
-        }
       } catch (err) {
         setLobbyMessage(String(err.message || "Unable to start next round."));
       }
     });
 
     els.endBtn?.addEventListener("click", async () => {
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/end`,
+          `/api/quote-anarchy/sessions/${encodeURIComponent(sessionCode)}/end`,
           {
             method: "POST",
-            body: { player_id: state.multi.playerId },
+            body: { player_id: playerId },
           },
         );
         await refreshSessionState();
@@ -851,36 +759,22 @@
     });
 
     els.copyCodeBtn?.addEventListener("click", async () => {
-      if (!state.multi.sessionCode) return;
-      try {
-        await navigator.clipboard.writeText(state.multi.sessionCode);
+      const { sessionCode } = currentIdentity();
+      if (!sessionCode) return;
+      const copied = await window.GameRoomCore.copyText(sessionCode);
+      if (copied) {
         setLobbyMessage("Session code copied.");
-      } catch (_err) {
+      } else {
         setLobbyMessage("Clipboard blocked. Share code manually.");
       }
     });
 
     els.leaveBtn?.addEventListener("click", async () => {
-      if (!state.multi.sessionCode || !state.multi.playerId) {
-        resetSessionState();
-        return;
-      }
-      try {
-        await api(
-          `/api/quote-anarchy/sessions/${encodeURIComponent(state.multi.sessionCode)}/leave`,
-          {
-            method: "POST",
-            body: { player_id: state.multi.playerId },
-          },
-        );
-      } catch (_err) {
-        // Leave should still clear local state even if server reports an error.
-      }
-      resetSessionState("You left the session.");
+      await room.leave({ message: "You left the session.", swallowErrors: true });
     });
 
     window.addEventListener("beforeunload", () => {
-      stopPolling();
+      room.stopPolling();
     });
   };
 

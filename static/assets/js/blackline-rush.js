@@ -1,13 +1,5 @@
 (() => {
-  const bootstrapEl = document.getElementById("blrBootstrapData");
-  let bootstrap = {};
-  if (bootstrapEl?.textContent) {
-    try {
-      bootstrap = JSON.parse(bootstrapEl.textContent);
-    } catch (_err) {
-      bootstrap = {};
-    }
-  }
+  const bootstrap = window.GameRoomCore.parseBootstrapData("blrBootstrapData");
 
   const STORAGE_KEYS = {
     sessionCode: "blr_session_code",
@@ -68,11 +60,6 @@
   };
 
   const state = {
-    sessionCode: "",
-    playerId: "",
-    playerName: "",
-    pending: false,
-    pollingTimer: null,
     selectedTurn: 0,
     selectedRedactions: [],
     lastState: null,
@@ -88,39 +75,11 @@
 
   const isMobileViewport = () => window.matchMedia("(max-width: 720px)").matches;
 
-  const api = async (path, { method = "GET", body } = {}) => {
-    const options = {
-      method,
-      credentials: "same-origin",
-      headers: {},
-    };
-    if (body !== undefined) {
-      options.headers["Content-Type"] = "application/json";
-      options.body = JSON.stringify(body);
-    }
-    const response = await fetch(path, options);
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload?.error || "Request failed.");
-    }
-    return payload;
-  };
+  const api = window.GameRoomCore.api;
 
   const setLobbyMessage = (message) => {
     if (!els.lobbyMessage) return;
     els.lobbyMessage.textContent = message || "";
-  };
-
-  const saveSessionIdentity = () => {
-    localStorage.setItem(STORAGE_KEYS.sessionCode, state.sessionCode);
-    localStorage.setItem(STORAGE_KEYS.playerId, state.playerId);
-    localStorage.setItem(STORAGE_KEYS.playerName, state.playerName);
-  };
-
-  const clearSessionIdentity = () => {
-    localStorage.removeItem(STORAGE_KEYS.sessionCode);
-    localStorage.removeItem(STORAGE_KEYS.playerId);
-    localStorage.removeItem(STORAGE_KEYS.playerName);
   };
 
   const renderReadyState = () => {
@@ -136,32 +95,6 @@
   const renderLobbyOrSession = (inSession) => {
     if (els.lobbyView) els.lobbyView.hidden = inSession;
     if (els.sessionView) els.sessionView.hidden = !inSession;
-  };
-
-  const stopPolling = () => {
-    if (state.pollingTimer) {
-      window.clearInterval(state.pollingTimer);
-      state.pollingTimer = null;
-    }
-  };
-
-  const startPolling = () => {
-    stopPolling();
-    state.pollingTimer = window.setInterval(() => {
-      refreshSessionState();
-    }, 2500);
-  };
-
-  const resetSessionState = (message) => {
-    stopPolling();
-    state.sessionCode = "";
-    state.playerId = "";
-    state.lastState = null;
-    state.selectedTurn = 0;
-    state.selectedRedactions = [];
-    clearSessionIdentity();
-    renderLobbyOrSession(false);
-    if (message) setLobbyMessage(message);
   };
 
   const renderPlayers = (payload) => {
@@ -473,83 +406,57 @@
     renderLobbyOrSession(true);
     renderPlayers(payload);
     renderRound(payload);
-
-    if (!payload.session.is_active) {
-      stopPolling();
-    }
   };
 
-  const refreshSessionState = async () => {
-    if (state.pending) return;
-    if (!state.sessionCode || !state.playerId) return;
-
-    state.pending = true;
-    try {
-      const payload = await api(
-        `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}?player_id=${encodeURIComponent(state.playerId)}`,
-      );
-      renderSession(payload);
-    } catch (err) {
-      resetSessionState(String(err.message || "Session disconnected."));
-    } finally {
-      state.pending = false;
-    }
-  };
-
-  const createSession = async (playerName) => {
-    const payload = await api("/api/blackline-rush/sessions", {
-      method: "POST",
-      body: { player_name: playerName },
-    });
-    state.sessionCode = payload.session_code;
-    state.playerId = payload.player_id;
-    state.playerName = payload.display_name;
-    saveSessionIdentity();
-    setLobbyMessage("");
-    await refreshSessionState();
-    startPolling();
-  };
-
-  const joinSession = async ({ playerName, sessionCode, playerId }) => {
-    const payload = await api(
-      `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/join`,
-      {
+  const room = window.GameRoomCore.createRoomController({
+    storageKeys: STORAGE_KEYS,
+    fetchState: ({ sessionCode, playerId }) =>
+      api(
+        `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}?player_id=${encodeURIComponent(playerId)}`,
+      ),
+    requestCreate: ({ playerName }) =>
+      api("/api/blackline-rush/sessions", {
+        method: "POST",
+        body: { player_name: playerName },
+      }),
+    requestJoin: ({ playerName, sessionCode, playerId }) =>
+      api(`/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/join`, {
         method: "POST",
         body: {
           player_name: playerName,
           player_id: playerId || undefined,
         },
-      },
-    );
-    state.sessionCode = payload.session_code;
-    state.playerId = payload.player_id;
-    state.playerName = payload.display_name;
-    saveSessionIdentity();
+      }),
+    requestLeave: ({ sessionCode, playerId }) =>
+      api(`/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/leave`, {
+        method: "POST",
+        body: { player_id: playerId },
+      }),
+    renderLobbyOrSession,
+    renderSession,
+    onReset: (message) => {
+      state.lastState = null;
+      state.selectedTurn = 0;
+      state.selectedRedactions = [];
+      if (message) setLobbyMessage(message);
+    },
+  });
+
+  const refreshSessionState = async () => room.refresh();
+
+  const createSession = async (playerName) => {
     setLobbyMessage("");
-    await refreshSessionState();
-    startPolling();
+    await room.create({ playerName });
   };
 
-  const tryResumeSession = async () => {
-    const storedCode = localStorage.getItem(STORAGE_KEYS.sessionCode) || "";
-    const storedPlayerId = localStorage.getItem(STORAGE_KEYS.playerId) || "";
-    const storedPlayerName = localStorage.getItem(STORAGE_KEYS.playerName) || "";
-    if (!storedCode || !storedPlayerId) {
-      renderLobbyOrSession(false);
-      return;
-    }
-    state.sessionCode = storedCode;
-    state.playerId = storedPlayerId;
-    state.playerName = storedPlayerName;
-    try {
-      await refreshSessionState();
-      if (state.lastState?.session?.is_active) {
-        startPolling();
-      }
-    } catch (_err) {
-      resetSessionState();
-    }
+  const joinSession = async ({ playerName, sessionCode, playerId }) => {
+    setLobbyMessage("");
+    await room.join({ playerName, sessionCode, playerId });
   };
+
+  const tryResumeSession = async () => room.tryResume();
+
+  const currentIdentity = () => room.getState();
 
   const bindEvents = () => {
     els.createForm?.addEventListener("submit", async (event) => {
@@ -583,21 +490,17 @@
       }
     });
 
-    els.joinCode?.addEventListener("input", () => {
-      if (!els.joinCode) return;
-      els.joinCode.value = els.joinCode.value
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "")
-        .slice(0, 6);
-    });
+    window.GameRoomCore.bindSessionCodeInput(els.joinCode);
 
     els.startBtn?.addEventListener("click", async () => {
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}/start`,
+          `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/start`,
           {
             method: "POST",
-            body: { player_id: state.playerId },
+            body: { player_id: playerId },
           },
         );
         await refreshSessionState();
@@ -608,13 +511,15 @@
 
     els.submitRedactionBtn?.addEventListener("click", async () => {
       if (!state.selectedRedactions.length) return;
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}/submit-redaction`,
+          `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/submit-redaction`,
           {
             method: "POST",
             body: {
-              player_id: state.playerId,
+              player_id: playerId,
               redaction_indices: [...state.selectedRedactions].sort((a, b) => a - b),
             },
           },
@@ -636,14 +541,16 @@
         setLobbyMessage("Enter a guess for each gap.");
         return;
       }
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       if (els.guessSubmitBtn) els.guessSubmitBtn.disabled = true;
       try {
         const payload = await api(
-          `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}/guess`,
+          `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/guess`,
           {
             method: "POST",
             body: {
-              player_id: state.playerId,
+              player_id: playerId,
               guesses,
             },
           },
@@ -666,12 +573,14 @@
     });
 
     els.endTurnBtn?.addEventListener("click", async () => {
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}/end-turn`,
+          `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/end-turn`,
           {
             method: "POST",
-            body: { player_id: state.playerId },
+            body: { player_id: playerId },
           },
         );
         await refreshSessionState();
@@ -681,30 +590,31 @@
     });
 
     els.nextTurnBtn?.addEventListener("click", async () => {
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}/next-turn`,
+          `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/next-turn`,
           {
             method: "POST",
-            body: { player_id: state.playerId },
+            body: { player_id: playerId },
           },
         );
         await refreshSessionState();
-        if (state.lastState?.session?.is_active) {
-          startPolling();
-        }
       } catch (err) {
         setLobbyMessage(String(err.message || "Unable to start next turn."));
       }
     });
 
     els.endBtn?.addEventListener("click", async () => {
+      const { sessionCode, playerId } = currentIdentity();
+      if (!sessionCode || !playerId) return;
       try {
         await api(
-          `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}/end`,
+          `/api/blackline-rush/sessions/${encodeURIComponent(sessionCode)}/end`,
           {
             method: "POST",
-            body: { player_id: state.playerId },
+            body: { player_id: playerId },
           },
         );
         await refreshSessionState();
@@ -714,36 +624,22 @@
     });
 
     els.copyCodeBtn?.addEventListener("click", async () => {
-      if (!state.sessionCode) return;
-      try {
-        await navigator.clipboard.writeText(state.sessionCode);
+      const { sessionCode } = currentIdentity();
+      if (!sessionCode) return;
+      const copied = await window.GameRoomCore.copyText(sessionCode);
+      if (copied) {
         setLobbyMessage("Room code copied.");
-      } catch (_err) {
+      } else {
         setLobbyMessage("Clipboard blocked. Share code manually.");
       }
     });
 
     els.leaveBtn?.addEventListener("click", async () => {
-      if (!state.sessionCode || !state.playerId) {
-        resetSessionState();
-        return;
-      }
-      try {
-        await api(
-          `/api/blackline-rush/sessions/${encodeURIComponent(state.sessionCode)}/leave`,
-          {
-            method: "POST",
-            body: { player_id: state.playerId },
-          },
-        );
-      } catch (_err) {
-        // Leave should clear local state even on server errors.
-      }
-      resetSessionState("You left the room.");
+      await room.leave({ message: "You left the room.", swallowErrors: true });
     });
 
     window.addEventListener("beforeunload", () => {
-      stopPolling();
+      room.stopPolling();
     });
   };
 
