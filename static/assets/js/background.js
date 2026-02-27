@@ -8,10 +8,15 @@
 
   let width, height;
   let particles = [];
-  const PARTICLE_COUNT = 200;
+  const MAX_PARTICLE_COUNT = 120;
+  const MIN_PARTICLE_COUNT = 36;
+  const PARTICLE_AREA = 22000;
   const MAX_DISTANCE = 120;
+  const MAX_DISTANCE_SQUARED = MAX_DISTANCE * MAX_DISTANCE;
   let particleFill = "rgba(255, 255, 255, 0.7)";
   let particleLineRgb = "255, 255, 255";
+  let animationFrameId = null;
+  let isAnimating = false;
 
   function getDocumentHeight() {
     const body = document.body;
@@ -30,6 +35,7 @@
     height = canvas.height = Math.max(window.innerHeight, getDocumentHeight());
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
+    init();
   }
 
   window.addEventListener("resize", resize);
@@ -72,8 +78,13 @@
   }
 
   function init() {
+    const viewportArea = Math.max(1, width * Math.max(window.innerHeight, 1));
+    const nextCount = Math.min(
+      MAX_PARTICLE_COUNT,
+      Math.max(MIN_PARTICLE_COUNT, Math.floor(viewportArea / PARTICLE_AREA)),
+    );
     particles = [];
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
+    for (let i = 0; i < nextCount; i++) {
       particles.push(new Particle());
     }
   }
@@ -83,11 +94,11 @@
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < MAX_DISTANCE) {
+        const distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared < MAX_DISTANCE_SQUARED) {
+          const opacity = 1 - Math.sqrt(distanceSquared) / MAX_DISTANCE;
           ctx.strokeStyle = `rgba(${particleLineRgb}, ${
-            1 - distance / MAX_DISTANCE
+            opacity
           })`;
           ctx.lineWidth = 0.5;
           ctx.beginPath();
@@ -100,6 +111,7 @@
   }
 
   function animate() {
+    if (!isAnimating) return;
     ctx.clearRect(0, 0, width, height);
 
     particles.forEach((particle) => {
@@ -108,7 +120,22 @@
     });
 
     connect();
-    requestAnimationFrame(animate);
+    if (!isAnimating) return;
+    animationFrameId = requestAnimationFrame(animate);
+  }
+
+  function startAnimation() {
+    if (isAnimating) return;
+    isAnimating = true;
+    animate();
+  }
+
+  function stopAnimation() {
+    isAnimating = false;
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
   }
 
   const prefersReducedMotion = window.matchMedia(
@@ -117,10 +144,19 @@
 
   if (!prefersReducedMotion) {
     init();
-    animate();
+    startAnimation();
   } else {
     // Respect reduced motion preference: no animation.
   }
+
+  document.addEventListener("visibilitychange", () => {
+    if (prefersReducedMotion) return;
+    if (document.hidden) {
+      stopAnimation();
+    } else {
+      startAnimation();
+    }
+  });
 
   if ("ResizeObserver" in window) {
     const observer = new ResizeObserver(() => resize());

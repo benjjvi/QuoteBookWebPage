@@ -111,6 +111,8 @@ class AppServices:
         self.opportunistic_scheduler_interval_seconds = 300
         self._rate_limit_lock = threading.Lock()
         self._rate_limit_hits: dict[str, deque[float]] = {}
+        self._refresh_lock = threading.Lock()
+        self._last_refresh_at = 0.0
 
     # ------------------------
     # Runtime validation + metrics
@@ -1909,7 +1911,18 @@ class AppServices:
                 type(exception).__name__,
             )
 
-    def refresh_qb(self):
+    def refresh_qb(self, *, min_interval_seconds: float = 0.5):
+        # Remote API-backed clients do not maintain in-process quote state.
+        if bool(getattr(self.quote_store, "is_remote", False)):
+            return
+
+        now = timelib.time()
+        if min_interval_seconds > 0:
+            with self._refresh_lock:
+                if now - self._last_refresh_at < float(min_interval_seconds):
+                    return
+                self._last_refresh_at = now
+
         status = self.quote_store.reload()
         if status == 200:
             self.app.logger.info("Quote book reloaded.")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import secrets
+from functools import lru_cache
 
 from flask import (
     abort,
@@ -13,29 +14,7 @@ from flask import (
     session,
     url_for,
 )
-
-SOCIAL_GENERIC_POSTS = [
-    {
-        "title": "Hallway Bulletin",
-        "body": "Reminder: coffee machine diplomacy is still the fastest path to peace.",
-    },
-    {
-        "title": "Studio Update",
-        "body": "Today's vibe report says everyone is one spreadsheet away from poetry.",
-    },
-    {
-        "title": "Community Note",
-        "body": "If a quote starts with 'technically', brace for impact.",
-    },
-    {
-        "title": "Signal Boost",
-        "body": "Context lines are climbing. Future-you is grateful already.",
-    },
-    {
-        "title": "Mood Index",
-        "body": "Peak posting window remains late evening and lightly unhinged.",
-    },
-]
+from social_feed import build_social_feed_items
 
 
 def register_social_routes(bp, context):
@@ -115,32 +94,7 @@ def register_social_routes(bp, context):
         end = start + per_page
         return quotes[start:end], page, total_pages, total
 
-    def _build_social_feed_items(quotes, *, offset: int, total_quotes: int):
-        feed_items = []
-        for quote_index, quote in enumerate(quotes):
-            absolute_index = offset + quote_index
-            primary_author = quote.authors[0] if quote.authors else "Unknown"
-            feed_items.append(
-                {
-                    "kind": "quote",
-                    "quote": quote,
-                    "primary_author": primary_author,
-                }
-            )
-
-            should_insert_generic = (
-                SOCIAL_GENERIC_POSTS
-                and (absolute_index + 1) % 4 == 0
-                and absolute_index < total_quotes - 1
-            )
-            if should_insert_generic:
-                generic_index = ((absolute_index + 1) // 4 - 1) % len(SOCIAL_GENERIC_POSTS)
-                feed_items.append(
-                    {"kind": "generic", "post": SOCIAL_GENERIC_POSTS[generic_index]}
-                )
-
-        return feed_items
-
+    @lru_cache(maxsize=1)
     def _social_avatar_urls():
         avatar_dir = os.path.join(
             current_app.static_folder or "static",
@@ -169,6 +123,15 @@ def register_social_routes(bp, context):
         ]
         filenames.sort(key=_avatar_sort_key)
         return [f"/static/assets/img/ui_profile_pictures/{name}" for name in filenames]
+
+    def _quote_matches_query(quote, query: str) -> bool:
+        query = (query or "").strip().casefold()
+        if not query:
+            return True
+        quote_text = str(getattr(quote, "quote", "")).casefold()
+        context_text = str(getattr(quote, "context", "")).casefold()
+        author_text = " ".join(getattr(quote, "authors", []) or []).casefold()
+        return query in quote_text or query in context_text or query in author_text
 
     def _resolve_author_name(author_directory, raw_name: str):
         raw_name = (raw_name or "").strip()
@@ -234,7 +197,7 @@ def register_social_routes(bp, context):
         )
         paginated_quotes, page, total_pages, total_quotes = _paginate_quotes(all_quotes, page)
         matched_authors = _social_match_authors(author_directory, query)
-        feed_items = _build_social_feed_items(
+        feed_items = build_social_feed_items(
             paginated_quotes,
             offset=(page - 1) * per_page,
             total_quotes=total_quotes,
@@ -286,11 +249,12 @@ def register_social_routes(bp, context):
             author_name=canonical_author,
             tag="",
         )
-        filtered_quotes = _collect_social_quotes(
-            query=query,
-            author_name=canonical_author,
-            tag=selected_tag,
-        )
+        filtered_quotes = [
+            quote
+            for quote in author_quotes
+            if _social_quote_matches_tag(quote, selected_tag)
+            and _quote_matches_query(quote, query)
+        ]
         paginated_quotes, page, total_pages, total_quotes = _paginate_quotes(
             filtered_quotes, page
         )
@@ -308,7 +272,7 @@ def register_social_routes(bp, context):
             key=lambda item: (-item[1], item[0].casefold()),
         )[:3]
 
-        feed_items = _build_social_feed_items(
+        feed_items = build_social_feed_items(
             paginated_quotes,
             offset=(page - 1) * per_page,
             total_quotes=total_quotes,

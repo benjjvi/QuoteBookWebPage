@@ -113,12 +113,15 @@ except ValueError:
     SMTP_SEND_DELAY_SECONDS = 0.0
 WEEKLY_SCHEDULER_MODE = os.getenv("WEEKLY_SCHEDULER_MODE", "auto").strip().lower()
 PER_PAGE_QUOTE_LIMIT_FOR_ALL_QUOTES_PAGE = 9
+STATIC_ASSET_CACHE_TTL = timedelta(days=7)
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SECURE=IS_PROD,
     SESSION_COOKIE_SAMESITE="Lax",
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=15),
+    SEND_FILE_MAX_AGE_DEFAULT=STATIC_ASSET_CACHE_TTL,
+    TEMPLATES_AUTO_RELOAD=not IS_PROD,
 )
 
 services = AppServices(
@@ -401,6 +404,12 @@ def log_exception(exception):
 
 @app.before_request
 def refresh_qb():
+    endpoint = request.endpoint or ""
+    if endpoint == "static" or request.path.startswith("/static/"):
+        return None
+    if request.path in {"/sw.js", "/manifest.webmanifest"}:
+        return None
+
     services.maybe_run_scheduled_jobs_opportunistically()
     services.refresh_qb()
 

@@ -29,6 +29,7 @@ def quote_to_dict(quote: qb_formats.Quote) -> dict:
         "authors": quote.authors,
         "timestamp": quote.timestamp,
         "context": quote.context,
+        "tags": list(getattr(quote, "tags", []) or []),
         "stats": quote.stats,
     }
 
@@ -71,9 +72,27 @@ def api_speakers():
     return jsonify(speakers=[{"speaker": s, "count": c} for s, c in qb.speaker_counts])
 
 
+@app.route("/api/tags")
+def api_tags():
+    return jsonify(tags=[{"tag": t, "count": c} for t, c in qb.get_tag_counts()])
+
+
+def _normalized_tag(raw_tag: str) -> str:
+    tags = qb.parse_tags(raw_tag or "")
+    return tags[0] if tags else ""
+
+
+def _quote_has_tag(quote: qb_formats.Quote, tag_value: str) -> bool:
+    if not tag_value:
+        return True
+    normalized = qb.normalize_tags(getattr(quote, "tags", []) or [])
+    return tag_value in normalized
+
+
 @app.route("/api/quotes")
 def api_quotes():
     speaker = request.args.get("speaker")
+    tag = _normalized_tag(request.args.get("tag", ""))
     page = request.args.get("page", type=int)
     per_page = request.args.get("per_page", type=int)
     order = (request.args.get("order") or "oldest").strip().lower()
@@ -89,6 +108,8 @@ def api_quotes():
             for q in quotes
             if any(speaker_lower == author.lower() for author in q.authors)
         ]
+    if tag:
+        quotes = [q for q in quotes if _quote_has_tag(q, tag)]
     quotes = sorted(quotes, key=lambda q: (q.timestamp, q.id), reverse=reverse_sort)
 
     total = len(quotes)
@@ -113,6 +134,8 @@ def api_quotes():
         per_page=effective_per_page,
         total_pages=total_pages,
         order=order,
+        speaker=speaker or "",
+        tag=tag,
     )
 
 
@@ -139,6 +162,7 @@ def api_update_quote(quote_id: int):
     quote_text = (data.get("quote") or "").strip()
     context = (data.get("context") or "").strip()
     authors_raw = data.get("authors")
+    tags_raw = data.get("tags")
 
     if not quote_text:
         return jsonify({"error": "quote is required"}), 400
@@ -148,11 +172,19 @@ def api_update_quote(quote_id: int):
     else:
         authors = qb.parse_authors(str(authors_raw or "Unknown"))
 
+    tags = None
+    if tags_raw is not None:
+        if isinstance(tags_raw, list):
+            tags = qb.normalize_tags([str(tag) for tag in tags_raw])
+        else:
+            tags = qb.parse_tags(str(tags_raw))
+
     updated = qb.update_quote(
         quote_id=quote_id,
         quote_text=quote_text,
         authors=authors,
         context=context,
+        tags=tags,
     )
     if not updated:
         return jsonify({"error": "Quote not found"}), 404
@@ -175,11 +207,16 @@ def api_quotes_between():
 @app.route("/api/search")
 def api_search():
     query = request.args.get("query", "").strip()
+    tag = _normalized_tag(request.args.get("tag", ""))
     if not query:
-        return jsonify(quotes=[], query=query)
+        if not tag:
+            return jsonify(quotes=[], query=query, tag=tag)
+        matches = [quote for quote in qb.quotes if _quote_has_tag(quote, tag)]
+        matches = sorted(matches, key=lambda q: (q.timestamp, q.id), reverse=True)
+        return jsonify(quotes=[quote_to_dict(q) for q in matches], query=query, tag=tag)
 
-    results = qb.search_quotes(query)
-    return jsonify(quotes=[quote_to_dict(q) for q in results], query=query)
+    results = qb.search_quotes(query, tag=tag)
+    return jsonify(quotes=[quote_to_dict(q) for q in results], query=query, tag=tag)
 
 
 @app.route("/api/quotes", methods=["POST"])
@@ -188,6 +225,7 @@ def api_add_quote():
     quote_text = (data.get("quote") or "").strip()
     context = (data.get("context") or "").strip()
     authors_raw = data.get("authors")
+    tags_raw = data.get("tags")
 
     if not quote_text:
         return jsonify({"error": "quote is required"}), 400
@@ -196,6 +234,10 @@ def api_add_quote():
         authors = [str(a).strip() for a in authors_raw if str(a).strip()]
     else:
         authors = qb.parse_authors(str(authors_raw or "Unknown"))
+    if isinstance(tags_raw, list):
+        tags = qb.normalize_tags([str(tag) for tag in tags_raw])
+    else:
+        tags = qb.parse_tags(str(tags_raw or ""))
 
     timestamp = data.get("timestamp")
     if timestamp is None:
@@ -207,6 +249,7 @@ def api_add_quote():
         authors=authors,
         timestamp=int(timestamp),
         context=context,
+        tags=tags,
     )
 
     qb.add_quote(new_quote)
