@@ -87,6 +87,11 @@
           <span>Add quote</span>
         </a>
 
+        <a href="/ai" class="nav-item" data-offline-allowed="false">
+          <img src="/static/assets/img/robot.svg" alt="" />
+          <span>AI</span>
+        </a>
+
         <a
           href="/timeline/{{ now.year }}/{{ now.month }}"
           class="nav-item"

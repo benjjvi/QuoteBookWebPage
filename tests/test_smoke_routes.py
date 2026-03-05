@@ -156,9 +156,9 @@ def test_home_offline_flags_match_offline_ready_pages(client):
     assert _offline_allowed_for_path(html, "/stats") == "true"
 
     assert _offline_allowed_for_path(html, "/add_quote") == "false"
-    assert _offline_allowed_for_path(html, "/ai") == "false"
     assert _offline_allowed_for_path(html, "/games") == "false"
     assert _offline_allowed_for_path(html, "/social") == "false"
+    assert 'href="/ai"' not in html
 
 
 def test_service_worker_precaches_offline_ready_pages():

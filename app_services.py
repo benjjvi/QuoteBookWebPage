@@ -9,14 +9,18 @@ import smtplib
 import sqlite3
 import threading
 import time as timelib
+from base64 import urlsafe_b64decode
 from collections import Counter, deque
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from email.message import EmailMessage
+from functools import lru_cache
 from statistics import median
 from urllib.parse import urljoin
 
 from flask import abort, g, request, session
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
 
 from stats_stopwords import STOPWORDS
@@ -1461,10 +1465,46 @@ class AppServices:
             return compact[:237] + "..."
         return compact
 
+    @staticmethod
+    @lru_cache(maxsize=8)
+    def _normalize_vapid_private_key(key: str) -> str:
+        """
+        Convert base64url VAPID private keys to PEM so older py-vapid builds
+        avoid curve parsing bugs with newer cryptography releases.
+        """
+        candidate = (key or "").strip()
+        if not candidate:
+            return ""
+        if "BEGIN PRIVATE KEY" in candidate or os.path.exists(candidate):
+            return candidate
+
+        padded = candidate + ("=" * (-len(candidate) % 4))
+        try:
+            raw = urlsafe_b64decode(padded.encode("ascii"))
+        except (UnicodeEncodeError, ValueError):
+            return candidate
+        if len(raw) != 32:
+            return candidate
+
+        try:
+            private_value = int.from_bytes(raw, "big")
+            private_key = ec.derive_private_key(private_value, ec.SECP256R1())
+            pem_bytes = private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+        except Exception:
+            return candidate
+        return pem_bytes.decode("ascii")
+
     def send_push_notification(self, title: str, body: str, url: str) -> int:
         if not self.config.vapid_private_key or not self.config.vapid_public_key:
             self.app.logger.warning("Push notification skipped: missing VAPID keys.")
             return 0
+        vapid_private_key = self._normalize_vapid_private_key(
+            self.config.vapid_private_key
+        )
 
         payload = json.dumps({"title": title, "body": body, "url": url})
         subscriptions = self.load_push_subscriptions()
@@ -1479,7 +1519,7 @@ class AppServices:
                 webpush(
                     subscription_info=subscription,
                     data=payload,
-                    vapid_private_key=self.config.vapid_private_key,
+                    vapid_private_key=vapid_private_key,
                     vapid_claims={"sub": self.config.vapid_email},
                 )
                 sent += 1

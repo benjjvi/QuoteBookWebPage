@@ -101,6 +101,32 @@ def test_push_metrics_success_and_failure(services, monkeypatch):
 
 
 @pytest.mark.usefixtures("services")
+def test_push_normalizes_base64url_private_key_to_pem(services, monkeypatch):
+    services.config = replace(
+        services.config,
+        vapid_private_key="6mxgW6Uv1LHjQ02cd_8suO0yR37HaUlyAn8hV9BqslA",
+    )
+    services.save_push_subscription(
+        {
+            "endpoint": "https://push.example.com/sub-pem",
+            "keys": {"auth": "a", "p256dh": "b"},
+        },
+        "pytest",
+    )
+
+    seen = {}
+
+    def fake_webpush(**kwargs):
+        seen["vapid_private_key"] = kwargs.get("vapid_private_key")
+
+    monkeypatch.setattr("app_services.webpush", fake_webpush)
+
+    sent = services.send_push_notification("Title", "Body", "https://example.com")
+    assert sent == 1
+    assert "BEGIN PRIVATE KEY" in seen["vapid_private_key"]
+
+
+@pytest.mark.usefixtures("services")
 def test_add_weekly_email_recipient_attempts_scheduler_start(services, monkeypatch):
     calls = []
 
