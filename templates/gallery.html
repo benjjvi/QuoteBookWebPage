@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="/static/assets/css/gallery.css"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="gallery-page">
+  <header class="gallery-header">
+    <div>
+      <span class="eyebrow">Gallery</span>
+      <h1>Image Gallery</h1>
+      <p class="lead">
+        {{ total_images }} image{% if total_images != 1 %}s{% endif %}
+        {% if subject_query %} matching subject "{{ subject_query }}"{% else %} saved{% endif %}.
+      </p>
+    </div>
+    <div class="gallery-actions">
+      <a href="/gallery/add" class="btn btn-primary">Add image</a>
+      <a href="/" class="btn btn-ghost">Back home</a>
+    </div>
+  </header>
+
+  <form class="gallery-panel gallery-search-form" method="get" action="/gallery">
+    <label for="subjectSearch">Search subjects</label>
+    <div class="gallery-search-row">
+      <input
+        id="subjectSearch"
+        name="subject"
+        type="text"
+        value="{{ subject_query }}"
+        list="gallerySubjects"
+        placeholder="e.g. Alex"
+      />
+      <button type="submit" class="btn btn-primary">Search</button>
+      {% if subject_query %}
+        <a href="/gallery" class="btn btn-ghost">Clear</a>
+      {% endif %}
+    </div>
+    <datalist id="gallerySubjects">
+      {% for item in subject_directory %}
+        <option value="{{ item.subject }}">{{ item.subject }} ({{ item.count }})</option>
+      {% endfor %}
+    </datalist>
+  </form>
+
+  {% if images %}
+    <div class="gallery-grid">
+      {% for image in images %}
+        <article class="gallery-card">
+          {% set image_caption = image.linked_quotes[0].quote if image.linked_quotes else image.submitter_name %}
+          <a href="/gallery/{{ image.id }}">
+            <img
+              class="gallery-thumb"
+              src="{{ image.file_url }}"
+              alt="{{ image_caption }}"
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+          <div class="gallery-card-body">
+            <h2>Submitted by {{ image.submitter_name }}</h2>
+            {% if image.subjects %}
+              <p class="gallery-meta">
+                Subjects: {{ image.subjects | join(", ") }}
+              </p>
+            {% endif %}
+            <p class="gallery-meta">{{ image_caption }}</p>
+            {% if image.context %}
+              <p class="gallery-meta">{{ image.context }}</p>
+            {% endif %}
+            <p class="gallery-link-note">
+              {% if image.quote_count > 0 %}
+                <strong>{{ image.quote_count }}</strong> linked quote{% if image.quote_count != 1 %}s{% endif %}
+              {% else %}
+                Not linked to any quote yet
+              {% endif %}
+            </p>
+            {% if image.linked_quotes %}
+              <div class="gallery-quote-links">
+                {% for quote in image.linked_quotes %}
+                  <a class="gallery-quote-chip" href="/quote/{{ quote.id }}">
+                    Quote #{{ quote.id }}
+                  </a>
+                {% endfor %}
+              </div>
+            {% endif %}
+            <a href="/gallery/{{ image.id }}" class="btn btn-primary">Open image</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="gallery-empty">
+      <h2>No images yet</h2>
+      <p>Add your first image to start building the gallery.</p>
+      <a href="/gallery/add" class="btn btn-primary">Add image</a>
+    </div>
+  {% endif %}
+
+  {% if total_pages > 1 %}
+    <div class="gallery-actions">
+      {% if page > 1 %}
+        <a class="btn btn-ghost" href="/gallery?page={{ page-1 }}{% if subject_query %}&subject={{ subject_query | urlencode }}{% endif %}">← Prev</a>
+      {% endif %}
+      <span>Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}
+        <a class="btn btn-ghost" href="/gallery?page={{ page+1 }}{% if subject_query %}&subject={{ subject_query | urlencode }}{% endif %}">Next →</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

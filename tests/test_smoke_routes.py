@@ -25,6 +25,13 @@ def test_smoke_routes(client):
     all_quotes = client.get("/all_quotes")
     assert all_quotes.status_code == 200
 
+    gallery = client.get("/gallery")
+    assert gallery.status_code == 200
+
+    gallery_add = client.get("/gallery/add")
+    assert gallery_add.status_code == 200
+    assert b"Add Image" in gallery_add.data
+
     social = client.get("/social")
     assert social.status_code == 200
     assert b"Quote Stream" in social.data
@@ -156,6 +163,7 @@ def test_home_offline_flags_match_offline_ready_pages(client):
     assert _offline_allowed_for_path(html, "/stats") == "true"
 
     assert _offline_allowed_for_path(html, "/add_quote") == "false"
+    assert _offline_allowed_for_path(html, "/gallery") == "false"
     assert _offline_allowed_for_path(html, "/games") == "false"
     assert _offline_allowed_for_path(html, "/social") == "false"
     assert 'href="/ai"' not in html

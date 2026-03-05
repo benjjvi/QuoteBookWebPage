@@ -1,6 +1,7 @@
 from flask import Blueprint
 
 from .web_routes.core import register_core_routes
+from .web_routes.gallery import register_gallery_routes
 from .web_routes.quotes import register_quote_routes
 from .web_routes.social import register_social_routes
 
@@ -55,6 +56,7 @@ def create_web_blueprint(
 
     register_core_routes(bp, context)
     register_quote_routes(bp, context)
+    register_gallery_routes(bp, context)
     register_social_routes(bp, context)
 
     return bp

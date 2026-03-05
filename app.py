@@ -255,6 +255,10 @@ def wants_json_response() -> bool:
 CSRF_PROTECTED_ENDPOINTS = {
     "web.add_quote",
     "add_quote",
+    "web.gallery_add_image",
+    "gallery_add_image",
+    "web.gallery_image",
+    "gallery_image",
     "web.battle",
     "battle",
     "web.mailbox",

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Add Gallery Image{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="/static/assets/css/gallery.css"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="gallery-add-page">
+  <div class="gallery-panel">
+    <span class="eyebrow">Gallery</span>
+    <h1>Add Image</h1>
+    <p class="lead">
+      Pick an image from camera roll, credit the submitter, add subject names, and optionally link a quote.
+    </p>
+
+    {% if form_error %}
+      <p class="gallery-error">{{ form_error }}</p>
+    {% endif %}
+
+    <form method="post" class="gallery-form" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <label for="image_file">Image file</label>
+      <input
+        id="image_file"
+        name="image_file"
+        type="file"
+        accept="image/*"
+        required
+      />
+
+      <label for="submitter_name">Submitter name</label>
+      <input
+        id="submitter_name"
+        name="submitter_name"
+        type="text"
+        required
+        value="{{ form_defaults.submitter_name }}"
+        placeholder="e.g. Ben"
+      />
+
+      <label for="subjects">Subject name(s)</label>
+      <input
+        id="subjects"
+        name="subjects"
+        type="text"
+        value="{{ form_defaults.subjects }}"
+        placeholder="e.g. Alex, Sam"
+      />
+      <p class="gallery-form-hint">
+        Comma-separated names in the image.
+      </p>
+
+      <label for="image_context">Context (optional)</label>
+      <textarea
+        id="image_context"
+        name="image_context"
+        placeholder="Optional: where or when this was taken"
+      >{{ form_defaults.image_context }}</textarea>
+
+      <label for="quote_id">Link to quote (optional)</label>
+      <div class="gallery-select-wrap">
+        <select id="quote_id" name="quote_id">
+          <option value="">No quote link</option>
+          {% for quote in quote_options %}
+            {% set quote_label = "#" ~ quote.id ~ " · " ~ (quote.authors | join(", ")) ~ " · " ~ (quote.quote | truncate(56, True, "...")) %}
+            <option value="{{ quote.id }}" {% if form_defaults.quote_id and (form_defaults.quote_id | int) == quote.id %}selected{% endif %}>
+              {{ quote_label }}
+            </option>
+          {% endfor %}
+        </select>
+        <span class="gallery-select-icon">▾</span>
+      </div>
+
+      <div class="gallery-actions">
+        <a href="/gallery" class="btn btn-ghost">Back to gallery</a>
+        <button type="submit" class="btn btn-primary">Save image</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

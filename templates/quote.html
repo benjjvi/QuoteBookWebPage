@@ -45,6 +45,27 @@
       </div>
     {% endif %}
 
+    {% if linked_images %}
+      <section class="quote-gallery">
+        <p class="quote-gallery-summary">
+          {{ linked_images | length }} image{% if linked_images | length != 1 %}s{% endif %} linked to this quote.
+        </p>
+        <div class="quote-gallery-grid">
+          {% for image in linked_images %}
+            <figure class="quote-gallery-item">
+              <img
+                src="{{ image.file_url }}"
+                alt="{{ quote }}"
+                loading="lazy"
+                decoding="async"
+              />
+              <figcaption>{{ quote }}</figcaption>
+            </figure>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
     <div class="quote-meta">
       <span>{{ date }}</span>
       <span class="quote-meta-sep">•</span>

@@ -69,6 +69,15 @@
         </a>
 
         <a
+          href="/gallery"
+          class="nav-item"
+          data-offline-allowed="false"
+        >
+          <img src="/static/assets/img/book.svg" alt="" />
+          <span>Gallery</span>
+        </a>
+
+        <a
           href="/random"
           class="nav-item"
           data-offline-allowed="true"
@@ -82,15 +91,15 @@
           <span>Search</span>
         </a>
 
-        <a href="/add_quote" class="nav-item" data-offline-allowed="false">
-          <img src="/static/assets/img/add.svg" alt="" />
-          <span>Add quote</span>
-        </a>
+          <a href="/add_quote" class="nav-item" data-offline-allowed="false">
+            <img src="/static/assets/img/add.svg" alt="" />
+            <span>Add quote</span>
+          </a>
 
-        <a
-          href="/timeline/{{ now.year }}/{{ now.month }}"
-          class="nav-item"
-          data-offline-allowed="false"
+          <a
+            href="/timeline/{{ now.year }}/{{ now.month }}"
+            class="nav-item"
+            data-offline-allowed="false"
         >
           <img src="/static/assets/img/calendar.svg" alt="" />
           <span>Calendar</span>

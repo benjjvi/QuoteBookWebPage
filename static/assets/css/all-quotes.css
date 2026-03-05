@@ -208,6 +208,13 @@
   font-size: 0.9rem;
 }
 
+.quote-gallery-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--qb-text-muted);
+  font-weight: 600;
+}
+
 .tag-row {
   display: flex;
   flex-wrap: wrap;

@@ -37,6 +37,9 @@ def register_social_routes(bp, context):
             for author, count in quote_store.get_speaker_counts()
         ]
 
+    def _social_subject_avatar_map(author_names):
+        return services.get_subject_avatar_map(author_names)
+
     def _social_tag_directory():
         return [
             {"tag": tag, "count": count}
@@ -197,6 +200,9 @@ def register_social_routes(bp, context):
         )
         paginated_quotes, page, total_pages, total_quotes = _paginate_quotes(all_quotes, page)
         matched_authors = _social_match_authors(author_directory, query)
+        subject_avatar_map = _social_subject_avatar_map(
+            [entry["name"] for entry in author_directory]
+        )
         feed_items = build_social_feed_items(
             paginated_quotes,
             offset=(page - 1) * per_page,
@@ -217,6 +223,7 @@ def register_social_routes(bp, context):
                 tag_directory=tag_directory[:32],
                 all_authors=[entry["name"] for entry in author_directory],
                 avatar_urls=_social_avatar_urls(),
+                subject_avatar_map=subject_avatar_map,
                 profile_meta={},
                 social_feed_meta={
                     "page": page,
@@ -259,6 +266,9 @@ def register_social_routes(bp, context):
             filtered_quotes, page
         )
         matched_authors = _social_match_authors(author_directory, query)
+        subject_avatar_map = _social_subject_avatar_map(
+            [entry["name"] for entry in author_directory]
+        )
 
         co_author_counts = {}
         for quote in author_quotes:
@@ -292,6 +302,7 @@ def register_social_routes(bp, context):
                 tag_directory=tag_directory[:32],
                 all_authors=[entry["name"] for entry in author_directory],
                 avatar_urls=_social_avatar_urls(),
+                subject_avatar_map=subject_avatar_map,
                 profile_meta={
                     "quote_count": len(author_quotes),
                     "latest_timestamp": (author_quotes[0].timestamp if author_quotes else 0),
@@ -326,6 +337,9 @@ def register_social_routes(bp, context):
         comments = services.get_social_comments_for_quote(quote_id=quote_id, limit=300)
         notice = _social_notice_pop()
         author_directory = _social_author_directory()
+        subject_avatar_map = _social_subject_avatar_map(
+            [entry["name"] for entry in author_directory]
+        )
         related_quotes = []
         if quote.authors:
             primary_author = quote.authors[0]
@@ -354,6 +368,7 @@ def register_social_routes(bp, context):
                 related_quotes=related_quotes,
                 all_authors=[entry["name"] for entry in author_directory],
                 avatar_urls=_social_avatar_urls(),
+                subject_avatar_map=subject_avatar_map,
             )
         )
         return _social_apply_device_cookie(response, device_id)

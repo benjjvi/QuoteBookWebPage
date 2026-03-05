@@ -124,7 +124,7 @@ def register_quote_api_routes(bp, context):
             effective_per_page = total
 
         return jsonify(
-            quotes=[services.quote_to_dict(q) for q in quotes],
+            quotes=services.quotes_to_dict(quotes),
             total=total,
             page=page,
             per_page=effective_per_page,
@@ -172,14 +172,24 @@ def register_quote_api_routes(bp, context):
             total_quotes=total,
         )
 
+        quote_items = [
+            item["quote"] for item in feed_items if item.get("kind") == "quote"
+        ]
+        quote_payloads = {
+            payload["id"]: payload for payload in services.quotes_to_dict(quote_items)
+        }
+
         serialized_items = []
         for item in feed_items:
             if item["kind"] == "quote":
+                quote = item["quote"]
                 serialized_items.append(
                     {
                         "kind": "quote",
                         "primary_author": item["primary_author"],
-                        "quote": services.quote_to_dict(item["quote"]),
+                        "quote": quote_payloads.get(
+                            quote.id, services.quote_to_dict(quote)
+                        ),
                     }
                 )
             else:
@@ -264,7 +274,7 @@ def register_quote_api_routes(bp, context):
                 message="start_ts and end_ts are required",
             )
         quotes = quote_store.get_quotes_between(start_ts, end_ts)
-        return jsonify(quotes=[services.quote_to_dict(q) for q in quotes])
+        return jsonify(quotes=services.quotes_to_dict(quotes))
 
     @bp.route("/api/search", endpoint="api_search")
     def api_search():
@@ -280,25 +290,49 @@ def register_quote_api_routes(bp, context):
             ]
             matches = sorted(matches, key=lambda q: (q.timestamp, q.id), reverse=True)
             return jsonify(
-                quotes=[services.quote_to_dict(q) for q in matches],
+                quotes=services.quotes_to_dict(matches),
                 query=query,
                 tag=tag,
             )
 
         results = quote_store.search_quotes(query, tag=tag)
         return jsonify(
-            quotes=[services.quote_to_dict(q) for q in results],
+            quotes=services.quotes_to_dict(results),
             query=query,
             tag=tag,
         )
 
     @bp.route("/api/quotes", methods=["POST"], endpoint="api_add_quote")
     def api_add_quote():
-        data = request.get_json(silent=True) or {}
-        quote_text = (data.get("quote") or "").strip()
+        json_data = request.get_json(silent=True)
+        if isinstance(json_data, dict):
+            data = json_data
+        else:
+            data = request.form.to_dict(flat=True)
+
+        quote_text = (data.get("quote") or data.get("quote_text") or "").strip()
         context_text = (data.get("context") or "").strip()
-        authors_raw = data.get("authors")
+        authors_raw = data.get("authors", data.get("author_info"))
         tags = _extract_tags(quote_store, data.get("tags"))
+        image_file = request.files.get("image_file") or request.files.get("quote_image_file")
+        has_image_upload = bool(image_file and (image_file.filename or "").strip())
+        submitter_name = (
+            data.get("submitter_name")
+            or data.get("quote_submitter_name")
+            or data.get("image_name")
+            or data.get("quote_image_name")
+            or ""
+        ).strip()
+        image_subjects = (
+            data.get("subjects")
+            or data.get("quote_image_subjects")
+            or ""
+        ).strip()
+        image_context = (
+            data.get("image_context")
+            or data.get("quote_image_context")
+            or ""
+        ).strip()
 
         if not quote_text:
             return error_response(
@@ -311,6 +345,13 @@ def register_quote_api_routes(bp, context):
             authors = [str(value).strip() for value in authors_raw if str(value).strip()]
         else:
             authors = quote_store.parse_authors(str(authors_raw or "Unknown"))
+
+        if has_image_upload and not submitter_name:
+            return error_response(
+                status=400,
+                code="submitter_name_required",
+                message="submitter_name is required when an image is uploaded",
+            )
 
         timestamp_raw = data.get("timestamp")
         if timestamp_raw is None:
@@ -335,6 +376,23 @@ def register_quote_api_routes(bp, context):
             tags=tags,
         )
 
+        image_error = ""
+        linked_image_id = 0
+        if has_image_upload:
+            image_payload, image_error = services.create_gallery_image(
+                file_storage=image_file,
+                submitter_name=submitter_name,
+                subjects=image_subjects,
+                context=image_context,
+                quote_ids=[new_quote.id],
+            )
+            if image_payload:
+                linked_image_id = int(image_payload["id"])
+            if image_error:
+                current_app.logger.warning(
+                    "API quote %s image upload failed: %s", new_quote.id, image_error
+                )
+
         services.refresh_stats_cache("quote-added-api")
         try:
             sent_count = services.send_push_notification(
@@ -347,7 +405,13 @@ def register_quote_api_routes(bp, context):
             current_app.logger.warning("Push notification failed after API add: %s", exc)
 
         current_app.logger.info("Added quote %s via API", new_quote.id)
-        return jsonify(services.quote_to_dict(new_quote)), 201
+        payload = services.quote_to_dict(new_quote)
+        if has_image_upload:
+            payload["linked_image_id"] = linked_image_id
+            payload["image_uploaded"] = bool(linked_image_id)
+            if image_error:
+                payload["image_error"] = image_error
+        return jsonify(payload), 201
 
     @bp.route("/api/battles", methods=["POST"], endpoint="api_battle")
     def api_battle():
@@ -450,7 +514,7 @@ def register_quote_api_routes(bp, context):
         services.refresh_stats_cache("quote-anarchy-wins-api")
         return jsonify(
             {
-                "quotes": [services.quote_to_dict(quote) for quote in updated_quotes],
+                "quotes": services.quotes_to_dict(updated_quotes),
                 "updated_count": len(updated_quotes),
             }
         )

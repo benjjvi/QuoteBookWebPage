@@ -35,8 +35,11 @@
     </header>
 
     <div class="add-quote-body">
-      <form class="quote-form" method="POST" action="/add_quote">
+      <form class="quote-form" method="POST" action="/add_quote" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        {% if form_error %}
+          <p class="form-error">{{ form_error }}</p>
+        {% endif %}
         <div class="field">
           <label for="quote_text">Quote</label>
           <textarea
@@ -45,7 +48,7 @@
             rows="5"
             placeholder="Type the quote exactly as it was said..."
             required
-          ></textarea>
+          >{{ request.form.get("quote_text", "") }}</textarea>
           <p class="field-hint">Required. Keep it verbatim if you can.</p>
         </div>
 
@@ -57,6 +60,7 @@
             type="text"
             placeholder="e.g. Sam, Priya, and Lee"
             autocomplete="name"
+            value="{{ request.form.get("author_info", "") }}"
           />
           <p class="field-hint">
             Separate multiple names with commas or the word “and”.
@@ -70,8 +74,56 @@
             name="context"
             rows="3"
             placeholder="Optional: where, when, or what was happening"
-          ></textarea>
+          >{{ request.form.get("context", "") }}</textarea>
           <p class="field-hint">Optional. Helps future-you remember.</p>
+        </div>
+
+        <div class="field">
+          <label for="quote_image_file">Image (optional)</label>
+          <input
+            id="quote_image_file"
+            name="quote_image_file"
+            type="file"
+            accept="image/*"
+          />
+          <p class="field-hint">
+            Pick an image from your camera roll. If uploaded, it is added to Gallery and linked to this quote.
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="quote_submitter_name">Submitter name</label>
+          <input
+            id="quote_submitter_name"
+            name="quote_submitter_name"
+            type="text"
+            placeholder="e.g. Ben"
+            value="{{ request.form.get("quote_submitter_name", request.form.get("quote_image_name", "")) }}"
+          />
+          <p class="field-hint">Required when an image is uploaded.</p>
+        </div>
+
+        <div class="field">
+          <label for="quote_image_subjects">Subject name(s)</label>
+          <input
+            id="quote_image_subjects"
+            name="quote_image_subjects"
+            type="text"
+            placeholder="e.g. Alex, Sam"
+            value="{{ request.form.get("quote_image_subjects", "") }}"
+          />
+          <p class="field-hint">Optional. Comma-separated names in this image.</p>
+        </div>
+
+        <div class="field">
+          <label for="quote_image_context">Image context</label>
+          <textarea
+            id="quote_image_context"
+            name="quote_image_context"
+            rows="2"
+            placeholder="Optional: what this image is showing"
+          >{{ request.form.get("quote_image_context", "") }}</textarea>
+          <p class="field-hint">Optional. This belongs to the gallery image, not the quote.</p>
         </div>
 
         <div class="field">
@@ -82,6 +134,7 @@
             type="text"
             placeholder="e.g. work, chaos, coffee"
             autocomplete="off"
+            value="{{ request.form.get("tags", "") }}"
           />
           <p class="field-hint">
             Optional. Comma-separated topics. If blank, AI can suggest tags.
@@ -96,6 +149,7 @@
             type="text"
             placeholder="Leave blank for current date/time"
             autocomplete="off"
+            value="{{ request.form.get("quote_datetime", "") }}"
           />
           <p class="field-hint">
             Optional. Uses UK time. If empty, current date/time is used.
@@ -138,6 +192,10 @@
     const quoteTextInput = document.getElementById("quote_text");
     const authorInput = document.getElementById("author_info");
     const contextInput = document.getElementById("context");
+    const imageFileInput = document.getElementById("quote_image_file");
+    const submitterInput = document.getElementById("quote_submitter_name");
+    const imageSubjectsInput = document.getElementById("quote_image_subjects");
+    const imageContextInput = document.getElementById("quote_image_context");
     const tagsInput = document.getElementById("tags");
     const dateInput = document.getElementById("quote_datetime");
     const draftKey = "qb_add_quote_draft_v1";
@@ -149,6 +207,9 @@
         quote_text: quoteTextInput.value || "",
         author_info: authorInput.value || "",
         context: contextInput.value || "",
+        quote_submitter_name: submitterInput?.value || "",
+        quote_image_subjects: imageSubjectsInput?.value || "",
+        quote_image_context: imageContextInput?.value || "",
         tags: tagsInput.value || "",
         quote_datetime: dateInput.value || "",
       };
@@ -163,6 +224,18 @@
         if (!quoteTextInput.value && data.quote_text) quoteTextInput.value = data.quote_text;
         if (!authorInput.value && data.author_info) authorInput.value = data.author_info;
         if (!contextInput.value && data.context) contextInput.value = data.context;
+        if (submitterInput && !submitterInput.value) {
+          const restoredSubmitter = data.quote_submitter_name || data.quote_image_name || "";
+          if (restoredSubmitter) {
+            submitterInput.value = restoredSubmitter;
+          }
+        }
+        if (imageSubjectsInput && !imageSubjectsInput.value && data.quote_image_subjects) {
+          imageSubjectsInput.value = data.quote_image_subjects;
+        }
+        if (imageContextInput && !imageContextInput.value && data.quote_image_context) {
+          imageContextInput.value = data.quote_image_context;
+        }
         if (!tagsInput.value && data.tags) tagsInput.value = data.tags;
         if (!dateInput.value && data.quote_datetime) dateInput.value = data.quote_datetime;
       } catch (_err) {
@@ -185,12 +258,25 @@
     quoteTextInput.addEventListener("input", saveDraft);
     authorInput.addEventListener("input", saveDraft);
     contextInput.addEventListener("input", saveDraft);
+    submitterInput?.addEventListener("input", saveDraft);
+    imageSubjectsInput?.addEventListener("input", saveDraft);
+    imageContextInput?.addEventListener("input", saveDraft);
     tagsInput.addEventListener("input", saveDraft);
     dateInput.addEventListener("change", saveDraft);
+    imageFileInput?.addEventListener("change", () => {
+      if (submitterInput) {
+        submitterInput.required = Boolean(imageFileInput.files && imageFileInput.files.length);
+      }
+      saveDraft();
+    });
 
     form.addEventListener("submit", () => {
       localStorage.removeItem(draftKey);
     });
+
+    if (submitterInput && imageFileInput) {
+      submitterInput.required = Boolean(imageFileInput.files && imageFileInput.files.length);
+    }
   })();
 </script>
 {% endblock %}

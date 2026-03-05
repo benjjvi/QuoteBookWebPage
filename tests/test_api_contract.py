@@ -22,6 +22,8 @@ def test_api_quotes_order_and_pagination(client):
     newest = client.get("/api/quotes", query_string={"order": "newest"}).get_json()
 
     assert oldest["quotes"][0]["id"] != newest["quotes"][0]["id"]
+    assert "image_count" in oldest["quotes"][0]
+    assert "image_count" in newest["quotes"][0]
 
     paged = client.get(
         "/api/quotes",

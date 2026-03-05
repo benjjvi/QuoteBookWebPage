@@ -22,6 +22,8 @@ from flask import abort, g, request, session
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
+from werkzeug.datastructures import FileStorage
+from werkzeug.utils import secure_filename
 
 from stats_stopwords import STOPWORDS
 
@@ -74,6 +76,16 @@ class AppServices:
         {"key": "anger", "emoji": "😡", "label": "Anger"},
     )
     SOCIAL_REACTION_KEYS = {item["key"] for item in SOCIAL_REACTIONS}
+    GALLERY_MAX_UPLOAD_BYTES = 4 * 1024 * 1024
+    GALLERY_ALLOWED_MIME_TYPES = {
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+        "image/heic",
+        "image/heif",
+    }
 
     def __init__(self, app, quote_store, ai_worker, uk_tz, config: AppServiceConfig):
         self.app = app
@@ -273,8 +285,11 @@ class AppServices:
             base = f"{base}/"
         return urljoin(base, path.lstrip("/"))
 
-    @staticmethod
-    def quote_to_dict(quote) -> dict:
+    def quote_to_dict(self, quote, *, image_count: int | None = None) -> dict:
+        if image_count is None:
+            image_count = self.get_quote_image_counts([getattr(quote, "id", 0)]).get(
+                int(getattr(quote, "id", 0) or 0), 0
+            )
         return {
             "id": quote.id,
             "quote": quote.quote,
@@ -283,7 +298,20 @@ class AppServices:
             "context": quote.context,
             "tags": list(getattr(quote, "tags", []) or []),
             "stats": getattr(quote, "stats", {}),
+            "image_count": max(int(image_count or 0), 0),
         }
+
+    def quotes_to_dict(self, quotes: list) -> list[dict]:
+        quote_ids = [
+            int(getattr(quote, "id", 0) or 0)
+            for quote in (quotes or [])
+            if int(getattr(quote, "id", 0) or 0) > 0
+        ]
+        counts = self.get_quote_image_counts(quote_ids)
+        return [
+            self.quote_to_dict(quote, image_count=counts.get(int(quote.id), 0))
+            for quote in (quotes or [])
+        ]
 
     # ------------------------
     # Session tokens
@@ -369,6 +397,607 @@ class AppServices:
         if getattr(self.quote_store, "_local", None):
             return self.quote_store._local.filepath
         return os.getenv("QUOTEBOOK_DB", "qb.db")
+
+    @staticmethod
+    def parse_int_id_list(raw_ids, *, limit: int = 120) -> list[int]:
+        if isinstance(raw_ids, (list, tuple, set)):
+            candidates = list(raw_ids)
+        else:
+            candidates = re.split(r"[,\s]+", str(raw_ids or ""))
+
+        normalized: list[int] = []
+        seen = set()
+        for item in candidates:
+            value = str(item or "").strip()
+            if not value:
+                continue
+            try:
+                parsed = int(value)
+            except (TypeError, ValueError):
+                continue
+            if parsed <= 0 or parsed in seen:
+                continue
+            seen.add(parsed)
+            normalized.append(parsed)
+            if len(normalized) >= max(int(limit), 1):
+                break
+        return normalized
+
+    def _gallery_upload_root(self) -> str:
+        static_root = self.app.static_folder or "static"
+        root = os.path.join(static_root, "uploads", "gallery")
+        os.makedirs(root, exist_ok=True)
+        return root
+
+    @staticmethod
+    def _gallery_public_path(filename: str) -> str:
+        return f"/static/uploads/gallery/{filename}".replace("\\", "/")
+
+    def _resolve_gallery_extension(
+        self, file_storage: FileStorage
+    ) -> tuple[str, str]:
+        mime_to_ext = {
+            "image/jpeg": ".jpg",
+            "image/png": ".png",
+            "image/webp": ".webp",
+            "image/gif": ".gif",
+            "image/heic": ".heic",
+            "image/heif": ".heif",
+        }
+        ext_to_mime = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+            ".gif": "image/gif",
+            ".heic": "image/heic",
+            ".heif": "image/heif",
+        }
+
+        raw_mime = str(getattr(file_storage, "mimetype", "") or "")
+        normalized_mime = raw_mime.split(";", 1)[0].strip().lower()
+        if normalized_mime == "image/jpg":
+            normalized_mime = "image/jpeg"
+
+        safe_name = secure_filename(str(getattr(file_storage, "filename", "") or ""))
+        filename_ext = os.path.splitext(safe_name)[1].strip().lower()
+
+        if normalized_mime in self.GALLERY_ALLOWED_MIME_TYPES:
+            return mime_to_ext.get(normalized_mime, ".jpg"), normalized_mime
+
+        if filename_ext in ext_to_mime:
+            return filename_ext, ext_to_mime[filename_ext]
+
+        return "", ""
+
+    def ensure_gallery_tables(self) -> bool:
+        db_path = self.get_push_db_path()
+        try:
+            with sqlite3.connect(db_path) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS gallery_images (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        subjects TEXT NOT NULL DEFAULT '[]',
+                        context TEXT NOT NULL DEFAULT '',
+                        file_path TEXT NOT NULL UNIQUE,
+                        content_type TEXT NOT NULL,
+                        file_size INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_gallery_images_created
+                    ON gallery_images (created_at DESC, id DESC)
+                    """
+                )
+                gallery_columns = {
+                    row[1]
+                    for row in conn.execute(
+                        "PRAGMA table_info(gallery_images)"
+                    ).fetchall()
+                }
+                if "subjects" not in gallery_columns:
+                    conn.execute(
+                        "ALTER TABLE gallery_images ADD COLUMN subjects TEXT NOT NULL DEFAULT '[]'"
+                    )
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS gallery_quote_links (
+                        image_id INTEGER NOT NULL,
+                        quote_id INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        PRIMARY KEY (image_id, quote_id)
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_gallery_quote_links_quote
+                    ON gallery_quote_links (quote_id, image_id)
+                    """
+                )
+                row = conn.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type = 'table' AND name = 'gallery_images'
+                    """
+                ).fetchone()
+            return bool(row)
+        except sqlite3.Error as exc:
+            self.app.logger.error("Unable to ensure gallery tables: %s", exc)
+            return False
+
+    @staticmethod
+    def normalize_subject_names(raw_subjects) -> list[str]:
+        if isinstance(raw_subjects, str):
+            candidates = re.split(r"[,\n;]+", raw_subjects)
+        elif isinstance(raw_subjects, (list, tuple, set)):
+            candidates = list(raw_subjects)
+        else:
+            candidates = []
+
+        normalized: list[str] = []
+        seen = set()
+        for raw in candidates:
+            value = " ".join(str(raw or "").split()).strip()
+            if not value:
+                continue
+            key = value.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            normalized.append(value)
+            if len(normalized) >= 20:
+                break
+        return normalized
+
+    @staticmethod
+    def _load_json_list(raw_value) -> list[str]:
+        if isinstance(raw_value, list):
+            return [str(item) for item in raw_value if str(item).strip()]
+        try:
+            payload = json.loads(str(raw_value or "[]"))
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return []
+        if not isinstance(payload, list):
+            return []
+        return [str(item) for item in payload if str(item).strip()]
+
+    @staticmethod
+    def _gallery_row_to_dict(row: sqlite3.Row, quote_ids: list[int]) -> dict:
+        subjects = AppServices.normalize_subject_names(
+            AppServices._load_json_list(row["subjects"])
+        )
+        submitter_name = str(row["name"] or "").strip()
+        return {
+            "id": int(row["id"]),
+            "name": submitter_name,
+            "submitter_name": submitter_name,
+            "subjects": subjects,
+            "subject_count": len(subjects),
+            "context": str(row["context"] or ""),
+            "file_url": str(row["file_path"]),
+            "content_type": str(row["content_type"] or ""),
+            "file_size": int(row["file_size"] or 0),
+            "created_at": int(row["created_at"] or 0),
+            "quote_ids": [int(value) for value in quote_ids],
+            "quote_count": len(quote_ids),
+        }
+
+    def _get_quote_ids_by_image_ids(
+        self, image_ids: list[int]
+    ) -> dict[int, list[int]]:
+        normalized_ids = self.parse_int_id_list(image_ids)
+        if not normalized_ids:
+            return {}
+        if not self.ensure_gallery_tables():
+            return {}
+
+        placeholders = ",".join("?" for _ in normalized_ids)
+        query = f"""
+            SELECT image_id, quote_id
+            FROM gallery_quote_links
+            WHERE image_id IN ({placeholders})
+            ORDER BY image_id ASC, quote_id ASC
+        """
+        mapping: dict[int, list[int]] = {image_id: [] for image_id in normalized_ids}
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(query, tuple(normalized_ids)).fetchall()
+        for row in rows:
+            image_id = int(row["image_id"])
+            quote_id = int(row["quote_id"])
+            mapping.setdefault(image_id, []).append(quote_id)
+        return mapping
+
+    def list_gallery_images(
+        self, *, page: int = 1, per_page: int = 18, subject_query: str = ""
+    ) -> tuple[list[dict], int, int, int]:
+        if not self.ensure_gallery_tables():
+            return [], 1, 1, 0
+
+        page_size = max(1, min(int(per_page), 60))
+        normalized_query = " ".join(str(subject_query or "").split()).strip().casefold()
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            if not normalized_query:
+                total = int(
+                    conn.execute("SELECT COUNT(*) FROM gallery_images").fetchone()[0] or 0
+                )
+                total_pages = max(1, (total + page_size - 1) // page_size)
+                safe_page = max(1, min(int(page), total_pages))
+                offset = (safe_page - 1) * page_size
+                rows = conn.execute(
+                    """
+                    SELECT id, name, subjects, context, file_path, content_type, file_size, created_at
+                    FROM gallery_images
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT ? OFFSET ?
+                    """,
+                    (page_size, offset),
+                ).fetchall()
+            else:
+                all_rows = conn.execute(
+                    """
+                    SELECT id, name, subjects, context, file_path, content_type, file_size, created_at
+                    FROM gallery_images
+                    ORDER BY created_at DESC, id DESC
+                    """
+                ).fetchall()
+                filtered_rows = []
+                for row in all_rows:
+                    subjects = self.normalize_subject_names(
+                        self._load_json_list(row["subjects"])
+                    )
+                    if any(normalized_query in subject.casefold() for subject in subjects):
+                        filtered_rows.append(row)
+
+                total = len(filtered_rows)
+                total_pages = max(1, (total + page_size - 1) // page_size)
+                safe_page = max(1, min(int(page), total_pages))
+                start = (safe_page - 1) * page_size
+                end = start + page_size
+                rows = filtered_rows[start:end]
+
+        image_ids = [int(row["id"]) for row in rows]
+        quote_map = self._get_quote_ids_by_image_ids(image_ids)
+        images = [
+            self._gallery_row_to_dict(row, quote_map.get(int(row["id"]), []))
+            for row in rows
+        ]
+        return images, safe_page, total_pages, total
+
+    def get_gallery_image_by_id(self, image_id: int) -> dict | None:
+        if image_id <= 0:
+            return None
+        if not self.ensure_gallery_tables():
+            return None
+
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                """
+                SELECT id, name, subjects, context, file_path, content_type, file_size, created_at
+                FROM gallery_images
+                WHERE id = ?
+                """,
+                (int(image_id),),
+            ).fetchone()
+        if not row:
+            return None
+
+        quote_map = self._get_quote_ids_by_image_ids([int(image_id)])
+        return self._gallery_row_to_dict(row, quote_map.get(int(image_id), []))
+
+    def get_gallery_subject_directory(self, *, limit: int = 200) -> list[dict]:
+        if not self.ensure_gallery_tables():
+            return []
+        cap = max(1, min(int(limit), 1000))
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT subjects
+                FROM gallery_images
+                ORDER BY created_at DESC, id DESC
+                """
+            ).fetchall()
+
+        counts = Counter()
+        for row in rows:
+            subjects = self.normalize_subject_names(
+                self._load_json_list(row["subjects"])
+            )
+            for subject in subjects:
+                counts[subject] += 1
+        ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0].casefold()))
+        return [{"subject": subject, "count": count} for subject, count in ordered[:cap]]
+
+    def get_subject_avatar_map(self, names) -> dict[str, str]:
+        normalized_names = {
+            str(name or "").strip().casefold()
+            for name in (names or [])
+            if str(name or "").strip()
+        }
+        if not normalized_names:
+            return {}
+        if not self.ensure_gallery_tables():
+            return {}
+
+        mapping: dict[str, str] = {}
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT file_path, subjects
+                FROM gallery_images
+                ORDER BY created_at DESC, id DESC
+                """
+            ).fetchall()
+
+        for row in rows:
+            subjects = self.normalize_subject_names(
+                self._load_json_list(row["subjects"])
+            )
+            if len(subjects) != 1:
+                continue
+            key = subjects[0].casefold()
+            if key not in normalized_names:
+                continue
+            if key in mapping:
+                continue
+            mapping[key] = str(row["file_path"] or "")
+            if len(mapping) >= len(normalized_names):
+                break
+        return mapping
+
+    def get_gallery_images_for_quote(self, quote_id: int, *, limit: int = 32) -> list[dict]:
+        if quote_id <= 0:
+            return []
+        if not self.ensure_gallery_tables():
+            return []
+
+        cap = max(1, min(int(limit), 80))
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT gi.id, gi.name, gi.subjects, gi.context, gi.file_path, gi.content_type, gi.file_size, gi.created_at
+                FROM gallery_images gi
+                INNER JOIN gallery_quote_links gq ON gq.image_id = gi.id
+                WHERE gq.quote_id = ?
+                ORDER BY gi.created_at DESC, gi.id DESC
+                LIMIT ?
+                """,
+                (int(quote_id), cap),
+            ).fetchall()
+
+        return [
+            self._gallery_row_to_dict(row, [int(quote_id)])
+            for row in rows
+        ]
+
+    def get_image_ids_for_quote(self, quote_id: int, *, limit: int = 120) -> list[int]:
+        if quote_id <= 0:
+            return []
+        if not self.ensure_gallery_tables():
+            return []
+
+        cap = max(1, min(int(limit), 500))
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            rows = conn.execute(
+                """
+                SELECT image_id
+                FROM gallery_quote_links
+                WHERE quote_id = ?
+                ORDER BY image_id ASC
+                LIMIT ?
+                """,
+                (int(quote_id), cap),
+            ).fetchall()
+        return [int(row[0]) for row in rows]
+
+    def get_quote_image_counts(self, quote_ids) -> dict[int, int]:
+        normalized_ids = self.parse_int_id_list(quote_ids)
+        if not normalized_ids:
+            return {}
+        counts = {quote_id: 0 for quote_id in normalized_ids}
+        if not self.ensure_gallery_tables():
+            return counts
+
+        placeholders = ",".join("?" for _ in normalized_ids)
+        query = f"""
+            SELECT quote_id, COUNT(*) AS image_count
+            FROM gallery_quote_links
+            WHERE quote_id IN ({placeholders})
+            GROUP BY quote_id
+        """
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(query, tuple(normalized_ids)).fetchall()
+        for row in rows:
+            counts[int(row["quote_id"])] = int(row["image_count"] or 0)
+        return counts
+
+    def set_gallery_links_for_image(self, image_id: int, quote_ids) -> bool:
+        if image_id <= 0:
+            return False
+        if not self.ensure_gallery_tables():
+            return False
+
+        normalized_quote_ids = self.parse_int_id_list(quote_ids)
+        now_ts = int(timelib.time())
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            row = conn.execute(
+                "SELECT 1 FROM gallery_images WHERE id = ?",
+                (int(image_id),),
+            ).fetchone()
+            if not row:
+                return False
+            conn.execute(
+                "DELETE FROM gallery_quote_links WHERE image_id = ?",
+                (int(image_id),),
+            )
+            if normalized_quote_ids:
+                conn.executemany(
+                    """
+                    INSERT OR IGNORE INTO gallery_quote_links (image_id, quote_id, created_at)
+                    VALUES (?, ?, ?)
+                    """,
+                    [
+                        (int(image_id), int(quote_id), now_ts)
+                        for quote_id in normalized_quote_ids
+                    ],
+                )
+        return True
+
+    def set_gallery_links_for_quote(self, quote_id: int, image_ids) -> bool:
+        if quote_id <= 0:
+            return False
+        if not self.ensure_gallery_tables():
+            return False
+
+        normalized_image_ids = self.parse_int_id_list(image_ids)
+        now_ts = int(timelib.time())
+        with sqlite3.connect(self.get_push_db_path()) as conn:
+            conn.row_factory = sqlite3.Row
+            conn.execute(
+                "DELETE FROM gallery_quote_links WHERE quote_id = ?",
+                (int(quote_id),),
+            )
+            if not normalized_image_ids:
+                return True
+
+            placeholders = ",".join("?" for _ in normalized_image_ids)
+            valid_rows = conn.execute(
+                f"""
+                SELECT id
+                FROM gallery_images
+                WHERE id IN ({placeholders})
+                """,
+                tuple(normalized_image_ids),
+            ).fetchall()
+            valid_image_ids = [int(row["id"]) for row in valid_rows]
+            if valid_image_ids:
+                conn.executemany(
+                    """
+                    INSERT OR IGNORE INTO gallery_quote_links (image_id, quote_id, created_at)
+                    VALUES (?, ?, ?)
+                    """,
+                    [
+                        (int(image_id), int(quote_id), now_ts)
+                        for image_id in valid_image_ids
+                    ],
+                )
+        return True
+
+    def create_gallery_image(
+        self,
+        *,
+        file_storage: FileStorage | None,
+        submitter_name: str,
+        subjects=None,
+        context: str = "",
+        quote_ids=None,
+    ) -> tuple[dict | None, str]:
+        if not self.ensure_gallery_tables():
+            return None, "Gallery storage is unavailable right now."
+
+        normalized_submitter = " ".join((submitter_name or "").split()).strip()
+        if not normalized_submitter:
+            return None, "Submitter name is required."
+        if len(normalized_submitter) > 120:
+            return None, "Submitter name must be 120 characters or fewer."
+
+        normalized_subjects = self.normalize_subject_names(subjects)
+        if len(normalized_subjects) > 20:
+            return None, "Too many subjects. Keep it to 20 or fewer."
+
+        normalized_context = (context or "").strip()
+        if len(normalized_context) > 2000:
+            return None, "Image context must be 2000 characters or fewer."
+
+        if not file_storage or not getattr(file_storage, "filename", ""):
+            return None, "Please pick an image from your camera roll."
+
+        ext, normalized_mime = self._resolve_gallery_extension(file_storage)
+        if not ext or not normalized_mime:
+            return None, "Unsupported image format. Use JPEG, PNG, WEBP, GIF, or HEIC."
+
+        token = secrets.token_hex(14)
+        filename = f"{int(timelib.time())}-{token}{ext}"
+        upload_root = self._gallery_upload_root()
+        final_path = os.path.join(upload_root, filename)
+        temp_path = f"{final_path}.tmp"
+
+        try:
+            file_storage.save(temp_path)
+            file_size = int(os.path.getsize(temp_path) if os.path.exists(temp_path) else 0)
+            if file_size <= 0:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                return None, "Uploaded image was empty."
+            if file_size > self.GALLERY_MAX_UPLOAD_BYTES:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                max_mb = int(self.GALLERY_MAX_UPLOAD_BYTES / (1024 * 1024))
+                return None, f"Image must be {max_mb}MB or smaller."
+            os.replace(temp_path, final_path)
+        except Exception as exc:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+            self.app.logger.warning("Failed to store uploaded gallery image: %s", exc)
+            return None, "Unable to save image right now."
+
+        now_ts = int(timelib.time())
+        file_url = self._gallery_public_path(filename)
+
+        image_id = 0
+        try:
+            with sqlite3.connect(self.get_push_db_path()) as conn:
+                cur = conn.execute(
+                    """
+                    INSERT INTO gallery_images
+                    (name, subjects, context, file_path, content_type, file_size, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        normalized_submitter,
+                        json.dumps(normalized_subjects, ensure_ascii=False),
+                        normalized_context,
+                        file_url,
+                        normalized_mime,
+                        file_size,
+                        now_ts,
+                    ),
+                )
+                image_id = int(cur.lastrowid or 0)
+        except sqlite3.Error as exc:
+            self.app.logger.error("Unable to save gallery image metadata: %s", exc)
+            try:
+                os.remove(final_path)
+            except OSError:
+                pass
+            return None, "Unable to save image metadata."
+
+        if image_id <= 0:
+            try:
+                os.remove(final_path)
+            except OSError:
+                pass
+            return None, "Image save failed."
+
+        self.set_gallery_links_for_image(image_id, quote_ids)
+        payload = self.get_gallery_image_by_id(image_id)
+        return payload, ""
 
     def get_social_reaction_catalog(self) -> list[dict]:
         return [dict(item) for item in self.SOCIAL_REACTIONS]

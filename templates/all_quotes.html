@@ -111,6 +111,12 @@
           <span class="dot">•</span>
           <span>{{ q.timestamp | uk_time }}</span>
         </div>
+        {% set image_count = image_counts.get(q.id, 0) %}
+        {% if image_count > 0 %}
+          <p class="quote-gallery-note">
+            {{ image_count }} image{% if image_count != 1 %}s{% endif %} linked to this quote.
+          </p>
+        {% endif %}
         {% if q.context %}
           <p class="quote-context">{{ q.context }}</p>
         {% endif %}
@@ -250,6 +256,10 @@
       .map((q) => {
         const authorList = Array.isArray(q.authors) ? q.authors.join(", ") : "";
         const context = q.context ? `<p class="quote-context">${escapeHtml(q.context)}</p>` : "";
+        const imageCount = Number(q.image_count || 0);
+        const galleryNote = imageCount > 0
+          ? `<p class="quote-gallery-note">${imageCount} image${imageCount === 1 ? "" : "s"} linked to this quote.</p>`
+          : "";
         const tags = Array.isArray(q.tags) && q.tags.length
           ? `<div class="tag-row">${q.tags
               .map(
@@ -270,6 +280,7 @@
               <span class="dot">•</span>
               <span>${formatTime(q.timestamp)}</span>
             </div>
+            ${galleryNote}
             ${context}
             ${tags}
             <a href="/quote/${encodeURIComponent(q.id)}" class="btn btn-primary">

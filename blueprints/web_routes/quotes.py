@@ -40,14 +40,32 @@ def register_quote_routes(bp, context):
             current_app.logger.warning("AI tag suggestion failed: %s", exc)
             return []
 
+    def _image_counts_for_quotes(quotes) -> dict[int, int]:
+        quote_ids = [
+            int(getattr(quote, "id", 0) or 0)
+            for quote in (quotes or [])
+            if int(getattr(quote, "id", 0) or 0) > 0
+        ]
+        return services.get_quote_image_counts(quote_ids)
+
     @bp.route("/add_quote", methods=["GET", "POST"], endpoint="add_quote")
     def add_quote():
+        form_error = ""
         if request.method == "POST":
             quote_text = request.form.get("quote_text", "").strip()
             context = request.form.get("context", "").strip()
             author_raw = request.form.get("author_info", "Unknown").strip()
             quote_datetime_raw = request.form.get("quote_datetime", "").strip()
             tags_raw = request.form.get("tags", "")
+            submitter_name = (
+                request.form.get("quote_submitter_name")
+                or request.form.get("quote_image_name")
+                or ""
+            ).strip()
+            image_subjects = request.form.get("quote_image_subjects", "").strip()
+            image_context = request.form.get("quote_image_context", "").strip()
+            image_file = request.files.get("quote_image_file")
+            has_image_upload = bool(image_file and (image_file.filename or "").strip())
 
             if quote_text:
                 authors = quote_store.parse_authors(author_raw)
@@ -68,36 +86,57 @@ def register_quote_routes(bp, context):
                             quote_datetime_raw,
                         )
 
-                new_quote = quote_store.add_quote(
-                    quote_text=quote_text,
-                    authors=authors,
-                    context=context,
-                    timestamp=timestamp,
-                    tags=tags,
-                )
-                services.refresh_stats_cache("quote-added")
-                current_app.logger.info(
-                    "Added quote %s by %s tags=%s",
-                    new_quote.id,
-                    ", ".join(new_quote.authors),
-                    ",".join(new_quote.tags),
-                )
-                try:
-                    author_name = ", ".join(new_quote.authors) or "Unknown"
-                    sent_count = services.send_push_notification(
-                        "People are chatting...",
-                        f"New quote by {author_name}",
-                        services.build_public_url(
-                            url_for("quote_by_id", quote_id=new_quote.id)
-                        ),
+                if has_image_upload and not submitter_name:
+                    form_error = "Submitter name is required when uploading an image."
+                else:
+                    new_quote = quote_store.add_quote(
+                        quote_text=quote_text,
+                        authors=authors,
+                        context=context,
+                        timestamp=timestamp,
+                        tags=tags,
                     )
-                    current_app.logger.info("Push notifications sent: %s", sent_count)
-                except Exception as exc:
-                    current_app.logger.warning("Push notification failed: %s", exc)
 
-                return redirect(url_for("index"))
+                    if has_image_upload:
+                        _image_payload, image_error = services.create_gallery_image(
+                            file_storage=image_file,
+                            submitter_name=submitter_name,
+                            subjects=image_subjects,
+                            context=image_context,
+                            quote_ids=[new_quote.id],
+                        )
+                        if image_error:
+                            current_app.logger.warning(
+                                "Quote %s image upload failed: %s",
+                                new_quote.id,
+                                image_error,
+                            )
 
-        return render_template("add_quote.html")
+                    services.refresh_stats_cache("quote-added")
+                    current_app.logger.info(
+                        "Added quote %s by %s tags=%s",
+                        new_quote.id,
+                        ", ".join(new_quote.authors),
+                        ",".join(new_quote.tags),
+                    )
+                    try:
+                        author_name = ", ".join(new_quote.authors) or "Unknown"
+                        sent_count = services.send_push_notification(
+                            "People are chatting...",
+                            f"New quote by {author_name}",
+                            services.build_public_url(
+                                url_for("quote_by_id", quote_id=new_quote.id)
+                            ),
+                        )
+                        current_app.logger.info("Push notifications sent: %s", sent_count)
+                    except Exception as exc:
+                        current_app.logger.warning("Push notification failed: %s", exc)
+
+                    return redirect(url_for("index"))
+            else:
+                form_error = "Quote text cannot be empty."
+
+        return render_template("add_quote.html", form_error=form_error)
 
     @bp.route("/battle", methods=["GET", "POST"], endpoint="battle")
     def battle():
@@ -280,6 +319,7 @@ def register_quote_routes(bp, context):
         if not q:
             abort(404)
         current_app.logger.info("Random quote served: %s", q.id)
+        linked_images = services.get_gallery_images_for_quote(q.id)
 
         date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
             q.timestamp
@@ -294,6 +334,7 @@ def register_quote_routes(bp, context):
             id=str(q.id),
             context=q.context,
             tags=q.tags,
+            linked_images=linked_images,
             reroll_button=True,
             quote_id=q.id,
             permalink=services.build_public_url(url_for("quote_by_id", quote_id=q.id)),
@@ -308,6 +349,7 @@ def register_quote_routes(bp, context):
         if not q:
             current_app.logger.info("Quote not found: %s", quote_id)
             abort(404)
+        linked_images = services.get_gallery_images_for_quote(q.id)
 
         date_str, time_str = datetime_handler.format_uk_datetime_from_timestamp(
             q.timestamp
@@ -322,6 +364,7 @@ def register_quote_routes(bp, context):
             time=time_str,
             context=q.context,
             tags=q.tags,
+            linked_images=linked_images,
             reroll_button=False,
             quote_id=quote_id,
             permalink=services.build_public_url(url_for("quote_by_id", quote_id=quote_id)),
@@ -349,6 +392,8 @@ def register_quote_routes(bp, context):
 
         pin_error = None
         edit_error = None
+        linked_image_ids = services.get_image_ids_for_quote(quote_id)
+        image_ids_input = ", ".join(str(image_id) for image_id in linked_image_ids)
 
         if request.method == "POST":
             action = request.form.get("action", "").strip().lower()
@@ -369,7 +414,9 @@ def register_quote_routes(bp, context):
                     context = request.form.get("context", "").strip()
                     author_raw = request.form.get("author_info", "Unknown").strip()
                     tags_raw = request.form.get("tags", "")
+                    image_ids_input = request.form.get("image_ids", "").strip()
                     tags = quote_store.parse_tags(tags_raw)
+                    image_ids = services.parse_int_id_list(image_ids_input)
 
                     if not quote_text:
                         edit_error = "Quote text cannot be empty."
@@ -384,6 +431,7 @@ def register_quote_routes(bp, context):
                         )
                         if not updated:
                             abort(404)
+                        services.set_gallery_links_for_quote(quote_id, image_ids)
                         return redirect(url_for("quote_by_id", quote_id=quote_id))
 
         return render_template(
@@ -392,6 +440,7 @@ def register_quote_routes(bp, context):
             pin_error=pin_error,
             edit_error=edit_error,
             is_authed=bool(session.get("edit_authed")),
+            image_ids_input=image_ids_input,
         )
 
     @bp.route("/edit", methods=["GET", "POST"], endpoint="edit_index")
@@ -452,6 +501,7 @@ def register_quote_routes(bp, context):
         )
         sorted_speakers = quote_store.get_speaker_counts()
         sorted_tags = quote_store.get_tag_counts()
+        image_counts = _image_counts_for_quotes(paginated_quotes)
 
         return render_template(
             "all_quotes.html",
@@ -464,6 +514,7 @@ def register_quote_routes(bp, context):
             page=page,
             total_pages=total_pages,
             per_page=per_page_quote_limit,
+            image_counts=image_counts,
         )
 
     @bp.route("/search", methods=["GET", "POST"], endpoint="search")
@@ -494,6 +545,7 @@ def register_quote_routes(bp, context):
                 tag=normalized_tag,
             )
             results = filtered
+        image_counts = _image_counts_for_quotes(results)
 
         return render_template(
             "search.html",
@@ -502,6 +554,7 @@ def register_quote_routes(bp, context):
             query=query,
             selected_tag=normalized_tag,
             tags=quote_store.get_tag_counts(),
+            image_counts=image_counts,
         )
 
     @bp.route("/stats", endpoint="stats")
@@ -579,6 +632,7 @@ def register_quote_routes(bp, context):
         end_ts = int(end_of_day.timestamp())
 
         quotes = quote_store.get_quotes_between(start_ts, end_ts)
+        image_counts = _image_counts_for_quotes(quotes)
 
         return render_template(
             "quotes_by_day.html",
@@ -586,4 +640,5 @@ def register_quote_routes(bp, context):
             day=day_dt.strftime("%d %B %Y"),
             year=day_dt.year,
             month=day_dt.month,
+            image_counts=image_counts,
         )

@@ -12,6 +12,18 @@
   const avatarUrls = Array.isArray(config.avatarUrls)
     ? config.avatarUrls.filter((value) => typeof value === "string" && value.length > 0)
     : [];
+  const subjectAvatarMap =
+    config.subjectAvatarMap && typeof config.subjectAvatarMap === "object"
+      ? Object.fromEntries(
+          Object.entries(config.subjectAvatarMap).filter(
+            ([key, value]) =>
+              typeof key === "string" &&
+              key.trim().length > 0 &&
+              typeof value === "string" &&
+              value.length > 0,
+          ),
+        )
+      : {};
   const allAuthors = Array.isArray(config.allAuthors)
     ? config.allAuthors.filter((value) => typeof value === "string" && value.trim().length > 0)
     : [];
@@ -100,6 +112,7 @@
     assignAvatar = (authorName) => {
       const normalized = normalizeAuthor(authorName);
       if (!normalized) return avatarOrder[0];
+      if (subjectAvatarMap[normalized]) return subjectAvatarMap[normalized];
       if (avatarMap[normalized]) return avatarMap[normalized];
 
       const nextAvatar = avatarOrder[cursor % avatarOrder.length];

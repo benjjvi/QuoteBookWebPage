@@ -77,6 +77,12 @@
           <span class="dot">•</span>
           <span>{{ q.timestamp | uk_time }}</span>
         </div>
+        {% set image_count = image_counts.get(q.id, 0) %}
+        {% if image_count > 0 %}
+          <p class="quote-gallery-note">
+            {{ image_count }} image{% if image_count != 1 %}s{% endif %} linked to this quote.
+          </p>
+        {% endif %}
         {% if q.context %}
           <p class="quote-context">{{ q.context }}</p>
         {% endif %}
@@ -178,6 +184,10 @@
         const contextHtml = quote.context
           ? `<p class="quote-context">${escapeHtml(quote.context)}</p>`
           : "";
+        const imageCount = Number(quote.image_count || 0);
+        const galleryNote = imageCount > 0
+          ? `<p class="quote-gallery-note">${imageCount} image${imageCount === 1 ? "" : "s"} linked to this quote.</p>`
+          : "";
         const tagsHtml =
           Array.isArray(quote.tags) && quote.tags.length
             ? `<div class="tag-row">${quote.tags
@@ -199,6 +209,7 @@
               <span class="dot">•</span>
               <span>${formatTime(quote.timestamp)}</span>
             </div>
+            ${galleryNote}
             ${contextHtml}
             ${tagsHtml}
             <a href="/quote/${encodeURIComponent(quote.id)}" class="btn btn-primary">View</a>

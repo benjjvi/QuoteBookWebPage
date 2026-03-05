@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery Image #{{ image.id }}{% endblock %}
+
+{% block extra_css %}
+<link
+  rel="stylesheet"
+  href="/static/assets/css/gallery.css"
+/>
+{% endblock %}
+
+{% block content %}
+<section class="gallery-detail-page">
+  <header class="gallery-header">
+    <div>
+      <span class="eyebrow">Gallery</span>
+      <h1>Submitted by {{ image.submitter_name }}</h1>
+      <p class="lead">
+        Image #{{ image.id }} · {{ image.file_size }} bytes
+      </p>
+    </div>
+    <div class="gallery-actions">
+      <a href="/gallery/add" class="btn btn-primary">Add image</a>
+      <a href="/gallery" class="btn btn-ghost">Back to gallery</a>
+      <a href="/" class="btn btn-ghost">Back home</a>
+    </div>
+  </header>
+
+  <div class="gallery-detail-layout">
+    <article class="gallery-detail-card">
+      <figure>
+        <img
+          src="{{ image.file_url }}"
+          alt="{{ caption_text }}"
+          loading="lazy"
+          decoding="async"
+        />
+        <figcaption>{{ caption_text }}</figcaption>
+      </figure>
+      {% if image.subjects %}
+        <p class="gallery-meta">
+          Subjects: {{ image.subjects | join(", ") }}
+        </p>
+      {% endif %}
+      {% if image.context %}
+        <p class="gallery-meta">{{ image.context }}</p>
+      {% endif %}
+      <p class="gallery-link-note">
+        {{ image.quote_count }} linked quote{% if image.quote_count != 1 %}s{% endif %}
+      </p>
+    </article>
+
+    <aside class="gallery-side-card">
+      <h2>Quote links</h2>
+      {% if notice %}
+        <p class="gallery-notice">{{ notice }}</p>
+      {% endif %}
+      {% if form_error %}
+        <p class="gallery-error">{{ form_error }}</p>
+      {% endif %}
+
+      <form method="post" class="gallery-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <label for="quote_ids">Linked quote IDs</label>
+        <input
+          id="quote_ids"
+          name="quote_ids"
+          type="text"
+          value="{{ quote_ids_input }}"
+          placeholder="e.g. 1, 3, 7"
+        />
+        <p class="gallery-form-hint">
+          Save replaces current quote links for this image.
+        </p>
+        <button type="submit" class="btn btn-primary">Update links</button>
+      </form>
+
+      <div class="gallery-quote-links">
+        {% for quote in linked_quotes %}
+          <a class="gallery-quote-chip" href="/quote/{{ quote.id }}">
+            #{{ quote.id }} · {{ quote.quote | truncate(42, True, "...") }}
+          </a>
+        {% else %}
+          <p class="gallery-meta">No linked quotes yet.</p>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

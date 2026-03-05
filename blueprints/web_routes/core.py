@@ -104,6 +104,8 @@ def register_core_routes(bp, context):
             ("/", "daily", "1.0"),
             ("/social", "daily", "0.9"),
             ("/all_quotes", "daily", "0.9"),
+            ("/gallery", "daily", "0.8"),
+            ("/gallery/add", "monthly", "0.5"),
             ("/random", "daily", "0.8"),
             ("/stats", "daily", "0.7"),
             ("/search", "daily", "0.7"),

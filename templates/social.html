@@ -242,8 +242,8 @@
       <div class="panel-callout">
         <h3>How avatars work</h3>
         <p>
-          Each author gets one profile picture when this social view opens.
-          That picture sticks while you stay in social mode.
+          Single-subject gallery images are used first for matching names.
+          If none exists, a profile picture is assigned for this session.
         </p>
       </div>
     </aside>
@@ -254,6 +254,7 @@
   {{
     {
       "avatarUrls": avatar_urls,
+      "subjectAvatarMap": subject_avatar_map,
       "allAuthors": all_authors,
       "feed": social_feed_meta,
     } | tojson

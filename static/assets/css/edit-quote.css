@@ -165,6 +165,12 @@ textarea {
   color: var(--qb-accent-2);
 }
 
+.form-hint {
+  margin: -0.3rem 0 0.1rem 0;
+  color: var(--qb-text-faint);
+  font-size: 0.82rem;
+}
+
 .btn {
   font-family: var(--qb-font-body);
   border-radius: 999px;

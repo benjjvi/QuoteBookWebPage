@@ -103,6 +103,18 @@
           placeholder="e.g. work, chaos, coffee"
         />
 
+        <label for="image_ids">Linked image IDs (optional)</label>
+        <input
+          id="image_ids"
+          name="image_ids"
+          type="text"
+          value="{{ image_ids_input }}"
+          placeholder="e.g. 12, 19, 21"
+        />
+        <p class="form-hint">
+          Comma-separated gallery image IDs. Saving replaces the current image links for this quote.
+        </p>
+
         {% if edit_error %}
           <p class="form-error">{{ edit_error }}</p>
         {% endif %}

@@ -38,6 +38,12 @@
               <span>{{ dt.time }}</span>
             {% endif %}
           </div>
+          {% set image_count = image_counts.get(q.id, 0) %}
+          {% if image_count > 0 %}
+            <p class="quote-gallery-note">
+              {{ image_count }} image{% if image_count != 1 %}s{% endif %} linked to this quote.
+            </p>
+          {% endif %}
           {% if q.context %}
             <p class="quote-context">{{ q.context }}</p>
           {% endif %}

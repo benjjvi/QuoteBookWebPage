@@ -102,6 +102,13 @@
   font-size: 0.9rem;
 }
 
+.quote-gallery-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--qb-text-muted);
+  font-weight: 600;
+}
+
 .empty-state {
   background: var(--qb-surface);
   border-radius: 20px;
