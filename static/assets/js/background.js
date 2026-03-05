@@ -8,8 +8,8 @@
 
   let width, height;
   let particles = [];
-  const MAX_PARTICLE_COUNT = 120;
-  const MIN_PARTICLE_COUNT = 36;
+  const MAX_PARTICLE_COUNT = 400;
+  const MIN_PARTICLE_COUNT = 200;
   const PARTICLE_AREA = 22000;
   const MAX_DISTANCE = 120;
   const MAX_DISTANCE_SQUARED = MAX_DISTANCE * MAX_DISTANCE;
@@ -37,9 +37,6 @@
     canvas.style.height = `${height}px`;
     init();
   }
-
-  window.addEventListener("resize", resize);
-  resize();
 
   const resolveThemeColors = () => {
     const styles = getComputedStyle(document.documentElement);
@@ -88,6 +85,10 @@
       particles.push(new Particle());
     }
   }
+
+  // Register + run initial sizing only after Particle/init are ready.
+  window.addEventListener("resize", resize);
+  resize();
 
   function connect() {
     for (let i = 0; i < particles.length; i++) {
