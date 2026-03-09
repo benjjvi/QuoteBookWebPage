@@ -3,6 +3,8 @@ from dataclasses import replace
 from zoneinfo import ZoneInfo
 
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException
 
 UK_TZ = ZoneInfo("Europe/London")
@@ -124,6 +126,40 @@ def test_push_normalizes_base64url_private_key_to_pem(services, monkeypatch):
     sent = services.send_push_notification("Title", "Body", "https://example.com")
     assert sent == 1
     assert "BEGIN PRIVATE KEY" in seen["vapid_private_key"]
+
+
+@pytest.mark.usefixtures("services")
+def test_push_normalizes_escaped_quoted_pem_private_key(services, monkeypatch):
+    pem_key = (
+        ec.generate_private_key(ec.SECP256R1())
+        .private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        .decode("ascii")
+    )
+    escaped = f'"{pem_key.replace(chr(10), r"\\n")}"'
+    services.config = replace(services.config, vapid_private_key=escaped)
+    services.save_push_subscription(
+        {
+            "endpoint": "https://push.example.com/sub-escaped",
+            "keys": {"auth": "a", "p256dh": "b"},
+        },
+        "pytest",
+    )
+
+    seen = {}
+
+    def fake_webpush(**kwargs):
+        seen["vapid_private_key"] = kwargs.get("vapid_private_key")
+
+    monkeypatch.setattr("app_services.webpush", fake_webpush)
+
+    sent = services.send_push_notification("Title", "Body", "https://example.com")
+    assert sent == 1
+    assert "BEGIN PRIVATE KEY" in seen["vapid_private_key"]
+    assert "\\n" not in seen["vapid_private_key"]
 
 
 @pytest.mark.usefixtures("services")

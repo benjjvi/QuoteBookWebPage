@@ -9,7 +9,7 @@ import smtplib
 import sqlite3
 import threading
 import time as timelib
-from base64 import urlsafe_b64decode
+from base64 import b64decode, urlsafe_b64decode
 from collections import Counter, deque
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
@@ -2098,34 +2098,95 @@ class AppServices:
     @lru_cache(maxsize=8)
     def _normalize_vapid_private_key(key: str) -> str:
         """
-        Convert base64url VAPID private keys to PEM so older py-vapid builds
-        avoid curve parsing bugs with newer cryptography releases.
+        Normalize VAPID private keys from common env formats into PEM.
+
+        Supports:
+        - File paths to PEM keys
+        - PEM strings (including values escaped with literal "\n")
+        - Raw/base64url 32-byte private keys
+        - Base64-encoded DER keys
         """
-        candidate = (key or "").strip()
+        candidate = str(key or "").strip()
         if not candidate:
             return ""
-        if "BEGIN PRIVATE KEY" in candidate or os.path.exists(candidate):
+
+        # Common copy/paste artifact from env dashboards.
+        if (
+            len(candidate) >= 2
+            and candidate[0] == candidate[-1]
+            and candidate[0] in {"'", '"'}
+        ):
+            candidate = candidate[1:-1].strip()
+
+        if os.path.exists(candidate):
             return candidate
 
-        padded = candidate + ("=" * (-len(candidate) % 4))
-        try:
-            raw = urlsafe_b64decode(padded.encode("ascii"))
-        except (UnicodeEncodeError, ValueError):
-            return candidate
-        if len(raw) != 32:
-            return candidate
+        candidate = candidate.replace("\\r\\n", "\n").replace("\\n", "\n")
+        candidate = candidate.replace("\r\n", "\n").replace("\r", "\n")
 
-        try:
-            private_value = int.from_bytes(raw, "big")
-            private_key = ec.derive_private_key(private_value, ec.SECP256R1())
-            pem_bytes = private_key.private_bytes(
+        def _to_pem(private_key_obj) -> str:
+            pem_bytes = private_key_obj.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=serialization.NoEncryption(),
             )
+            return pem_bytes.decode("ascii")
+
+        # If the key already looks like PEM, canonicalize and validate it.
+        if "PRIVATE KEY" in candidate and "BEGIN" in candidate:
+            lines = [line.strip() for line in candidate.split("\n") if line.strip()]
+            begin_line = next(
+                (line for line in lines if line.startswith("-----BEGIN ") and "PRIVATE KEY" in line),
+                "",
+            )
+            end_line = next(
+                (line for line in lines if line.startswith("-----END ") and "PRIVATE KEY" in line),
+                "",
+            )
+            if begin_line and end_line:
+                body = "".join(
+                    line
+                    for line in lines
+                    if not line.startswith("-----BEGIN ") and not line.startswith("-----END ")
+                )
+                body = "".join(body.split())
+                if body:
+                    wrapped = "\n".join(
+                        body[i : i + 64] for i in range(0, len(body), 64)
+                    )
+                    candidate = f"{begin_line}\n{wrapped}\n{end_line}\n"
+            try:
+                loaded = serialization.load_pem_private_key(
+                    candidate.encode("ascii"), password=None
+                )
+                return _to_pem(loaded)
+            except Exception:
+                pass
+
+        compact = "".join(candidate.split())
+
+        # Raw/base64url private key (32 bytes) -> PEM.
+        padded_url = compact + ("=" * (-len(compact) % 4))
+        try:
+            raw = urlsafe_b64decode(padded_url.encode("ascii"))
+        except (UnicodeEncodeError, ValueError):
+            raw = b""
+        if len(raw) == 32:
+            try:
+                private_value = int.from_bytes(raw, "big")
+                private_key = ec.derive_private_key(private_value, ec.SECP256R1())
+                return _to_pem(private_key)
+            except Exception:
+                pass
+
+        # Base64 DER key -> PEM.
+        padded_std = compact + ("=" * (-len(compact) % 4))
+        try:
+            der_bytes = b64decode(padded_std.encode("ascii"))
+            loaded = serialization.load_der_private_key(der_bytes, password=None)
+            return _to_pem(loaded)
         except Exception:
             return candidate
-        return pem_bytes.decode("ascii")
 
     def send_push_notification(self, title: str, body: str, url: str) -> int:
         if not self.config.vapid_private_key or not self.config.vapid_public_key:
