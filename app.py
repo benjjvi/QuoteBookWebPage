@@ -18,7 +18,7 @@ from quote_anarchy import QuoteAnarchyService
 from quote_who_said_it import QuoteWhoSaidItService
 from quote_client import get_quote_client
 
-load_dotenv()
+load_dotenv(".env")
 
 
 class RequestAwareSessionInterface(SecureCookieSessionInterface):
